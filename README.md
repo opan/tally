@@ -1,0 +1,129 @@
+# Tally
+
+A points leaderboard for clubs and groups — start with a badminton season
+ranking, extend to other sports or any tally. Admins enter players, shuffle
+pairs, and record match scores; points add up per player and the ranking can be
+shared as a link or a poster.
+
+UI: Bahasa Indonesia (default) and English.
+
+Plan, decisions, and backlog: [NOTES.md](NOTES.md).
+
+## Run
+
+```bash
+docker compose up --build
+```
+
+Open <http://localhost:8090> and sign up. Postgres runs in compose (exposed on
+`127.0.0.1:5433` for poking around); the schema is applied on app start.
+
+Local Go against the compose database:
+
+```bash
+docker compose up -d db
+DATABASE_URL=postgres://tally:tally@localhost:5433/tally?sslmode=disable go run .
+```
+
+## Test
+
+```bash
+go test ./...
+```
+
+Store tests run against a real Postgres when `TALLY_TEST_DATABASE_URL` points
+at a throwaway database (it is wiped); otherwise they're skipped:
+
+```bash
+docker compose exec db createdb -U tally tally_test
+TALLY_TEST_DATABASE_URL='postgres://tally:tally@localhost:5433/tally_test?sslmode=disable' go test ./...
+```
+
+## Configuration
+
+| Env | Default | |
+|---|---|---|
+| `DATABASE_URL` | `postgres://tally:tally@localhost:5432/tally?sslmode=disable` | |
+| `PORT` | `8080` | |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | unset | enables OTLP metric export |
+| `AUTH_PROVIDER` | `local` | `aio` = log in through All-in-one (below) |
+| `AIO_ISSUER` | | aio's public base URL, e.g. `https://aio.opanmustopah.com` |
+| `AIO_CLIENT_ID` | | the client id registered in aio (`tally`) |
+| `AIO_CLIENT_SECRET` | | printed once by `oidc:client:create`; keep it in a Secret |
+| `AIO_REDIRECT_URL` | | `https://<tally host>/auth/callback` |
+| `AIO_POST_LOGOUT_URL` | optional | `https://<tally host>/`, where aio sends the browser after logout |
+
+The `AIO_*` settings are required when `AUTH_PROVIDER=aio`; a missing one stops
+tally at startup instead of silently falling back to local passwords.
+
+## Login through All-in-one
+
+With `AUTH_PROVIDER=aio`, tally never sees a password. **Masuk** and **Daftar**
+go to aio's login and signup pages, which show tally's name, 🏆 icon, and gold
+colour, in the language picked in tally (`ui_locales=id|en`). Someone already
+logged in to aio goes straight through (single sign-on). **Keluar** ends both
+the tally and the aio session. `POST /login` and `POST /register` redirect to
+aio.
+
+How it works (same as cashflow's `aioauth.go`): authorization code + PKCE +
+nonce. State, nonce, and the PKCE verifier sit in a 10-minute `tally_oidc`
+cookie. The ID token is verified (signature, issuer, audience, expiry, nonce),
+then the local user is found by its aio id (`users.aio_user_id`) or created on
+first login with aio's `preferred_username`. A username that already belongs to
+a local-only tally account is never taken over (409 page). A username taken by
+another aio account gets a suffix. If aio is down nobody new can log in, but
+existing sessions keep working; tally also starts without aio.
+
+Admins are added by username, so a new admin has to log in to tally once
+before the owner can add them.
+
+Register the client in aio (the secret is printed once):
+
+```bash
+kubectl -n app exec deploy/all-in-one -- /app/all-in-one oidc:client:create \
+  --id tally --name Tally \
+  --redirect-uri https://<tally host>/auth/callback \
+  --post-logout-redirect-uri https://<tally host>/ \
+  --brand-color '#d4af37' --icon 🏆
+```
+
+To try it locally, run aio from its repo with OIDC on
+(`ALLINONE_SERVER_PORT=18080 ALLINONE_AUTH_OIDC_ENABLED=true
+ALLINONE_AUTH_OIDC_ISSUER=http://localhost:18080`), register a client with
+redirect URI `http://localhost:8091/auth/callback`, and run tally on the host
+(`PORT=8091 DATABASE_URL=postgres://tally:tally@localhost:5433/tally?sslmode=disable
+AUTH_PROVIDER=aio AIO_ISSUER=http://localhost:18080 ...`). The issuer must be
+the same URL for the browser and for tally, which is why tally runs on the host
+here rather than in Docker Compose.
+
+## User guide
+
+`/panduan` is the in-app guide (`/guide` redirects there). The text lives in
+`templates/guide_id.html` and `templates/guide_en.html`, one per language, with
+the same sections so links like `/panduan#hari-main` work in both. `go test`
+checks that the sections match and that every screenshot exists.
+
+The screenshots in `static/guide/{id,en}/` are generated, not hand-made. After
+a UI change, regenerate them against an empty database:
+
+```bash
+./scripts/guide-db-reset.sh                       # empty tally_guide database
+PORT=8095 DATABASE_URL='postgres://tally:tally@localhost:5433/tally_guide?sslmode=disable' go run . &
+node scripts/guide-shots.cjs /path/to/node_modules/playwright-core
+```
+
+The script signs up a demo admin, seeds a fictional club (Badminton Sampai
+Pingsan: Jacque Oui, Prabski, Bahlul…) with two play days, and captures each
+screen at phone width in both languages.
+
+## Tech
+
+Go (single binary, `net/http`, `html/template`, embedded assets), PostgreSQL via
+`pgx/v5`, cookie sessions (bcrypt for local accounts, or OpenID Connect through
+All-in-one via `coreos/go-oidc` + `x/oauth2`), OpenTelemetry metrics. Same
+shape as cashflow.
+
+## Adding a language
+
+Add `locales/<lang>.json` with the same keys as `locales/id.json` and append
+the code to `supportedLangs` in `i18n.go`. `go test` fails if keys drift.
