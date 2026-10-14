@@ -48,7 +48,7 @@ TALLY_TEST_DATABASE_URL='postgres://tally:tally@localhost:5433/tally_test?sslmod
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | unset | enables OTLP metric export (see Metrics) |
 | `OTEL_SERVICE_NAME` | `tally` | becomes the `job` label in VictoriaMetrics |
 | `AUTH_PROVIDER` | `local` | `aio` = log in through All-in-one (below) |
-| `AIO_ISSUER` | | aio's public base URL, e.g. `https://aio.opanmustopah.com` |
+| `AIO_ISSUER` | | aio's public base URL, e.g. `https://aio.example.com` |
 | `AIO_CLIENT_ID` | | the client id registered in aio (`tally`) |
 | `AIO_CLIENT_SECRET` | | printed once by `oidc:client:create`; keep it in a Secret |
 | `AIO_REDIRECT_URL` | | `https://<tally host>/auth/callback` |
