@@ -48,6 +48,6 @@ func suggestMatches(in shuffleInput, rng *rand.Rand) (matches [][2][]string, wai
 // unpredictable at no cost.
 func shuffleRNG() *rand.Rand {
 	var seed [32]byte
-	_, _ = crand.Read(seed[:]) // never fails on supported platforms (Go 1.24+)
+	_, _ = crand.Read(seed[:])             // never fails on supported platforms (Go 1.24+)
 	return rand.New(rand.NewChaCha8(seed)) // #nosec G404 -- CSPRNG seeded from crypto/rand; fairness, not secrecy
 }
