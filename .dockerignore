@@ -1,3 +1,6 @@
 .git
+.github
 .env
 /tally
+scripts
+*.md

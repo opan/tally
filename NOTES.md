@@ -276,6 +276,19 @@ Change from the plan: the guide's prose lives in `templates/guide_{id,en}.html`
 rather than locale keys (long text is easier to revise there); only the page
 chrome uses `locales/`. Not done yet: printable quick-start, opan's review.
 
+## CI and security scans (2026-10-14)
+
+Workflows: test (race + Postgres service), docker (test gate → build → Trivy
+image gate → push to Docker Hub, opan added the secrets), security (gitleaks,
+govulncheck, gosec, Trivy fs; weekly too), Dependabot. All actions pinned to
+commit SHAs. Ran every scanner locally first: govulncheck showed the old build
+image (Go 1.26.6) had reachable net/http vulnerabilities fixed in 1.26.9 → build
+image `golang:1.26.9-alpine` and `toolchain go1.26.9` in go.mod; gosec G404 on
+the shuffle RNG → ChaCha8 seeded from crypto/rand (+ `#nosec` with reason).
+Runtime image moved from alpine:3.20 to distroless static (Debian 13, nonroot
+uid 65532, 39 MB); Trivy: 0 fixable HIGH/CRITICAL. Remaining notice:
+GO-2026-5932 (x/crypto/openpgp, unmaintained), not imported by tally.
+
 ## Double-submit protection (2026-10-14)
 
 Two layers, as in cashflow. **Browser** (`static/app.js`): every POST form

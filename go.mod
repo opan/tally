@@ -2,6 +2,8 @@ module tally
 
 go 1.26.0
 
+toolchain go1.26.9
+
 require (
 	github.com/coreos/go-oidc/v3 v3.21.0
 	github.com/jackc/pgx/v5 v5.11.0

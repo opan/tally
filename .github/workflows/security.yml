@@ -1,0 +1,125 @@
+name: Security
+
+# Secret detection, Go vulnerability check, static analysis (SAST), and a
+# dependency/misconfiguration scan. Runs on every push and pull request, and
+# weekly, because new vulnerabilities appear without any code change.
+# Findings show up under the repository's Security → Code scanning tab.
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: '0 1 * * 1'  # Mondays 01:00 UTC (08:00 WIB)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gitleaks:
+    name: Gitleaks (secrets)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0  # scan the whole history, not just the last commit
+      - name: Scan history
+        id: scan
+        continue-on-error: true
+        run: |
+          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.30.1 \
+            git /repo --no-banner --redact --report-format sarif --report-path /repo/gitleaks.sarif
+      - name: Upload to the Security tab
+        if: always() && hashFiles('gitleaks.sarif') != ''
+        uses: github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
+        with:
+          sarif_file: gitleaks.sarif
+          category: gitleaks
+      - name: Fail on leaks
+        if: steps.scan.outcome == 'failure'
+        run: exit 1
+
+  govulncheck:
+    name: govulncheck (Go vulnerabilities)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.26.x'
+          check-latest: true
+          cache: true
+      # Fails only on vulnerabilities tally's code can actually reach, including
+      # the standard library of the Go release it is built with.
+      - run: go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
+
+  gosec:
+    name: gosec (static analysis)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.26.x'
+          check-latest: true
+          cache: true
+      - name: Run gosec
+        id: scan
+        continue-on-error: true
+        run: |
+          go run github.com/securego/gosec/v2/cmd/gosec@v2.29.0 \
+            -severity high -confidence medium \
+            -fmt sarif -out gosec.sarif -stdout -verbose text ./...
+      - name: Upload to the Security tab
+        if: always() && hashFiles('gosec.sarif') != ''
+        uses: github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
+        with:
+          sarif_file: gosec.sarif
+          category: gosec
+      - name: Fail on findings
+        if: steps.scan.outcome == 'failure'
+        run: exit 1
+
+  trivy-fs:
+    name: Trivy (dependencies, Dockerfile)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Scan (report)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret,misconfig
+          format: sarif
+          output: trivy-fs.sarif
+          severity: HIGH,CRITICAL
+      - name: Upload to the Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
+        with:
+          sarif_file: trivy-fs.sarif
+          category: trivy-fs
+      - name: Scan (gate)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret,misconfig
+          format: table
+          exit-code: '1'
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          skip-setup-trivy: true

@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"math/rand/v2"
 	"net/http"
 	"slices"
 	"strconv"
@@ -469,7 +468,7 @@ func (a *App) handleShuffle(w http.ResponseWriter, r *http.Request) {
 		a.renderRound(w, r, d, nil, http.StatusUnprocessableEntity)
 		return
 	}
-	groups, _ := suggestMatches(in, rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64())))
+	groups, _ := suggestMatches(in, shuffleRNG())
 	if len(groups) == 0 {
 		d.tc.Err = tr(r, "err.not_enough_players", 2*sideSize)
 		a.renderRound(w, r, d, nil, http.StatusUnprocessableEntity)

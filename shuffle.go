@@ -1,6 +1,7 @@
 package main
 
 import (
+	crand "crypto/rand"
 	"math/rand/v2"
 	"slices"
 	"time"
@@ -40,4 +41,13 @@ func suggestMatches(in shuffleInput, rng *rand.Rand) (matches [][2][]string, wai
 		matches = append(matches, [2][]string{slices.Clone(m[:in.SideSize]), slices.Clone(m[in.SideSize:])})
 	}
 	return matches, waiting
+}
+
+// shuffleRNG returns a generator for one shuffle. Who plays next isn't a
+// security decision, but seeding ChaCha8 from crypto/rand keeps the draw
+// unpredictable at no cost.
+func shuffleRNG() *rand.Rand {
+	var seed [32]byte
+	_, _ = crand.Read(seed[:]) // never fails on supported platforms (Go 1.24+)
+	return rand.New(rand.NewChaCha8(seed)) // #nosec G404 -- CSPRNG seeded from crypto/rand; fairness, not secrecy
 }

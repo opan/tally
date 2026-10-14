@@ -149,6 +149,25 @@ The script signs up a demo admin, seeds a fictional club (Badminton Sampai
 Pingsan: Jacque Oui, Prabski, Bahlul…) with two play days, and captures each
 screen at phone width in both languages.
 
+## CI
+
+GitHub Actions (`.github/workflows/`), with every third-party action pinned to
+a commit:
+
+| Workflow | When | What |
+|---|---|---|
+| `test.yml` | every push and PR | gofmt, vet, build, `go test -race` including the database tests (Postgres service) |
+| `docker.yml` | push to `main`, `v*` tags | tests, build, Trivy image scan (fails on fixable HIGH/CRITICAL), push `<DOCKER_USERNAME>/tally` as `latest`, `sha-<short>`, and the version for tags |
+| `security.yml` | every push and PR, weekly | gitleaks (whole history), govulncheck, gosec, Trivy (dependencies, secrets, Dockerfile) |
+
+Needs the `DOCKER_USERNAME` and `DOCKER_PASSWORD` (a Docker Hub access token)
+repository secrets. Scan results also appear under Security → Code scanning.
+Dependabot (`.github/dependabot.yml`) opens weekly PRs for Go modules, base
+images, and the pinned actions.
+
+The image is distroless (`gcr.io/distroless/static-debian13:nonroot`): no
+shell, runs as uid 65532.
+
 ## Tech
 
 Go (single binary, `net/http`, `html/template`, embedded assets), PostgreSQL via
