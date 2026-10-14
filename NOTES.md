@@ -288,6 +288,9 @@ the shuffle RNG → ChaCha8 seeded from crypto/rand (+ `#nosec` with reason).
 Runtime image moved from alpine:3.20 to distroless static (Debian 13, nonroot
 uid 65532, 39 MB); Trivy: 0 fixable HIGH/CRITICAL. Remaining notice:
 GO-2026-5932 (x/crypto/openpgp, unmaintained), not imported by tally.
+Moved to Go 1.27.2 (Dependabot PR #1, merged 2026-10-14): build image, go.mod
+`toolchain`, and CI `go-version: '1.27.x'` move together; `go 1.26.0` language
+line unchanged. Re-ran race tests, govulncheck and Trivy on 1.27.2: clean.
 
 ## Double-submit protection (2026-10-14)
 
