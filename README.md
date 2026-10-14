@@ -45,7 +45,8 @@ TALLY_TEST_DATABASE_URL='postgres://tally:tally@localhost:5433/tally_test?sslmod
 |---|---|---|
 | `DATABASE_URL` | `postgres://tally:tally@localhost:5432/tally?sslmode=disable` | |
 | `PORT` | `8080` | |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | unset | enables OTLP metric export |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | unset | enables OTLP metric export (see Metrics) |
+| `OTEL_SERVICE_NAME` | `tally` | becomes the `job` label in VictoriaMetrics |
 | `AUTH_PROVIDER` | `local` | `aio` = log in through All-in-one (below) |
 | `AIO_ISSUER` | | aio's public base URL, e.g. `https://aio.opanmustopah.com` |
 | `AIO_CLIENT_ID` | | the client id registered in aio (`tally`) |
@@ -95,6 +96,38 @@ redirect URI `http://localhost:8091/auth/callback`, and run tally on the host
 AUTH_PROVIDER=aio AIO_ISSUER=http://localhost:18080 ...`). The issuer must be
 the same URL for the browser and for tally, which is why tally runs on the host
 here rather than in Docker Compose.
+
+## Metrics
+
+Metrics are pushed over OTLP/HTTP every 15s when `OTEL_EXPORTER_OTLP_ENDPOINT`
+is set, e.g. to an OpenTelemetry Collector that writes to Prometheus or
+VictoriaMetrics (`prometheusremotewrite`):
+
+```
+OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector.example:4318
+OTEL_SERVICE_NAME=tally
+```
+
+Names as they appear in VictoriaMetrics / Grafana (label `job="tally"`):
+
+| Metric | Type | Labels | What |
+|---|---|---|---|
+| `http_server_request_duration_seconds` | histogram | `http_route`, `http_request_method`, `http_response_status_code` | Request latency and counts |
+| `http_server_active_requests` | gauge | | In-flight requests |
+| `go_memory_used_bytes`, `go_goroutine_count`, … | gauge | | Go runtime |
+| `tally_db_connections` | gauge | `state` = acquired, idle, max | Database pool |
+| `tally_users`, `tally_tallies`, `tally_players`, `tally_matches`, `tally_play_days` | gauge | | Totals from the database (active players, finished matches) |
+| `tally_tallies_active` | gauge | | Tallies with a play day in the last 30 days |
+| `tally_users_created_total` | counter | `method` = local, aio | New accounts |
+| `tally_tallies_created_total` | counter | `type` | New tallies, by preset |
+| `tally_logins_total` | counter | `method`, `result` | Logins: `ok`, `failed` (wrong password), or the aio error (`state`, `denied`, `unavailable`, `exchange`, `verify`, `unlinked`) |
+| `tally_play_days_started_total` | counter | | Play days started |
+| `tally_match_events_total` | counter | `action` = scheduled, scored, added, edited, deleted, cancelled | Match activity |
+| `tally_players_added_total`, `tally_awards_recorded_total` | counter | | Players added, extra-point entries |
+
+A ready-made Grafana dashboard for these metrics is kept as a Kubernetes
+ConfigMap (`tally-dashboard`, for Grafana's dashboard sidecar) alongside the
+deployment manifests, not in this repo.
 
 ## User guide
 

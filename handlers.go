@@ -225,7 +225,7 @@ func (a *App) handleRegister(w http.ResponseWriter, r *http.Request) {
 		internalError(w, "create user", err)
 		return
 	}
-	recordUserCreated(r.Context())
+	recordUserCreated(r.Context(), "local")
 	if err := a.startSession(w, r, u.ID, ""); err != nil {
 		internalError(w, "start session", err)
 		return
@@ -257,6 +257,7 @@ func (a *App) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 	u, hash, err := a.store.UserByUsername(r.Context(), username)
 	if errors.Is(err, pgx.ErrNoRows) || (err == nil && !checkPassword(hash, pw)) {
+		recordLogin(r.Context(), "local", "failed")
 		a.authFail(w, r, "login", "err.login_failed", username)
 		return
 	}
@@ -268,6 +269,7 @@ func (a *App) handleLogin(w http.ResponseWriter, r *http.Request) {
 		internalError(w, "start session", err)
 		return
 	}
+	recordLogin(r.Context(), "local", "ok")
 	http.Redirect(w, r, nextOrHome(r.URL.Query().Get("next")), http.StatusSeeOther)
 }
 

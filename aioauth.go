@@ -204,7 +204,10 @@ func (a *App) setLoginStateCookie(w http.ResponseWriter, r *http.Request, value 
 	})
 }
 
+// authError shows a failed aio login and counts it by reason ("state",
+// "denied", "unavailable", ...).
 func (a *App) authError(w http.ResponseWriter, r *http.Request, status int, key string) {
+	recordLogin(r.Context(), "aio", strings.TrimPrefix(key, "auth.err."))
 	a.renderStatus(w, r, "autherror", authVM{Err: tr(r, key)}, status)
 }
 
@@ -312,6 +315,7 @@ func (a *App) handleAuthCallback(w http.ResponseWriter, r *http.Request) {
 		internalError(w, "aio login: start session", err)
 		return
 	}
+	recordLogin(r.Context(), "aio", "ok")
 	http.Redirect(w, r, nextOrHome(st.Next), http.StatusSeeOther)
 }
 
@@ -329,7 +333,7 @@ func (a *App) linkedUser(ctx context.Context, sub, preferred string) (*User, err
 	name := localUsername(preferred, sub)
 	u, err = a.store.CreateAioUser(ctx, sub, name)
 	if err == nil {
-		recordUserCreated(ctx)
+		recordUserCreated(ctx, "aio")
 	}
 	if !errors.Is(err, ErrUsernameTaken) {
 		return u, err
@@ -349,7 +353,7 @@ func (a *App) linkedUser(ctx context.Context, sub, preferred string) (*User, err
 	// Taken by another aio account (e.g. a renamed one): keep both distinct.
 	u, err = a.store.CreateAioUser(ctx, sub, suffixedUsername(name, sub))
 	if err == nil {
-		recordUserCreated(ctx)
+		recordUserCreated(ctx, "aio")
 	}
 	if errors.Is(err, ErrUsernameTaken) {
 		if winner, lookupErr := a.store.UserByAioID(ctx, sub); lookupErr == nil {

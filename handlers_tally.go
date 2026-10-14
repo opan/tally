@@ -216,7 +216,7 @@ func (a *App) handleCreateTally(w http.ResponseWriter, r *http.Request) {
 		internalError(w, "create tally", err)
 		return
 	}
-	recordTallyCreated(r.Context())
+	recordTallyCreated(r.Context(), tmpl)
 	redirectOK(w, r, tallyPath(t, "/players"), "tally_created")
 }
 
@@ -307,6 +307,7 @@ func (a *App) handleAddPlayers(w http.ResponseWriter, r *http.Request) {
 		internalError(w, "add players", err)
 		return
 	}
+	recordPlayersAdded(r.Context(), len(added))
 	a.renderPlayers(w, r, playersVM{tallyCtx: tc, Added: added, Skipped: skipped}, http.StatusOK)
 }
 

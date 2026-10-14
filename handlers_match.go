@@ -214,6 +214,8 @@ func (a *App) handleCreateRound(w http.ResponseWriter, r *http.Request) {
 	} else if err != nil {
 		internalError(w, "create round", err)
 		return
+	} else {
+		recordPlayDayStarted(ctx)
 	}
 	http.Redirect(w, r, tallyPath(tc.Tally, "/rounds/"+id), http.StatusSeeOther)
 }
@@ -477,6 +479,7 @@ func (a *App) handleShuffle(w http.ResponseWriter, r *http.Request) {
 		internalError(w, "schedule matches", err)
 		return
 	}
+	recordMatchEvent(r.Context(), "scheduled", len(groups))
 	http.Redirect(w, r, roundPath(tc.Tally, d.round.ID)+"#court", http.StatusSeeOther)
 }
 
@@ -502,6 +505,7 @@ func (a *App) handleAddMatch(w http.ResponseWriter, r *http.Request) {
 		internalError(w, "save match", err)
 		return
 	}
+	recordMatchEvent(r.Context(), "added", 1)
 	http.Redirect(w, r, roundPath(tc.Tally, d.round.ID)+"?ok=match_saved#done", http.StatusSeeOther)
 }
 
@@ -575,10 +579,11 @@ func (a *App) handleMatchAction(w http.ResponseWriter, r *http.Request) {
 			internalError(w, "delete match", err)
 			return
 		}
-		key := "match_deleted"
+		key, action := "match_deleted", "deleted"
 		if m.Scheduled() {
-			key = "match_cancelled"
+			key, action = "match_cancelled", "cancelled"
 		}
+		recordMatchEvent(r.Context(), action, 1)
 		redirectOK(w, r, back, key)
 	case "save":
 		f := readMatchForm(r, tallyPath(tc.Tally, "/matches/"+m.ID), tc.Tally.SideSize(), d.period.Scoring.GamesPerMatch())
@@ -596,6 +601,11 @@ func (a *App) handleMatchAction(w http.ResponseWriter, r *http.Request) {
 			internalError(w, "save match", err)
 			return
 		}
+		action := "edited"
+		if m.Scheduled() {
+			action = "scored"
+		}
+		recordMatchEvent(r.Context(), action, 1)
 		http.Redirect(w, r, back+"?ok=match_saved#done", http.StatusSeeOther)
 	default:
 		http.Error(w, "unknown action", http.StatusBadRequest)
@@ -663,6 +673,7 @@ func (a *App) handleAddAwards(w http.ResponseWriter, r *http.Request) {
 		internalError(w, "add awards", err)
 		return
 	}
+	recordAwards(r.Context(), len(entries))
 	http.Redirect(w, r, roundPath(tc.Tally, d.round.ID)+"?ok=awards_saved#awards", http.StatusSeeOther)
 }
 

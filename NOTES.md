@@ -276,6 +276,19 @@ Change from the plan: the guide's prose lives in `templates/guide_{id,en}.html`
 rather than locale keys (long text is easier to revise there); only the page
 chrome uses `locales/`. Not done yet: printable quick-start, opan's review.
 
+## Metrics (2026-10-14)
+
+App metrics added on top of HTTP + runtime: DB totals as gauges (users,
+tallies, active tallies 30d, players, matches, play days, DB pool) and event
+counters (logins by method/result, users/tallies created, play days, match
+events by action, players added, extra points). Names and labels: README →
+Metrics. Verified end to end locally through otel-collector-contrib
+(prometheusremotewrite) → VictoriaMetrics → Grafana 13. Dashboard: ConfigMap
+`tally-dashboard` (sidecar label `grafana_dashboard: "9"`) in
+`homelab/k8s/observabilities/vm/dashboards/`, same layout as cashflow's plus an
+"Aplikasi" section. Failed logins are on it because login rate limiting is
+still in the security backlog.
+
 ## P7 notes: login through aio (2026-10-14)
 
 - Port of cashflow's `aioauth.go` (same decisions: code + PKCE + nonce, link by

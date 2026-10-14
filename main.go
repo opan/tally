@@ -53,6 +53,7 @@ func main() {
 
 	otelShutdown, otelOn := initOTel(ctx)
 	if otelOn {
+		registerBusinessMetrics(&Store{pool: pool})
 		log.Print("otel metrics: enabled (OTLP export)")
 	} else {
 		log.Print("otel metrics: disabled (set OTEL_EXPORTER_OTLP_ENDPOINT to enable)")

@@ -151,3 +151,22 @@ func (s *Store) DeleteExpiredSessions(ctx context.Context) (int64, error) {
 	ct, err := s.pool.Exec(ctx, `DELETE FROM sessions WHERE expires_at < now()`)
 	return ct.RowsAffected(), err
 }
+
+// Totals are app-wide counts for the metrics gauges.
+type Totals struct {
+	Users, Tallies, ActiveTallies, Players, Matches, PlayDays int64
+}
+
+func (s *Store) Totals(ctx context.Context) (Totals, error) {
+	var t Totals
+	err := s.pool.QueryRow(ctx, `SELECT
+		(SELECT count(*) FROM users),
+		(SELECT count(*) FROM tallies),
+		(SELECT count(DISTINCT p.tally_id) FROM rounds r JOIN periods p ON p.id = r.period_id
+		  WHERE r.played_on >= current_date - 30),
+		(SELECT count(*) FROM participants WHERE active),
+		(SELECT count(*) FROM matches WHERE status = 'done'),
+		(SELECT count(*) FROM rounds)`,
+	).Scan(&t.Users, &t.Tallies, &t.ActiveTallies, &t.Players, &t.Matches, &t.PlayDays)
+	return t, err
+}
