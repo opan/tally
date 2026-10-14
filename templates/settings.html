@@ -1,0 +1,88 @@
+{{define "title"}}{{.T "tab.settings"}} &middot; {{.Data.Tally.Name}} &mdash; {{.T "app.name"}}{{end}}
+{{define "content"}}
+{{template "tallyhead" .}}
+{{$t := .Data.Tally}}
+
+<section class="card">
+  <h2>{{.T "settings.title"}}</h2>
+  <form method="post" action="/t/{{$t.Slug}}/settings" class="stack">
+    <label>{{.T "create.name"}}
+      <input type="text" name="name" value="{{.Data.FName}}" maxlength="80" required>
+    </label>
+    <label>{{.T "create.description"}} <span class="muted hint">{{.T "common.optional"}}</span>
+      <textarea name="description" rows="2" maxlength="500">{{.Data.FDesc}}</textarea>
+    </label>
+    <fieldset>
+      <legend>{{.T "visibility.title"}}</legend>
+      <label class="choice">
+        <input type="radio" name="visibility" value="link" {{if ne .Data.FVisibility "private"}}checked{{end}}>
+        <span><strong>{{.T "visibility.link"}}</strong><span class="muted small">{{.T "visibility.link_help"}}</span></span>
+      </label>
+      <label class="choice">
+        <input type="radio" name="visibility" value="private" {{if eq .Data.FVisibility "private"}}checked{{end}}>
+        <span><strong>{{.T "visibility.private"}}</strong><span class="muted small">{{.T "visibility.private_help"}}</span></span>
+      </label>
+    </fieldset>
+    <dl class="facts">
+      <dt>{{.T "create.slug"}}</dt><dd><code>/t/{{$t.Slug}}</code></dd>
+      <dt>{{.T "create.template"}}</dt><dd>{{.T $t.Preset.NameKey}}{{if $t.Preset.TeamSizes}} · {{.T "tally.per_side" $t.SideSize}}{{end}}</dd>
+    </dl>
+    <button type="submit" class="btn primary">{{.T "common.save"}}</button>
+  </form>
+</section>
+
+<section class="card" id="poster">
+  <div class="cardhead">
+    <h2>{{.T "poster.title"}}</h2>
+    <a class="small" href="/t/{{$t.Slug}}/poster">{{.T "poster.view"}} →</a>
+  </div>
+  <p class="muted small">{{.T "branding.help"}}</p>
+  <form method="post" action="/t/{{$t.Slug}}/branding" enctype="multipart/form-data" class="stack">
+    <div class="row2">
+      <label>{{.T "branding.title1"}}
+        <input type="text" name="title1" value="{{$t.Branding.Title1}}" placeholder="{{.Data.DefTitle1}}" maxlength="40">
+      </label>
+      <label>{{.T "branding.title2"}}
+        <input type="text" name="title2" value="{{$t.Branding.Title2}}" placeholder="{{.Data.DefTitle2}}" maxlength="40">
+      </label>
+    </div>
+    <label>{{.T "branding.badge"}} <span class="muted hint">{{.T "common.optional"}}</span>
+      <input type="text" name="badge" value="{{$t.Branding.Badge}}" placeholder="{{.T "branding.badge_placeholder"}}" maxlength="40">
+    </label>
+    <label>{{.T "branding.footer"}} <span class="muted hint">{{.T "common.optional"}}</span>
+      <input type="text" name="footer" value="{{$t.Branding.Footer}}" placeholder="{{.T "branding.footer_placeholder"}}" maxlength="60">
+    </label>
+    <div class="logofield">
+      {{if $t.HasLogo}}<img class="logo-preview" src="/t/{{$t.Slug}}/logo?v={{$t.LogoVer}}" alt="{{.T "branding.logo"}}">{{end}}
+      <label>{{.T "branding.logo"}} <span class="muted hint">{{.T "branding.logo_hint"}}</span>
+        <input type="file" name="logo" accept="image/png,image/jpeg,image/webp">
+      </label>
+      {{if $t.HasLogo}}<label class="choice"><input type="checkbox" name="remove_logo" value="1"><span>{{.T "branding.remove_logo"}}</span></label>{{end}}
+    </div>
+    <button type="submit" class="btn primary">{{.T "common.save"}}</button>
+  </form>
+</section>
+
+<section class="card">
+  <h2>{{.T "admins.title"}}</h2>
+  <p class="muted small">{{.T "admins.help"}}</p>
+  <ul class="rows">
+    {{range .Data.Admins}}
+    <li class="prow">
+      <span class="pname">{{.Username}} {{if eq .Role "owner"}}<span class="badge gold">{{$.T "role.owner"}}</span>{{else}}<span class="badge">{{$.T "role.admin"}}</span>{{end}}</span>
+      {{if and $.Data.IsOwner (ne .Role "owner")}}
+      <form method="post" action="/t/{{$t.Slug}}/admins/{{.UserID}}/remove" data-confirm="{{$.T "admins.remove_confirm" .Username}}">
+        <button type="submit" class="btn small danger">{{$.T "admins.remove"}}</button>
+      </form>
+      {{end}}
+    </li>
+    {{end}}
+  </ul>
+  {{if .Data.IsOwner}}
+  <form method="post" action="/t/{{$t.Slug}}/admins" class="inlineform">
+    <input type="text" name="username" value="{{.Data.FUsername}}" placeholder="{{.T "admins.username_placeholder"}}" required autocapitalize="none" spellcheck="false" aria-label="{{.T "auth.username"}}">
+    <button type="submit" class="btn small">{{.T "admins.add"}}</button>
+  </form>
+  {{end}}
+</section>
+{{end}}

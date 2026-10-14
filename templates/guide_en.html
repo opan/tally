@@ -1,0 +1,192 @@
+{{define "guide_en"}}{{$P := .}}
+<section class="card gsec" id="mulai">
+  <h2>1. Quick start</h2>
+  <p>Five steps from nothing to your first recorded match.</p>
+  <ol class="gsteps">
+    <li><strong>Sign up or log in.</strong>
+      {{if .Data.Aio}}Tap <em>Sign up</em> or <em>Log in</em>. You go to All-in-one's page, one account for Tally
+      and other apps, and come back to Tally when you're done.
+      {{else}}Tap <em>Sign up</em> and pick a username and password.{{end}}
+      Accounts are only for the <strong>admins</strong> who keep score. Players don't need one.</li>
+    <li><strong>Create a tally.</strong> On <em>My tallies</em>, enter a name (e.g. <em>Sunday Smashers</em>),
+      check its link, and pick its <a href="#jenis">type</a>. The link and type can't be changed after creating
+      the tally; the name and description can.</li>
+    <li><strong>Add player names.</strong> One name per line. You can paste a list straight from a WhatsApp
+      group: numbers and bullets are removed, and names that already exist are skipped.</li>
+    <li><strong>Create a season.</strong> On the <em>Seasons</em> tab, set the start and end dates and choose
+      the <a href="#aturan-poin">points rule</a>.</li>
+    <li><strong>Start playing.</strong> Open the <em>Play</em> tab and pick the date, number of courts, and who's
+      here. Continue in <a href="#hari-main">Play day</a>.</li>
+  </ol>
+  {{template "gimg" (dict "P" $P "N" "create" "Alt" "The Create a new tally form: name, link, type, description")}}
+  {{template "gimg" (dict "P" $P "N" "players" "Alt" "The Add players form with one name per line")}}
+</section>
+
+<section class="card gsec" id="jenis">
+  <h2>2. Tally types</h2>
+  <p>The type sets how many people are on a side and which score formats a season can use.</p>
+  <div class="tablewrap"><table class="gtable">
+    <thead><tr><th>Type</th><th>Good for</th><th>Score formats</th></tr></thead>
+    <tbody>
+      <tr><td>Badminton · doubles</td><td>Doubles, 2 vs 2</td><td>continuous, 2 games reset</td></tr>
+      <tr><td>Badminton · singles</td><td>Singles, 1 vs 1</td><td>continuous, 2 games reset</td></tr>
+      <tr><td>One on one</td><td>Chess, table tennis, arm wrestling, games</td><td>win / draw / loss, continuous, games reset</td></tr>
+      <tr><td>Two on two</td><td>Padel, beach volleyball, paired dominoes</td><td>win / draw / loss, continuous, games reset</td></tr>
+      <tr><td>Teams</td><td>Futsal, basketball, volleyball (3–11 a side)</td><td>win / draw / loss, continuous, games reset</td></tr>
+      <tr><td>Free counter</td><td>No opponents: attendance, quizzes, goals</td><td>points entered directly</td></tr>
+    </tbody>
+  </table></div>
+  <p class="muted">For <em>Teams</em>, players per side is chosen when creating the tally and can't be changed.
+    Teams are still shuffled for every match.</p>
+</section>
+
+<section class="card gsec" id="aturan-poin">
+  <h2>3. Points rules</h2>
+  <p>The points rule is set per <strong>season</strong>. Everyone on a side gets the same points. Since pairs
+    are shuffled every match, points belong to <strong>individuals</strong>, not pairs.</p>
+  <h3>Continuous score</h3>
+  <p>One running score up to a target, e.g. 42; the second game carries on from the first. Each player gets
+    their side's score.</p>
+  <p class="gexample">A &amp; B vs C &amp; D, score <strong>42–36</strong> → A and B get 42 points each,
+    C and D get 36 each.</p>
+  <h3>2 games, score resets</h3>
+  <p>Each game starts at 0, e.g. to 21. Points = the side's score across both games. Winning 1–1 counts as a
+    <strong>draw</strong>. A single game can't end level.</p>
+  <p class="gexample"><strong>21–9, 21–19</strong> → A/B 42 points, C/D 28 points.<br>
+    <strong>21–19, 18–21</strong> → draw: A/B 39 points, C/D 40 points.</p>
+  <h3>Win / draw / loss</h3>
+  <p>Enter the final score; points follow the result (3 / 1 / 0 by default), not the size of the score. Equal
+    scores are a draw.</p>
+  <h3>Win bonus</h3>
+  <p>Optional, for continuous and reset scores: the winning side gets extra points. A draw gets no bonus.</p>
+  <h3>Accepted scores</h3>
+  <p>Deuce scores (43–41, 30–29) and matches cut short when court time ran out (38–35) can still be recorded.
+    Scores go up to 999, to catch typos.</p>
+  <h3>Changing the rule mid-season</h3>
+  <p>Once a season has matches, its <strong>score format is locked</strong>. The numbers (target, bonus,
+    win/draw/loss points) can still change, and every point in the season is recalculated. Need another
+    format? Start a new season.</p>
+  {{template "gimg" (dict "P" $P "N" "season" "Alt" "The New season form with dates and score format")}}
+</section>
+
+<section class="card gsec" id="hari-main">
+  <h2>4. Play day</h2>
+  <h3>Starting</h3>
+  <p>On the <em>Play</em> tab, pick the <strong>date</strong>, the <strong>number of courts</strong> (1–3),
+    and tick <strong>who's here</strong>. A date has only one play day; picking a date that already has one
+    opens it. The date must fall inside a season.</p>
+  {{template "gimg" (dict "P" $P "N" "start-day" "Alt" "The Start a play day form: date, courts, who's here")}}
+  <h3>Shuffle pairs</h3>
+  <p>Tap <strong>Shuffle pairs</strong> to fill every free court. So everyone gets a turn:</p>
+  <ol>
+    <li>whoever has <strong>played the least</strong> today goes first,</li>
+    <li>then whoever has <strong>waited the longest</strong>,</li>
+    <li>the rest is drawn at random. Partners and opponents are always random.</li>
+  </ol>
+  <p>Below it you see who is <em>waiting</em>, in order, with how many matches they've played today (e.g. 2×).</p>
+  {{template "gimg" (dict "P" $P "N" "courts" "Alt" "Two courts in play and the waiting list")}}
+  <h3>Changing players or cancelling</h3>
+  <p>Someone has to leave, or wants to switch partners? Open <strong>Change players</strong> on the court card,
+    pick someone else, and save it with the score. <strong>Cancel match</strong> removes an unfinished match;
+    its players go back to the waiting list.</p>
+  {{template "gimg" (dict "P" $P "N" "swap" "Alt" "A court card with Change players open")}}
+  <h3>Saving a score</h3>
+  <p>Enter the score and tap <strong>Save score</strong>. Points are counted right away, the match moves to
+    <em>Finished</em>, and the court is free again. Tap <em>Shuffle pairs</em> for the next turn.</p>
+  <h3>Arriving late, leaving early</h3>
+  <p>Open <strong>Attendance &amp; courts</strong> at the bottom, tick or untick people, and save. You can
+    change the number of courts there too. Late arrivals go first automatically, since they've played less.</p>
+  <h3>Fixing mistakes and manual matches</h3>
+  <p>In the <em>Finished</em> list, tap <strong>Edit</strong> to fix the players or score, or
+    <strong>Delete</strong>. Points update with it. Use <strong>Add a match manually</strong> for matches whose
+    pairs were arranged by hand.</p>
+  {{template "gimg" (dict "P" $P "N" "done" "Alt" "The finished matches list with Edit and Delete")}}
+  <h3>Extra points</h3>
+  <p>For bonuses or penalties outside matches (e.g. winning a tournament, arriving late). Enter points per
+    player and a note; use a minus number for a penalty. Extra points count toward that play day.</p>
+  {{template "gimg" (dict "P" $P "N" "awards" "Alt" "The Extra points form with a note")}}
+  <p class="muted"><em>Free counter</em> tallies have no courts: the <em>Record</em> tab is simply the list of
+    players to enter points for.</p>
+</section>
+
+<section class="card gsec" id="peringkat">
+  <h2>5. Leaderboard</h2>
+  <p>The leaderboard is on the <em>Overview</em> tab, and anyone with the link can open it.</p>
+  <ul>
+    <li><strong>Order:</strong> total points. On equal points, whoever played fewer matches is higher, then by
+      name. Every row keeps its own number.</li>
+    <li><strong>Played</strong> = number of matches, <strong>Avg</strong> = points per match (wide screens only).</li>
+    <li><strong>Arrows</strong> compare with the previous play day: ↑ up, ↓ down, ↔ same, and
+      <strong>NEW</strong> for someone on the board for the first time.</li>
+    <li><strong>As of</strong>: see the ranking as it was after a given week. Older seasons are under <em>Season</em>.</li>
+    <li>Below the board are that play day's <strong>match results</strong>.</li>
+  </ul>
+  {{template "gimg" (dict "P" $P "N" "board" "Alt" "The leaderboard with up and down arrows and a NEW label")}}
+  <h3>Player page</h3>
+  <p>Tap a name to see their rank, win–draw–loss record, points per play day, who they've partnered and
+    played against, and all their matches.</p>
+  {{template "gimg" (dict "P" $P "N" "player" "Alt" "One player's stats page")}}
+</section>
+
+<section class="card gsec" id="poster">
+  <h2>6. Poster</h2>
+  <p>Tap <strong>Poster</strong> on the leaderboard. The poster uses the season and play day currently
+    selected, shows up to the top 20, and is 1024×1536 for WhatsApp groups or Instagram.</p>
+  <ul>
+    <li><strong>Download PNG</strong> saves the image.</li>
+    <li><strong>Share</strong> (on phones that support it) opens the share menu, e.g. to WhatsApp.</li>
+  </ul>
+  {{template "gimg" (dict "P" $P "N" "poster" "Alt" "An example leaderboard poster")}}
+  <h3>Title, logo, and text</h3>
+  <p>In <em>Settings → Poster</em> (or <em>Edit title &amp; logo</em> on the poster page). All optional:</p>
+  <ul>
+    <li><strong>Title lines 1 and 2</strong> (white and gold). If empty, the tally's name is split over two lines.</li>
+    <li><strong>Logo</strong>: PNG, JPG, or WebP, up to 1 MB.</li>
+    <li><strong>Text under the logo</strong> and <strong>footer text</strong>, e.g. <em>Healthy together, fun together</em>.</li>
+  </ul>
+  {{template "gimg" (dict "P" $P "N" "branding" "Alt" "The poster title, logo, and text form")}}
+</section>
+
+<section class="card gsec" id="kelola">
+  <h2>7. Managing a tally</h2>
+  <h3>Players</h3>
+  <p>On the <em>Players</em> tab: <strong>Rename</strong>, <strong>Deactivate</strong> (no longer offered when
+    picking players, but their points stay), or <strong>Delete</strong>. Delete only works for players who have
+    never played or received points.</p>
+  {{template "gimg" (dict "P" $P "N" "player-list" "Alt" "The player list with rename, deactivate, and delete")}}
+  <h3>New season</h3>
+  <p>On the <em>Seasons</em> tab. Old seasons are kept and can be viewed from the <em>Season</em> picker on the leaderboard.</p>
+  <h3>Other admins</h3>
+  <p>In <em>Settings → Admins</em>, type their username. They have to {{if .Data.Aio}}log in to Tally{{else}}sign up{{end}}
+    once first. Admins can manage players, seasons, and matches; only the owner can add or remove admins.</p>
+  <h3>Who can see it</h3>
+  <p><strong>Anyone with the link</strong> (the default) or <strong>admins only</strong>.</p>
+  {{template "gimg" (dict "P" $P "N" "visibility" "Alt" "Settings for name, description, and who can see the tally")}}
+  <h3>Sharing the link</h3>
+  <p>The link is at the bottom of <em>Overview</em>; tap <strong>Copy</strong> and send it to the group.</p>
+  {{template "gimg" (dict "P" $P "N" "share" "Alt" "The share link with a Copy button")}}
+</section>
+
+<section class="card gsec" id="pemain">
+  <h2>8. For players</h2>
+  <p>Players don't need an account. Open the link from your admin to see the leaderboard, pick another play
+    day, and tap your own name for your stats. Spotted a wrong score? Tell the admin; fixing it updates points
+    and ranks right away.</p>
+</section>
+
+<section class="card gsec" id="faq">
+  <h2>9. FAQ</h2>
+  <details><summary>Why can't I delete a player?</summary>
+    <p>They already have matches or points. Deactivate them instead: their name leaves the pickers, and the history stays correct.</p></details>
+  <details><summary>I entered a wrong score. How do I fix it?</summary>
+    <p>Open the play day (the <em>Play</em> tab, or <em>Manage this play day</em> on the leaderboard) and tap <em>Edit</em> in the <em>Finished</em> list.</p></details>
+  <details><summary>Can I change the score format mid-season?</summary>
+    <p>Not once there are matches. The win bonus and other numbers can still change, and points are recalculated. For another format, start a new season.</p></details>
+  <details><summary>Someone arrived late. Will they still get to play?</summary>
+    <p>Yes. Tick them in <em>Attendance &amp; courts</em>. Since they've played less, they go first at the next shuffle.</p></details>
+  <details><summary>The poster won't download on my iPhone.</summary>
+    <p>Tap it again; iPhones sometimes need two tries. If it still fails, take a screenshot of the poster page.</p></details>
+  <details><summary>Can the tally's link be changed?</summary>
+    <p>No, so links you've already shared keep working. The name and description can be changed in <em>Settings</em>.</p></details>
+</section>
+{{end}}

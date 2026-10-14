@@ -1,0 +1,63 @@
+{{define "title"}}{{.T "tab.players"}} &middot; {{.Data.Tally.Name}} &mdash; {{.T "app.name"}}{{end}}
+{{define "content"}}
+{{template "tallyhead" .}}
+{{$t := .Data.Tally}}
+
+<section class="card">
+  <h2>{{.T "players.add_title"}}</h2>
+  {{if .Data.JustCreated}}<p class="muted">{{.T "players.first_hint"}}</p>{{end}}
+  {{if .Data.Added}}<div class="alert ok" role="status">{{.T "players.added" (len .Data.Added)}}</div>{{end}}
+  {{if .Data.Skipped}}<div class="alert warn" role="status">{{.T "players.skipped"}} {{range $i, $n := .Data.Skipped}}{{if $i}}, {{end}}{{$n}}{{end}}</div>{{end}}
+  <form method="post" action="/t/{{$t.Slug}}/players" class="stack">
+    <label>{{.T "players.names"}} <span class="muted hint">{{.T "players.names_hint"}}</span>
+      <textarea name="names" rows="6" placeholder="Jacque Oui&#10;Prabski&#10;Bahlul" required>{{.Data.FNames}}</textarea>
+    </label>
+    <button type="submit" class="btn primary">{{.T "players.add_submit"}}</button>
+  </form>
+</section>
+
+<section class="card">
+  <div class="cardhead">
+    <h2>{{.T "tab.players"}}</h2>
+    <span class="muted small">{{.T "players.count" .Data.Active (len .Data.Players)}}</span>
+  </div>
+  {{if .Data.Players}}
+  <ul class="rows">
+    {{range .Data.Players}}
+    <li class="prow {{if not .Active}}inactive{{end}}">
+      <span class="pname">{{.Name}}{{if not .Active}} <span class="badge">{{$.T "players.inactive"}}</span>{{end}}</span>
+      <details class="pmenu">
+        <summary class="btn small ghost">{{$.T "common.edit"}}</summary>
+        <div class="pmenu-body">
+          <form method="post" action="/t/{{$t.Slug}}/players/{{.ID}}" class="inlineform">
+            <input type="hidden" name="action" value="rename">
+            <input type="text" name="name" value="{{.Name}}" maxlength="40" required aria-label="{{$.T "players.rename"}}">
+            <button type="submit" class="btn small">{{$.T "players.rename"}}</button>
+          </form>
+          <div class="pactions">
+            <form method="post" action="/t/{{$t.Slug}}/players/{{.ID}}">
+              {{if .Active}}
+              <input type="hidden" name="action" value="deactivate">
+              <button type="submit" class="btn small ghost">{{$.T "players.deactivate"}}</button>
+              {{else}}
+              <input type="hidden" name="action" value="activate">
+              <button type="submit" class="btn small ghost">{{$.T "players.activate"}}</button>
+              {{end}}
+            </form>
+            <form method="post" action="/t/{{$t.Slug}}/players/{{.ID}}" data-confirm="{{$.T "players.delete_confirm" .Name}}">
+              <input type="hidden" name="action" value="delete">
+              <button type="submit" class="btn small danger">{{$.T "common.delete"}}</button>
+            </form>
+          </div>
+          <p class="muted small">{{$.T "players.deactivate_help"}}</p>
+          <div><button type="button" class="btn small ghost" data-close-details>{{$.T "common.cancel"}}</button></div>
+        </div>
+      </details>
+    </li>
+    {{end}}
+  </ul>
+  {{else}}
+  <p class="muted">{{.T "players.empty"}}</p>
+  {{end}}
+</section>
+{{end}}

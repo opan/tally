@@ -1,0 +1,184 @@
+{{define "tallyhead"}}{{$t := .Data.Tally}}
+<header class="tallyhead">
+  <p class="eyebrow">{{.T $t.Preset.NameKey}}{{if $t.Preset.TeamSizes}} · {{.T "tally.per_side" $t.SideSize}}{{end}}</p>
+  <h1>{{$t.Name}}</h1>
+  {{if .Data.IsAdmin}}
+  <nav class="tabs" aria-label="{{.T "tally.tabs"}}">
+    <a href="/t/{{$t.Slug}}" {{if eq .Data.Tab "overview"}}class="on" aria-current="page"{{end}}>{{.T "tab.overview"}}</a>
+    <a href="/t/{{$t.Slug}}/play" {{if eq .Data.Tab "play"}}class="on" aria-current="page"{{end}}>{{if $t.Preset.IsCounter}}{{.T "tab.record"}}{{else}}{{.T "tab.play"}}{{end}}</a>
+    <a href="/t/{{$t.Slug}}/players" {{if eq .Data.Tab "players"}}class="on" aria-current="page"{{end}}>{{.T "tab.players"}}</a>
+    <a href="/t/{{$t.Slug}}/periods" {{if eq .Data.Tab "periods"}}class="on" aria-current="page"{{end}}>{{.T "tab.periods"}}</a>
+    <a href="/t/{{$t.Slug}}/settings" {{if eq .Data.Tab "settings"}}class="on" aria-current="page"{{end}}>{{.T "tab.settings"}}</a>
+  </nav>
+  {{end}}
+</header>
+{{if .Data.Notice}}<div class="alert ok" role="status">{{.Data.Notice}}</div>{{end}}
+{{if .Data.Err}}<div class="alert error" role="alert">{{.Data.Err}}</div>{{end}}
+{{end}}
+
+{{define "periodfields"}}{{$f := .Data.Form}}{{$pr := .Data.Tally.Preset}}
+<label>{{.T "period.name"}}
+  <input type="text" name="name" value="{{$f.Name}}" maxlength="60" required>
+</label>
+<div class="row2">
+  <label>{{.T "period.starts_on"}}<input type="date" name="starts_on" value="{{$f.StartsOn}}" required></label>
+  <label>{{.T "period.ends_on"}}<input type="date" name="ends_on" value="{{$f.EndsOn}}" required></label>
+</div>
+{{if $pr.IsCounter}}
+<input type="hidden" name="format" value="counter">
+<p class="muted small">{{.T "rule.counter"}}</p>
+{{else}}
+<fieldset class="formats" data-format-toggle>
+  <legend>{{.T "period.format"}}</legend>
+  {{$cur := $f.Format}}{{if not ($pr.AllowsFormat $cur)}}{{$cur = index $pr.Formats 0}}{{end}}
+  {{range $pr.Formats}}
+  <label class="choice">
+    <input type="radio" name="format" value="{{.}}" {{if eq . $cur}}checked{{end}}>
+    <span><strong>{{$.T (print "format." .)}}</strong><span class="muted small">{{$.T (print "format." . "_help")}}</span></span>
+  </label>
+  {{end}}
+</fieldset>
+<div class="row2">
+  <label data-for-format="continuous">{{.T "period.target"}}
+    <input type="number" name="target" value="{{$f.Target}}" min="1" max="999" inputmode="numeric">
+  </label>
+  <label data-for-format="reset">{{.T "period.game_target"}}
+    <input type="number" name="game_target" value="{{$f.GameTarget}}" min="1" max="999" inputmode="numeric">
+  </label>
+  <label data-for-format="continuous reset">{{.T "period.win_bonus"}} <span class="muted hint">{{.T "period.win_bonus_hint"}}</span>
+    <input type="number" name="win_bonus" value="{{$f.WinBonus}}" min="0" max="999" inputmode="numeric">
+  </label>
+  <label data-for-format="outcome">{{.T "period.win_pts"}}
+    <input type="number" name="win_pts" value="{{$f.WinPts}}" min="0" max="999" inputmode="numeric">
+  </label>
+  <label data-for-format="outcome">{{.T "period.draw_pts"}}
+    <input type="number" name="draw_pts" value="{{$f.DrawPts}}" min="0" max="999" inputmode="numeric">
+  </label>
+  <label data-for-format="outcome">{{.T "period.loss_pts"}}
+    <input type="number" name="loss_pts" value="{{$f.LossPts}}" min="0" max="999" inputmode="numeric">
+  </label>
+</div>
+{{end}}
+{{end}}
+
+{{/* matchform: dict P (page) F (*matchForm) Opts SideSize Games Submit (key) From ("edit"|"") Collapse (bool) Cancel (bool: closes the enclosing <details>) CancelForm (id of a form the cancel-match button submits) */}}
+{{define "matchform"}}{{$P := .P}}{{$F := .F}}
+<form method="post" action="{{$F.Action}}" class="matchform">
+  <input type="hidden" name="action" value="save">
+  {{if .From}}<input type="hidden" name="from" value="{{.From}}">{{end}}
+  {{if .Collapse}}<details class="mf-swap"><summary>{{$P.T "match.swap"}}</summary>{{end}}
+  <div class="mf-sides">
+    {{range $s := 2}}
+    <fieldset class="mf-side">
+      <legend>{{if eq $s 0}}{{$P.T "match.side_a"}}{{else}}{{$P.T "match.side_b"}}{{end}}</legend>
+      {{range $i := $.SideSize}}{{$sel := index (index $F.Sel $s) $i}}
+      <select name="p{{$s}}_{{$i}}" required aria-label="{{if eq $s 0}}{{$P.T "match.side_a"}}{{else}}{{$P.T "match.side_b"}}{{end}} {{add1 $i}}">
+        <option value="">{{$P.T "match.pick"}}</option>
+        {{range $.Opts}}<option value="{{.ID}}" {{if eq .ID $sel}}selected{{end}}>{{.Name}}</option>{{end}}
+      </select>
+      {{end}}
+    </fieldset>
+    {{end}}
+  </div>
+  {{if .Collapse}}</details>{{end}}
+  <div class="mf-scores">
+    {{range $g := $.Games}}
+    <div class="mf-game">
+      <span class="mf-glabel">{{if gt $.Games 1}}{{$P.T "match.game" (add1 $g)}}{{else}}{{$P.T "match.score"}}{{end}}</span>
+      <input type="number" name="s0_{{$g}}" value="{{index (index $F.Scores 0) $g}}" min="0" max="999" inputmode="numeric" required aria-label="{{$P.T "match.side_a"}}">
+      <span class="mf-dash">–</span>
+      <input type="number" name="s1_{{$g}}" value="{{index (index $F.Scores 1) $g}}" min="0" max="999" inputmode="numeric" required aria-label="{{$P.T "match.side_b"}}">
+    </div>
+    {{end}}
+    <div class="mf-actions">
+      {{if .Cancel}}<button type="button" class="btn ghost" data-close-details>{{$P.T "common.cancel"}}</button>{{end}}
+      {{if .CancelForm}}<button type="submit" form="{{.CancelForm}}" class="btn ghost">{{$P.T "round.cancel_match"}}</button>{{end}}
+      <button type="submit" class="btn primary">{{$P.T .Submit}}</button>
+    </div>
+  </div>
+</form>
+{{end}}
+
+{{/* matchrow: dict P (page) M (*Match) Slug Actions (bool) */}}
+{{define "matchrow"}}{{$P := .P}}{{$m := .M}}
+<div class="mrow">
+  {{range $i, $side := $m.Sides}}
+  <div class="mr-side {{if $side.Won}}won{{end}} {{if eq $i 1}}right{{end}}">
+    <span class="mr-names">{{range $j, $p := $side.Players}}{{if $j}} &amp; {{end}}{{$p.Name}}{{end}}</span>
+    <span class="mr-pts">+{{$side.Points}}</span>
+  </div>
+  {{if eq $i 0}}
+  <div class="mr-score">
+    <strong>{{(index $m.Sides 0).Total}}&thinsp;–&thinsp;{{(index $m.Sides 1).Total}}</strong>
+    {{if gt (len (index $m.Sides 0).Games) 1}}<span class="muted small">{{range $g, $v := (index $m.Sides 0).Games}}{{if $g}}, {{end}}{{$v}}-{{index (index $m.Sides 1).Games $g}}{{end}}</span>{{end}}
+    {{if eq (index $m.Sides 0).Result "draw"}}<span class="badge">{{$P.T "match.draw"}}</span>{{end}}
+  </div>
+  {{end}}
+  {{end}}
+  {{if .Actions}}
+  <div class="mr-actions">
+    <a class="btn small ghost" href="/t/{{.Slug}}/matches/{{$m.ID}}/edit">{{$P.T "common.edit"}}</a>
+    <form method="post" action="/t/{{.Slug}}/matches/{{$m.ID}}" data-confirm="{{$P.T "match.delete_confirm"}}">
+      <input type="hidden" name="action" value="delete">
+      <button type="submit" class="btn small danger">{{$P.T "common.delete"}}</button>
+    </form>
+  </div>
+  {{end}}
+</div>
+{{end}}
+
+{{/* attendance: dict P Players Present (map id->bool) */}}
+{{define "attendance"}}{{$P := .P}}{{$present := .Present}}
+<fieldset class="attendance">
+  <legend>{{$P.T "play.present"}}</legend>
+  <div class="att-tools"><button type="button" class="linkbtn small" data-check-all="present">{{$P.T "play.select_all"}}</button> &middot; <button type="button" class="linkbtn small" data-check-none="present">{{$P.T "play.select_none"}}</button></div>
+  <div class="att-grid">
+    {{range .Players}}{{if or .Active (index $present .ID)}}
+    <label class="att"><input type="checkbox" name="present" value="{{.ID}}" {{if index $present .ID}}checked{{end}}><span>{{.Name}}</span></label>
+    {{end}}{{end}}
+  </div>
+</fieldset>
+{{end}}
+
+{{define "pzarrow"}}{{if .New}}<span class="pz-new">{{.Label}}</span>{{else if .Up}}<svg class="pz-arrow up" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21V4M5 11l7-7 7 7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>{{else if .Down}}<svg class="pz-arrow down" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v17M5 13l7 7 7-7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>{{else}}<svg class="pz-arrow same" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h18M8 7l-5 5 5 5M16 7l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>{{end}}{{end}}
+
+{{define "shuttle"}}<svg class="{{.}}" viewBox="0 0 100 140" aria-hidden="true">
+  <g fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round">
+    <path d="M32 98 L8 8 L92 8 L68 98 Z"/>
+    <path d="M40 98 L30 8 M50 98 L50 8 M60 98 L70 8"/>
+    <path d="M17 42 Q50 50 83 42 M24 70 Q50 77 76 70"/>
+  </g>
+  <path d="M30 100 h40 v6 a20 20 0 0 1 -40 0 z" fill="currentColor"/>
+</svg>{{end}}
+
+{{/* awardsform: dict P D (roundVM) */}}
+{{define "awardsform"}}{{$P := .P}}{{$d := .D}}
+<form method="post" action="/t/{{$d.Tally.Slug}}/rounds/{{$d.Round.ID}}/awards" class="stack">
+  <div class="award-grid">
+    {{range $d.EntryFor}}
+    <label class="award"><span>{{.Name}}</span>
+      <input type="text" name="pts_{{.ID}}" value="{{index $d.FPoints .ID}}" inputmode="numeric" pattern="[+-]?[0-9]*" placeholder="0" autocomplete="off">
+    </label>
+    {{end}}
+  </div>
+  <label>{{$P.T "awards.reason"}} <span class="muted hint">{{$P.T "common.optional"}}</span>
+    <input type="text" name="reason" value="{{$d.FReason}}" maxlength="120" placeholder="{{if $d.Counter}}{{$P.T "awards.reason_placeholder_counter"}}{{else}}{{$P.T "awards.reason_placeholder"}}{{end}}">
+  </label>
+  <div class="actions">
+    <button type="submit" class="btn primary">{{$P.T "awards.save"}}</button>
+    {{if not $d.Counter}}<button type="button" class="btn ghost" data-close-details>{{$P.T "common.cancel"}}</button>{{end}}
+  </div>
+</form>
+{{if $d.Awards}}
+<ul class="rows awards-list">
+  {{range $d.Awards}}
+  <li class="prow">
+    <span><strong>{{.Name}}</strong> <span class="{{if lt .Points 0}}neg{{else}}pos{{end}}">{{if gt .Points 0}}+{{end}}{{.Points}}</span>{{if .Reason}} <span class="muted small">· {{.Reason}}</span>{{end}}</span>
+    <form method="post" action="/t/{{$d.Tally.Slug}}/awards/{{.ID}}/delete" data-confirm="{{$P.T "awards.delete_confirm"}}">
+      <button type="submit" class="btn small danger">{{$P.T "common.delete"}}</button>
+    </form>
+  </li>
+  {{end}}
+</ul>
+{{end}}
+{{end}}

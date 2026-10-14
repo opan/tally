@@ -1,0 +1,80 @@
+{{define "title"}}{{.Data.Player.Name}} &middot; {{.Data.Tally.Name}} &mdash; {{.T "app.name"}}{{end}}
+{{define "content"}}
+{{$t := .Data.Tally}}{{$d := .Data}}
+<p class="eyebrow"><a href="/t/{{$t.Slug}}{{with $d.Period}}?season={{.ID}}{{end}}">← {{$t.Name}}</a></p>
+<header class="playerhead">
+  <h1>{{$d.Player.Name}}{{if not $d.Player.Active}} <span class="badge">{{.T "players.inactive"}}</span>{{end}}</h1>
+  {{if gt (len $d.Periods) 1}}
+  <form method="get" data-autosubmit>
+    <select name="season" aria-label="{{.T "board.season"}}">{{range $d.Periods}}<option value="{{.ID}}" {{if eq .ID $d.Period.ID}}selected{{end}}>{{.Name}}</option>{{end}}</select>
+    <noscript><button type="submit" class="btn small">{{.T "board.show"}}</button></noscript>
+  </form>
+  {{else if $d.Period}}<p class="muted">{{$d.Period.Name}}</p>{{end}}
+</header>
+
+{{if not $d.Rank}}
+<section class="card empty"><p>{{.T "player.no_points"}}</p></section>
+{{else}}
+<section class="stats">
+  <div class="stat"><span class="lbl">{{.T "player.rank"}}</span><span class="val">#{{$d.Rank}}<small> / {{$d.Of}}</small></span></div>
+  <div class="stat"><span class="lbl">{{.T "board.points"}}</span><span class="val">{{$d.Standing.Points}}</span></div>
+  {{if $d.Counter}}
+  <div class="stat"><span class="lbl">{{.T "board.entries"}}</span><span class="val">{{$d.Standing.Entries}}</span></div>
+  {{else}}
+  <div class="stat"><span class="lbl">{{.T "board.played"}}</span><span class="val">{{$d.Standing.Played}}</span></div>
+  <div class="stat"><span class="lbl">{{.T "player.record"}}</span><span class="val">{{$d.Won}}–{{$d.Drawn}}–{{$d.Lost}}</span><span class="muted small">{{.T "player.record_help"}}</span></div>
+  <div class="stat"><span class="lbl">{{.T "board.avg"}}</span><span class="val">{{fmt1 $d.Standing.Avg}}</span></div>
+  {{end}}
+</section>
+
+<section class="card">
+  <h2>{{.T "player.days"}}</h2>
+  <table class="board days">
+    <thead><tr><th>{{.T "player.day"}}</th><th class="num">{{.T "board.points"}}</th><th class="bar"></th><th class="num">{{.T "player.rank_after"}}</th></tr></thead>
+    <tbody>
+      {{range $d.Days}}
+      <tr>
+        <td class="day"><a href="/t/{{$t.Slug}}?season={{$d.Period.ID}}&day={{.Round.ID}}">{{$.T "round.label" .Round.Number}}</a><span class="muted small">{{$.Date .Round.PlayedOn}}</span></td>
+        <td class="num pts">{{.Points}}</td>
+        <td class="bar"><svg viewBox="0 0 100 8" preserveAspectRatio="none" aria-hidden="true"><rect width="{{.BarPct}}" height="8" rx="2"/></svg></td>
+        <td class="num">{{if .Rank}}#{{.Rank}}{{end}}</td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+</section>
+
+{{if or $d.Partners $d.Opponents}}
+<div class="pairs">
+  {{if $d.Partners}}
+  <section class="card">
+    <h2>{{.T "player.partners"}}</h2>
+    <ul class="rows">{{range $d.Partners}}<li class="prow"><a href="/t/{{$t.Slug}}/players/{{.ID}}?season={{$d.Period.ID}}">{{.Name}}</a><span class="muted small">{{$.T "player.together" .Played .Won}}</span></li>{{end}}</ul>
+  </section>
+  {{end}}
+  {{if $d.Opponents}}
+  <section class="card">
+    <h2>{{.T "player.opponents"}}</h2>
+    <ul class="rows">{{range $d.Opponents}}<li class="prow"><a href="/t/{{$t.Slug}}/players/{{.ID}}?season={{$d.Period.ID}}">{{.Name}}</a><span class="muted small">{{$.T "player.against" .Played .Won}}</span></li>{{end}}</ul>
+  </section>
+  {{end}}
+</div>
+{{end}}
+
+{{if $d.Matches}}
+<section class="card">
+  <div class="cardhead"><h2>{{.T "player.matches"}}</h2><span class="muted small">{{len $d.Matches}}</span></div>
+  {{range $d.Matches}}{{template "matchrow" (dict "P" $ "M" . "Slug" $t.Slug "Actions" false)}}{{end}}
+</section>
+{{end}}
+
+{{if $d.Awards}}
+<section class="card">
+  <h2>{{if $d.Counter}}{{.T "player.entries"}}{{else}}{{.T "awards.title"}}{{end}}</h2>
+  <ul class="rows">
+    {{range $d.Awards}}<li class="prow"><span><span class="{{if lt .Points 0}}neg{{else}}pos{{end}}">{{if gt .Points 0}}+{{end}}{{.Points}}</span>{{if .Reason}} <span class="muted small">· {{.Reason}}</span>{{end}}</span><span class="muted small">{{$.Date .CreatedAt}}</span></li>{{end}}
+  </ul>
+</section>
+{{end}}
+{{end}}
+{{end}}

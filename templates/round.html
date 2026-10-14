@@ -1,0 +1,90 @@
+{{define "title"}}{{.T "round.label" .Data.Round.Number}} &middot; {{.Data.Tally.Name}} &mdash; {{.T "app.name"}}{{end}}
+{{define "content"}}
+{{template "tallyhead" .}}
+{{$t := .Data.Tally}}{{$d := .Data}}
+<div class="roundhead">
+  <div>
+    <h2>{{.T "round.label" $d.Round.Number}} &middot; {{.Date $d.Round.PlayedOn}}</h2>
+    <p class="muted small">{{$d.Period.Name}} &middot; {{.Rule $d.Period.Scoring}}</p>
+  </div>
+  <a class="btn small ghost" href="/t/{{$t.Slug}}/play?new=1">{{.T "round.other_day"}}</a>
+</div>
+
+{{if $d.Counter}}
+<section class="card" id="awards">
+  <div class="cardhead"><h2>{{.T "awards.counter_title"}}</h2><span class="muted small">{{.T "awards.counter_help"}}</span></div>
+  {{template "awardsform" (dict "P" $ "D" $d)}}
+</section>
+{{else}}
+<section class="card" id="court">
+  <div class="cardhead">
+    <h2>{{.T "round.on_court"}}</h2>
+    <span class="muted small">{{.T "round.courts_free" $d.FreeCourts $d.Round.Courts}}</span>
+  </div>
+  {{range $i, $m := $d.OnCourt}}
+  <article class="court {{if eq $d.AutoOpen $m.ID}}flash{{end}}">
+    <div class="court-title">{{$.T "round.court" (add1 $i)}}</div>
+    <div class="vs">
+      <span>{{range $j, $p := (index $m.Sides 0).Players}}{{if $j}} &amp; {{end}}{{$p.Name}}{{end}}</span>
+      <span class="vs-x">vs</span>
+      <span>{{range $j, $p := (index $m.Sides 1).Players}}{{if $j}} &amp; {{end}}{{$p.Name}}{{end}}</span>
+    </div>
+    {{template "matchform" (dict "P" $ "F" (index $d.Forms $m.ID) "Opts" $d.Options "SideSize" $d.SideSize "Games" $d.Games "Submit" "match.save_score" "From" "" "Collapse" true "CancelForm" (print "cancel-" $m.ID))}}
+    <form method="post" action="/t/{{$t.Slug}}/matches/{{$m.ID}}" id="cancel-{{$m.ID}}" data-confirm="{{$.T "round.cancel_confirm"}}" hidden>
+      <input type="hidden" name="action" value="delete">
+    </form>
+  </article>
+  {{else}}
+  <p class="muted">{{.T "round.no_court"}}</p>
+  {{end}}
+
+  <form method="post" action="/t/{{$t.Slug}}/rounds/{{$d.Round.ID}}/shuffle" class="shuffle">
+    <button type="submit" class="btn primary" {{if not $d.CanShuffle}}disabled{{end}}>{{.T "round.shuffle"}}</button>
+    <span class="muted small">
+      {{if eq $d.FreeCourts 0}}{{.T "round.all_busy"}}
+      {{else if not $d.CanShuffle}}{{.T "err.not_enough_players" $d.NeedPerCt}}
+      {{else}}{{.T "round.shuffle_help"}} <a href="/panduan#hari-main">{{.T "guide.more"}}</a>{{end}}
+    </span>
+  </form>
+  {{if $d.Waiting}}
+  <div class="waiting">
+    <span class="muted small">{{.T "round.waiting"}}</span>
+    <ul class="chips">{{range $d.Waiting}}<li>{{.Name}} <span class="muted">{{index $d.Played .ID}}×</span></li>{{end}}</ul>
+  </div>
+  {{end}}
+</section>
+
+<section class="card" id="done">
+  <div class="cardhead">
+    <h2>{{.T "round.done"}}</h2>
+    <span class="muted small">{{len $d.Done}}</span>
+  </div>
+  {{range $d.Done}}{{template "matchrow" (dict "P" $ "M" . "Slug" $t.Slug "Actions" true)}}{{else}}<p class="muted">{{.T "round.no_done"}}</p>{{end}}
+  <details class="manual" {{if eq $d.AutoOpen "new"}}open{{end}}>
+    <summary class="btn small ghost">{{.T "round.add_manual"}}</summary>
+    <p class="muted small">{{.T "round.add_manual_help"}}</p>
+    {{template "matchform" (dict "P" $ "F" (index $d.Forms "new") "Opts" $d.Options "SideSize" $d.SideSize "Games" $d.Games "Submit" "match.save" "From" "" "Collapse" false "Cancel" true)}}
+  </details>
+</section>
+
+<section class="card" id="awards">
+  <details {{if or $d.Awards (eq $d.AutoOpen "awards")}}open{{end}}>
+    <summary class="cardhead summaryhead"><h2>{{.T "awards.title"}}</h2><span class="muted small">{{.T "awards.help"}}</span></summary>
+    {{template "awardsform" (dict "P" $ "D" $d)}}
+  </details>
+</section>
+{{end}}
+
+<section class="card">
+  <details {{if not $d.PresentN}}open{{end}}>
+    <summary class="cardhead summaryhead"><h2>{{if $d.Counter}}{{.T "play.present"}}{{else}}{{.T "round.setup"}}{{end}}</h2><span class="muted small">{{.T "round.present_n" $d.PresentN}}{{if not $d.Counter}} &middot; {{.T "round.courts_n" $d.Round.Courts}}{{end}}</span></summary>
+    <form method="post" action="/t/{{$t.Slug}}/rounds/{{$d.Round.ID}}/setup" class="stack">
+      <label {{if $d.Counter}}hidden{{end}}>{{.T "play.courts"}}
+        <select name="courts">{{range $n := 3}}<option value="{{add1 $n}}" {{if eq (add1 $n) $d.Round.Courts}}selected{{end}}>{{add1 $n}}</option>{{end}}</select>
+      </label>
+      {{template "attendance" (dict "P" $ "Players" $d.Players "Present" $d.Present)}}
+      <button type="submit" class="btn">{{.T "common.save"}}</button>
+    </form>
+  </details>
+</section>
+{{end}}

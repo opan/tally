@@ -1,0 +1,59 @@
+{{define "title"}}{{.T "poster.title"}} &middot; {{.Data.Tally.Name}} &mdash; {{.T "app.name"}}{{end}}
+{{define "content"}}
+{{$t := .Data.Tally}}{{$d := .Data}}
+<div class="postertools">
+  <a class="btn small ghost" href="/t/{{$t.Slug}}{{if $d.Round}}?season={{$d.Period.ID}}&day={{$d.Round.ID}}{{end}}">← {{.T "poster.back"}}</a>
+  <div class="pt-actions">
+    <button type="button" class="btn small" id="posterShare" hidden>{{.T "poster.share"}}</button>
+    <button type="button" class="btn primary small" id="posterDownload" data-filename="{{$d.Filename}}" data-busy="{{.T "poster.working"}}" data-failed="{{.T "poster.failed"}}">{{.T "poster.download"}}</button>
+  </div>
+</div>
+<p class="muted small">{{.T "poster.help"}}{{if $d.IsAdmin}} <a href="/t/{{$t.Slug}}/settings#poster">{{.T "poster.edit_branding"}}</a>{{end}}</p>
+
+<div class="poster-frame" id="posterFrame">
+  <div class="poster {{$d.Density}}" id="poster">
+    <i class="pz-streak s1"></i><i class="pz-streak s2"></i><i class="pz-streak s3"></i><i class="pz-streak s4"></i><i class="pz-streak s5"></i>
+    {{if hasPrefix $t.Template "badminton"}}{{template "shuttle" "pz-shuttle-bg"}}{{end}}
+
+    <header class="pz-head">
+      <div class="pz-titles {{titleSize $d.Title1 $d.Title2}}">
+        {{if $d.Title1}}<div><span class="pz-t1">{{$d.Title1}}</span></div>{{end}}
+        {{if $d.Title2}}<div><span class="pz-t2">{{$d.Title2}}</span></div>{{end}}
+      </div>
+      <div class="pz-brand">
+        {{if $t.HasLogo}}<img class="pz-logo" src="/t/{{$t.Slug}}/logo?v={{$t.LogoVer}}" alt="">
+        {{else if hasPrefix $t.Template "badminton"}}<div class="pz-emblem">{{template "shuttle" "pz-shuttle"}}</div>{{end}}
+        {{if $d.Badge}}<div class="pz-badge">{{$d.Badge}}</div>{{end}}
+      </div>
+    </header>
+
+    {{with $d.Period}}
+    <div class="pz-season"><span class="pz-sname">{{.Name}}</span><span class="pz-bar"></span><span class="pz-range">({{$.MonthRange .StartsOn .EndsOn}})</span></div>
+    {{end}}
+    <div class="pz-ribbon-row">
+      {{if $d.Round}}<div class="pz-ribbon">{{.T "round.label" $d.Round.Number}} – {{.Date $d.Round.PlayedOn}}</div>{{end}}
+      <span class="pz-rule"></span>
+    </div>
+
+    <div class="pz-table">
+      <div class="pz-th"><span>#</span><span>{{.T "board.player"}}</span><span>{{.T "board.points"}}</span><span></span></div>
+      {{range $d.Rows}}
+      <div class="pz-row {{if le .Rank 3}}top r{{.Rank}}{{end}}">
+        <span class="pz-rank"><b>{{.Rank}}</b></span>
+        <span class="pz-name">{{.Name}}</span>
+        <span class="pz-pts">{{.Points}}</span>
+        <span class="pz-mv">{{template "pzarrow" (dict "New" .New "Up" .Up "Down" .Down "Label" ($.T "board.new"))}}</span>
+      </div>
+      {{else}}
+      <div class="pz-empty">{{.T "tally.board_empty"}}</div>
+      {{end}}
+    </div>
+
+    <footer class="pz-foot">{{if $d.Footer}}<span>{{$d.Footer}}</span>{{end}}<span class="pz-rule"></span></footer>
+  </div>
+</div>
+{{end}}
+{{define "scripts"}}
+<script src="/static/vendor/html-to-image.js?v={{.AssetVer}}"></script>
+<script src="/static/poster.js?v={{.AssetVer}}"></script>
+{{end}}

@@ -1,0 +1,21 @@
+{{define "title"}}{{.T "register.title"}} &mdash; {{.T "app.name"}}{{end}}
+{{define "content"}}
+<section class="card authcard">
+  <h1>{{.T "register.title"}}</h1>
+  <p class="muted">{{.T "register.lead"}}</p>
+  {{if .Data.Err}}<div class="alert error" role="alert">{{.Data.Err}}</div>{{end}}
+  <form method="post" action="/register" class="stack">
+    <label>{{.T "auth.username"}} <span class="muted hint">{{.T "auth.username_hint"}}</span>
+      <input type="text" name="username" value="{{.Data.Username}}" placeholder="{{.T "auth.username_placeholder"}}" minlength="3" maxlength="30" required autofocus autocapitalize="none" autocomplete="username" spellcheck="false">
+    </label>
+    <label>{{.T "auth.password"}} <span class="muted hint">{{.T "auth.password_hint"}}</span>
+      <input type="password" name="password" minlength="8" maxlength="72" required autocomplete="new-password">
+    </label>
+    <label>{{.T "auth.password2"}}
+      <input type="password" name="password2" minlength="8" maxlength="72" required autocomplete="new-password">
+    </label>
+    <button type="submit" class="btn primary">{{.T "register.submit"}}</button>
+  </form>
+  <p class="muted small">{{.T "register.have_account"}} <a href="/login">{{.T "register.login_link"}}</a>.</p>
+</section>
+{{end}}

@@ -1,0 +1,104 @@
+{{define "title"}}{{.Data.Tally.Name}} &mdash; {{.T "app.name"}}{{end}}
+{{define "content"}}
+{{template "tallyhead" .}}
+{{$t := .Data.Tally}}{{$d := .Data}}
+{{if $t.Description}}<p class="lead">{{$t.Description}}</p>{{end}}
+
+{{if $d.IsAdmin}}
+  {{if or (not $d.HasPlayers) (not $d.Periods)}}
+  <section class="card">
+    <h2>{{.T "setup.title"}}</h2>
+    <ol class="checklist">
+      <li class="{{if $d.HasPlayers}}done{{end}}"><a href="/t/{{$t.Slug}}/players">{{.T "setup.players"}}</a></li>
+      <li class="{{if $d.Periods}}done{{end}}"><a href="/t/{{$t.Slug}}/periods">{{.T "setup.period"}}</a></li>
+      <li>{{.T "setup.matches"}}</li>
+    </ol>
+    <p class="small"><a href="/panduan#mulai">{{.T "guide.read"}}</a></p>
+  </section>
+  {{else}}
+  <a class="btn primary wide" href="/t/{{$t.Slug}}/play">{{.T "tally.play_cta"}}</a>
+  {{end}}
+{{end}}
+
+{{with $d.Period}}
+<section class="card boardcard">
+  <header class="boardhead">
+    <p class="eyebrow">{{.Name}} <span class="muted">({{$.Date .StartsOn}} – {{$.Date .EndsOn}})</span></p>
+    <div class="boardhead-row">
+      {{if $d.Round}}<h2 class="ribbon">{{$.T "round.label" $d.Round.Number}} – {{$.Date $d.Round.PlayedOn}}</h2>{{end}}
+      {{if $d.Board}}<a class="btn small" href="/t/{{$t.Slug}}/poster?season={{$d.Period.ID}}&day={{$d.Round.ID}}">{{$.T "poster.make"}}</a>{{end}}
+    </div>
+  </header>
+
+  {{if or (gt (len $d.Periods) 1) (gt (len $d.Rounds) 1)}}
+  <form method="get" class="boardsel" data-autosubmit>
+    {{if gt (len $d.Periods) 1}}
+    <label><span class="muted small">{{$.T "board.season"}}</span>
+      <select name="season">{{range $d.Periods}}<option value="{{.ID}}" {{if eq .ID $d.Period.ID}}selected{{end}}>{{.Name}}</option>{{end}}</select>
+    </label>
+    {{end}}
+    {{if gt (len $d.Rounds) 1}}
+    <label><span class="muted small">{{$.T "board.as_of"}}</span>
+      <select name="day">{{range $d.Rounds}}<option value="{{.ID}}" {{if eq .ID $d.Round.ID}}selected{{end}}>{{$.T "round.label" .Number}} · {{$.Date .PlayedOn}}</option>{{end}}</select>
+    </label>
+    {{end}}
+    <noscript><button type="submit" class="btn small">{{$.T "board.show"}}</button></noscript>
+  </form>
+  {{end}}
+
+  {{if $d.Board}}
+  <div class="tablewrap">
+    <table class="board">
+      <thead><tr>
+        <th class="num">#</th><th>{{$.T "board.player"}}</th><th class="num">{{$.T "board.points"}}</th>
+        <th class="num">{{if $t.Preset.IsCounter}}{{$.T "board.entries"}}{{else}}{{$.T "board.played"}}{{end}}</th><th class="num hide-xs">{{$.T "board.avg"}}</th><th class="mv"><span class="sr">{{$.T "board.move"}}</span></th>
+      </tr></thead>
+      <tbody>
+        {{range $d.Board}}
+        <tr class="{{if le .Rank 3}}top{{.Rank}}{{end}}">
+          <td class="num rank">{{.Rank}}</td>
+          <td class="pname"><a href="/t/{{$t.Slug}}/players/{{.ParticipantID}}?season={{$d.Period.ID}}">{{.Name}}</a></td>
+          <td class="num pts">{{.Points}}</td>
+          <td class="num">{{.Played}}</td>
+          <td class="num hide-xs">{{fmt1 .Avg}}</td>
+          <td class="mv">
+            {{if .New}}<span class="mv-new">{{$.T "board.new"}}</span>
+            {{else if .Up}}<span class="mv-up" title="{{$.T "board.up" .Move}}">↑<small>{{.Move}}</small></span>
+            {{else if .Down}}<span class="mv-down" title="{{$.T "board.down" .AbsMove}}">↓<small>{{.AbsMove}}</small></span>
+            {{else}}<span class="mv-same" title="{{$.T "board.same"}}">↔</span>{{end}}
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+  {{else}}
+  <p class="placeholder">{{$.T "tally.board_empty"}}</p>
+  {{end}}
+</section>
+
+{{if $d.Results}}
+<section class="card">
+  <div class="cardhead">
+    <h2>{{$.T "board.results"}}</h2>
+    <span class="muted small">{{$.T "round.label" $d.Round.Number}} · {{$.T "play.matches_n" (len $d.Results)}}</span>
+  </div>
+  {{range $d.Results}}{{template "matchrow" (dict "P" $ "M" . "Slug" $t.Slug "Actions" false)}}{{end}}
+  {{if $d.IsAdmin}}<p class="small"><a href="/t/{{$t.Slug}}/rounds/{{$d.Round.ID}}">{{$.T "board.manage_day"}}</a></p>{{end}}
+</section>
+{{end}}
+{{else}}
+<section class="card empty"><p>{{.T "tally.no_period"}}</p></section>
+{{end}}
+
+{{if $d.IsAdmin}}
+<section class="card">
+  <h2>{{.T "share.title"}}</h2>
+  <div class="copyrow">
+    <input type="text" id="shareUrl" value="{{$d.ShareURL}}" readonly aria-label="{{.T "share.title"}}">
+    <button type="button" class="btn small" data-copy="#shareUrl" data-done="{{.T "share.copied"}}">{{.T "share.copy"}}</button>
+  </div>
+  <p class="muted small">{{if eq $t.Visibility "private"}}{{.T "visibility.private_help"}}{{else}}{{.T "visibility.link_help"}}{{end}}</p>
+</section>
+{{end}}
+{{end}}

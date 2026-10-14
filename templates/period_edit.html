@@ -1,0 +1,16 @@
+{{define "title"}}{{.Data.Editing.Name}} &middot; {{.Data.Tally.Name}} &mdash; {{.T "app.name"}}{{end}}
+{{define "content"}}
+{{template "tallyhead" .}}
+{{$t := .Data.Tally}}
+<section class="card">
+  <h2>{{.T "period.edit_title" .Data.Editing.Name}}</h2>
+  {{if .Data.HasScored}}<div class="alert warn" role="note">{{.T "period.scored_note"}}</div>{{end}}
+  <form method="post" action="/t/{{$t.Slug}}/periods/{{.Data.Editing.ID}}" class="stack">
+    {{template "periodfields" .}}
+    <div class="actions">
+      <button type="submit" class="btn primary">{{.T "common.save"}}</button>
+      <a class="btn ghost" href="/t/{{$t.Slug}}/periods">{{.T "common.cancel"}}</a>
+    </div>
+  </form>
+</section>
+{{end}}

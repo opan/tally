@@ -1,0 +1,190 @@
+{{define "guide_id"}}{{$P := .}}
+<section class="card gsec" id="mulai">
+  <h2>1. Mulai cepat</h2>
+  <p>Lima langkah dari nol sampai pertandingan pertama tercatat.</p>
+  <ol class="gsteps">
+    <li><strong>Daftar atau masuk.</strong>
+      {{if .Data.Aio}}Tekan <em>Daftar</em> atau <em>Masuk</em>. Anda dibawa ke halaman All-in-one, satu akun
+      untuk Tally dan aplikasi lain, lalu kembali ke Tally setelah selesai.
+      {{else}}Tekan <em>Daftar</em>, pilih nama pengguna dan kata sandi.{{end}}
+      Akun hanya untuk <strong>admin</strong> yang mencatat. Pemain tidak perlu akun.</li>
+    <li><strong>Buat tally.</strong> Di halaman <em>Tally saya</em>, isi nama (mis. <em>Badminton Sampai
+      Pingsan</em>), periksa tautannya, dan pilih <a href="#jenis">jenis</a>-nya. Tautan dan jenis tidak bisa
+      diubah setelah tally dibuat; nama dan deskripsi bisa.</li>
+    <li><strong>Tulis nama pemain.</strong> Satu nama per baris. Daftar dari grup WhatsApp bisa langsung
+      ditempel: nomor dan tanda daftar dibuang otomatis, nama yang sudah ada dilewati.</li>
+    <li><strong>Buat musim.</strong> Di tab <em>Musim</em>, isi tanggal mulai dan selesai, lalu pilih
+      <a href="#aturan-poin">aturan poin</a>.</li>
+    <li><strong>Mulai main.</strong> Buka tab <em>Main</em>, pilih tanggal, jumlah lapangan, dan siapa yang
+      hadir. Lanjutkan di <a href="#hari-main">Hari main</a>.</li>
+  </ol>
+  {{template "gimg" (dict "P" $P "N" "create" "Alt" "Formulir Buat tally baru: nama, tautan, jenis, deskripsi")}}
+  {{template "gimg" (dict "P" $P "N" "players" "Alt" "Formulir Tambah pemain dengan satu nama per baris")}}
+</section>
+
+<section class="card gsec" id="jenis">
+  <h2>2. Jenis tally</h2>
+  <p>Jenis menentukan berapa orang per tim dan format skor yang bisa dipilih untuk musimnya.</p>
+  <div class="tablewrap"><table class="gtable">
+    <thead><tr><th>Jenis</th><th>Cocok untuk</th><th>Format skor</th></tr></thead>
+    <tbody>
+      <tr><td>Bulu tangkis · ganda</td><td>Ganda, 2 lawan 2</td><td>berlanjut, 2 gim diulang</td></tr>
+      <tr><td>Bulu tangkis · tunggal</td><td>Tunggal, 1 lawan 1</td><td>berlanjut, 2 gim diulang</td></tr>
+      <tr><td>1 lawan 1</td><td>Catur, tenis meja, panco, game</td><td>menang / seri / kalah, berlanjut, gim diulang</td></tr>
+      <tr><td>2 lawan 2</td><td>Padel, voli pantai, domino berpasangan</td><td>menang / seri / kalah, berlanjut, gim diulang</td></tr>
+      <tr><td>Tim</td><td>Futsal, basket, voli (3–11 per tim)</td><td>menang / seri / kalah, berlanjut, gim diulang</td></tr>
+      <tr><td>Hitungan bebas</td><td>Tanpa lawan: kehadiran, kuis, target</td><td>poin dicatat langsung</td></tr>
+    </tbody>
+  </table></div>
+  <p class="muted">Untuk jenis <em>Tim</em>, jumlah pemain per tim dipilih saat membuat tally dan tidak bisa
+    diubah. Tim tetap diacak di setiap pertandingan.</p>
+</section>
+
+<section class="card gsec" id="aturan-poin">
+  <h2>3. Aturan poin</h2>
+  <p>Aturan poin ditetapkan per <strong>musim</strong>. Setiap pemain dalam satu tim mendapat poin yang sama.
+    Karena pasangan diacak setiap pertandingan, poin menjadi milik <strong>perorangan</strong>, bukan pasangan.</p>
+  <h3>Skor berlanjut</h3>
+  <p>Satu skor berjalan sampai target, mis. 42; gim kedua melanjutkan skor gim pertama. Setiap pemain
+    mendapat skor timnya.</p>
+  <p class="gexample">A &amp; B lawan C &amp; D, skor <strong>42–36</strong> → A dan B masing-masing 42 poin,
+    C dan D masing-masing 36 poin.</p>
+  <h3>2 gim, skor diulang</h3>
+  <p>Tiap gim mulai dari 0, mis. sampai 21. Poin = jumlah skor tim di kedua gim. Menang 1–1 dihitung
+    <strong>seri</strong>. Satu gim tidak boleh berakhir sama.</p>
+  <p class="gexample"><strong>21–9, 21–19</strong> → A/B 42 poin, C/D 28 poin.<br>
+    <strong>21–19, 18–21</strong> → seri: A/B 39 poin, C/D 40 poin.</p>
+  <h3>Menang / seri / kalah</h3>
+  <p>Isi skor akhir; poinnya mengikuti hasil (bawaan 3 / 1 / 0), bukan besar skornya. Skor sama berarti seri.</p>
+  <h3>Bonus menang</h3>
+  <p>Opsional, untuk skor berlanjut dan gim diulang: tim pemenang mendapat tambahan poin. Seri tidak mendapat bonus.</p>
+  <h3>Skor yang diterima</h3>
+  <p>Skor deuce (43–41, 30–29) dan pertandingan yang belum selesai karena waktu lapangan habis (38–35) tetap
+    bisa dicatat. Skor maksimal 999 untuk mencegah salah ketik.</p>
+  <h3>Mengubah aturan di tengah musim</h3>
+  <p>Setelah ada pertandingan, <strong>format skor terkunci</strong>. Angka lain (target, bonus, poin
+    menang/seri/kalah) masih bisa diubah, dan semua poin musim itu dihitung ulang. Butuh format lain? Buat musim baru.</p>
+  {{template "gimg" (dict "P" $P "N" "season" "Alt" "Formulir Musim baru dengan tanggal dan format skor")}}
+</section>
+
+<section class="card gsec" id="hari-main">
+  <h2>4. Hari main</h2>
+  <h3>Memulai</h3>
+  <p>Di tab <em>Main</em>, pilih <strong>tanggal</strong>, <strong>jumlah lapangan</strong> (1–3), dan centang
+    <strong>yang hadir</strong>. Satu tanggal hanya punya satu hari main; memilih tanggal yang sudah ada akan
+    membuka hari main itu. Tanggalnya harus masuk dalam salah satu musim.</p>
+  {{template "gimg" (dict "P" $P "N" "start-day" "Alt" "Formulir Mulai hari main: tanggal, lapangan, yang hadir")}}
+  <h3>Acak pasangan</h3>
+  <p>Tekan <strong>Acak pasangan</strong> untuk mengisi semua lapangan yang kosong. Supaya semua kebagian main:</p>
+  <ol>
+    <li>yang <strong>paling sedikit main</strong> hari itu dipilih duluan,</li>
+    <li>kalau sama, yang <strong>paling lama menunggu</strong>,</li>
+    <li>sisanya diundi. Pasangan dan lawannya selalu diacak.</li>
+  </ol>
+  <p>Di bawahnya terlihat siapa yang <em>menunggu giliran</em>, berurutan, dengan jumlah mainnya hari itu (mis. 2×).</p>
+  {{template "gimg" (dict "P" $P "N" "courts" "Alt" "Dua lapangan terisi, dengan daftar yang menunggu giliran")}}
+  <h3>Mengganti pemain atau membatalkan</h3>
+  <p>Ada yang harus pergi atau mau tukar pasangan? Buka <strong>Ganti pemain</strong> di kartu lapangan,
+    pilih pemain lain, lalu simpan bersama skornya. <strong>Batalkan</strong> menghapus pertandingan yang
+    belum selesai; pemainnya kembali ke daftar tunggu.</p>
+  {{template "gimg" (dict "P" $P "N" "swap" "Alt" "Kartu lapangan dengan pilihan Ganti pemain terbuka")}}
+  <h3>Menyimpan skor</h3>
+  <p>Isi skor lalu tekan <strong>Simpan skor</strong>. Poin langsung dihitung, pertandingan pindah ke
+    <em>Selesai</em>, dan lapangan kosong lagi. Tekan <em>Acak pasangan</em> untuk giliran berikutnya.</p>
+  <h3>Datang telat, pulang duluan</h3>
+  <p>Buka <strong>Kehadiran &amp; lapangan</strong> di bagian bawah, centang atau hapus centang, dan simpan.
+    Di sini jumlah lapangan juga bisa diubah. Yang datang telat otomatis didahulukan karena mainnya masih sedikit.</p>
+  <h3>Salah input dan pertandingan manual</h3>
+  <p>Di daftar <em>Selesai</em>, tekan <strong>Ubah</strong> untuk memperbaiki pemain atau skor, atau
+    <strong>Hapus</strong>. Poin ikut diperbarui. <strong>Tambah pertandingan manual</strong> untuk pertandingan
+    yang pasangannya diatur sendiri.</p>
+  {{template "gimg" (dict "P" $P "N" "done" "Alt" "Daftar pertandingan selesai dengan tombol Ubah dan Hapus")}}
+  <h3>Poin tambahan</h3>
+  <p>Untuk bonus atau penalti di luar pertandingan (mis. juara turnamen, telat). Isi poin per pemain dan
+    keterangannya; pakai angka minus untuk penalti. Poin tambahan masuk ke hari main itu.</p>
+  {{template "gimg" (dict "P" $P "N" "awards" "Alt" "Formulir Poin tambahan dengan keterangan")}}
+  <p class="muted">Tally jenis <em>Hitungan bebas</em> tidak punya lapangan: tab <em>Catat</em> langsung berisi
+    daftar pemain untuk diisi poinnya.</p>
+</section>
+
+<section class="card gsec" id="peringkat">
+  <h2>5. Papan peringkat</h2>
+  <p>Papan peringkat ada di tab <em>Ringkasan</em> dan bisa dibuka siapa saja yang punya tautan.</p>
+  <ul>
+    <li><strong>Urutan:</strong> total poin. Kalau poinnya sama, yang mainnya lebih sedikit di atas, lalu
+      menurut nama. Setiap baris tetap punya nomor sendiri.</li>
+    <li><strong>Main</strong> = jumlah pertandingan, <strong>Rata²</strong> = poin per pertandingan (layar lebar saja).</li>
+    <li><strong>Panah</strong> membandingkan dengan hari main sebelumnya: ↑ naik, ↓ turun, ↔ tetap, dan
+      <strong>BARU</strong> untuk yang pertama kali masuk papan.</li>
+    <li><strong>Per hari main</strong>: lihat peringkat seperti setelah minggu tertentu. Musim lama bisa dipilih dari <em>Musim</em>.</li>
+    <li>Di bawah papan ada <strong>hasil pertandingan</strong> hari main itu.</li>
+  </ul>
+  {{template "gimg" (dict "P" $P "N" "board" "Alt" "Papan peringkat dengan panah naik turun dan label BARU")}}
+  <h3>Halaman pemain</h3>
+  <p>Tekan nama pemain untuk melihat peringkat, catatan menang–seri–kalah, poin per hari main, dengan siapa
+    saja dia berpasangan dan melawan siapa, serta semua pertandingannya.</p>
+  {{template "gimg" (dict "P" $P "N" "player" "Alt" "Halaman statistik satu pemain")}}
+</section>
+
+<section class="card gsec" id="poster">
+  <h2>6. Poster</h2>
+  <p>Tekan <strong>Poster</strong> di papan peringkat. Poster memakai musim dan hari main yang sedang dipilih,
+    berisi sampai 20 peringkat teratas, dan berukuran 1024×1536 untuk grup WhatsApp atau Instagram.</p>
+  <ul>
+    <li><strong>Unduh PNG</strong> menyimpan gambarnya.</li>
+    <li><strong>Bagikan</strong> (di ponsel yang mendukung) langsung membuka menu bagikan, mis. ke WhatsApp.</li>
+  </ul>
+  {{template "gimg" (dict "P" $P "N" "poster" "Alt" "Contoh poster peringkat")}}
+  <h3>Judul, logo, dan teks</h3>
+  <p>Di <em>Setelan → Poster</em> (atau <em>Ubah judul &amp; logo</em> di halaman poster). Semua opsional:</p>
+  <ul>
+    <li><strong>Judul baris 1 dan 2</strong> (putih dan emas). Jika kosong, nama tally dibagi dua baris.</li>
+    <li><strong>Logo</strong>: PNG, JPG, atau WebP, maks. 1 MB.</li>
+    <li><strong>Teks di bawah logo</strong> dan <strong>teks kaki poster</strong>, mis. <em>Sehat bareng, seru bareng</em>.</li>
+  </ul>
+  {{template "gimg" (dict "P" $P "N" "branding" "Alt" "Formulir judul, logo, dan teks poster")}}
+</section>
+
+<section class="card gsec" id="kelola">
+  <h2>7. Mengelola tally</h2>
+  <h3>Pemain</h3>
+  <p>Di tab <em>Pemain</em>: <strong>Ganti nama</strong>, <strong>Nonaktifkan</strong> (tidak muncul lagi saat
+    memilih pemain, tapi poinnya tetap), atau <strong>Hapus</strong>. Hapus hanya bisa untuk pemain yang belum
+    pernah bertanding atau mendapat poin.</p>
+  {{template "gimg" (dict "P" $P "N" "player-list" "Alt" "Daftar pemain dengan tombol ganti nama, nonaktifkan, hapus")}}
+  <h3>Musim baru</h3>
+  <p>Di tab <em>Musim</em>. Musim lama tetap tersimpan dan bisa dilihat dari pilihan <em>Musim</em> di papan peringkat.</p>
+  <h3>Admin lain</h3>
+  <p>Di <em>Setelan → Admin</em>, tulis nama penggunanya. Orang itu harus {{if .Data.Aio}}masuk ke Tally{{else}}daftar{{end}}
+    sekali dulu. Admin bisa mengelola pemain, musim, dan pertandingan; hanya pemilik yang bisa menambah atau menghapus admin.</p>
+  <h3>Siapa yang bisa melihat</h3>
+  <p><strong>Siapa saja yang punya tautan</strong> (bawaan) atau <strong>hanya admin</strong>.</p>
+  {{template "gimg" (dict "P" $P "N" "visibility" "Alt" "Pengaturan nama, deskripsi, dan siapa yang bisa melihat")}}
+  <h3>Membagikan tautan</h3>
+  <p>Tautan ada di bagian bawah <em>Ringkasan</em>; tekan <strong>Salin</strong> lalu kirim ke grup.</p>
+  {{template "gimg" (dict "P" $P "N" "share" "Alt" "Tautan untuk dibagikan dengan tombol Salin")}}
+</section>
+
+<section class="card gsec" id="pemain">
+  <h2>8. Untuk pemain</h2>
+  <p>Pemain tidak perlu akun. Buka tautan dari admin untuk melihat papan peringkat, pilih hari main lain,
+    dan tekan nama sendiri untuk melihat statistik. Ada skor yang salah? Beri tahu admin; perbaikannya langsung
+    mengubah poin dan peringkat.</p>
+</section>
+
+<section class="card gsec" id="faq">
+  <h2>9. Tanya jawab</h2>
+  <details><summary>Kenapa pemain tidak bisa dihapus?</summary>
+    <p>Pemain itu sudah punya pertandingan atau poin. Nonaktifkan saja: namanya hilang dari pilihan, tapi riwayatnya tetap benar.</p></details>
+  <details><summary>Salah input skor, bagaimana memperbaikinya?</summary>
+    <p>Buka hari mainnya (tab <em>Main</em>, atau <em>Kelola hari main ini</em> dari papan peringkat), lalu tekan <em>Ubah</em> di daftar <em>Selesai</em>.</p></details>
+  <details><summary>Bisakah format skor diganti di tengah musim?</summary>
+    <p>Tidak, setelah ada pertandingan. Bonus menang dan angka lain masih bisa diubah, dan poin dihitung ulang. Untuk format lain, buat musim baru.</p></details>
+  <details><summary>Ada yang datang telat. Apakah dia tetap kebagian main?</summary>
+    <p>Ya. Centang dia di <em>Kehadiran &amp; lapangan</em>. Karena mainnya masih sedikit, dia akan didahulukan saat acak pasangan berikutnya.</p></details>
+  <details><summary>Poster gagal diunduh di iPhone.</summary>
+    <p>Coba tekan lagi; iPhone kadang perlu dua kali. Jika masih gagal, ambil tangkapan layar halaman poster.</p></details>
+  <details><summary>Bisakah tautan tally diganti?</summary>
+    <p>Tidak, supaya tautan yang sudah dibagikan tetap berfungsi. Nama dan deskripsi bisa diganti di <em>Setelan</em>.</p></details>
+</section>
+{{end}}

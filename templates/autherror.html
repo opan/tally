@@ -1,0 +1,9 @@
+{{define "title"}}{{.T "autherror.title"}} &mdash; {{.T "app.name"}}{{end}}
+{{define "content"}}
+<section class="card authcard">
+  <h1>{{.T "autherror.title"}}</h1>
+  <div class="alert error" role="alert">{{.Data.Err}}</div>
+  <a class="btn primary" href="/auth/login">{{.T "autherror.retry"}}</a>
+  <p class="muted small"><a href="/">{{.T "autherror.home"}}</a></p>
+</section>
+{{end}}

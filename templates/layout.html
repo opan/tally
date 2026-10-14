@@ -1,0 +1,36 @@
+{{define "layout"}}<!doctype html>
+<html lang="{{.Lang}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{block "title" .}}{{.T "app.name"}}{{end}}</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏸</text></svg>">
+  <link rel="stylesheet" href="/static/style.css?v={{.AssetVer}}">
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap bar">
+      <a class="brand" href="/">{{.T "app.name"}}</a>
+      <nav class="nav">
+        <span class="langs" aria-label="{{.T "nav.language"}}">
+          <a href="/lang/id?next={{.Path}}" {{if eq .Lang "id"}}class="on" aria-current="true"{{end}}>ID</a>
+          <a href="/lang/en?next={{.Path}}" {{if eq .Lang "en"}}class="on" aria-current="true"{{end}}>EN</a>
+        </span>
+        {{if .Username}}
+          <span class="who" title="{{.Username}}">{{.Username}}</span>
+          <form method="post" action="/logout" class="inline"><button class="linkbtn" type="submit">{{.T "nav.logout"}}</button></form>
+        {{else}}
+          <a href="/login">{{.T "nav.login"}}</a>
+          <a href="/register" class="btn primary small">{{.T "nav.register"}}</a>
+        {{end}}
+      </nav>
+    </div>
+  </header>
+  <main class="wrap">
+    {{block "content" .}}{{end}}
+  </main>
+  <footer class="foot"><div class="wrap">{{.T "app.name"}} &middot; {{.T "footer.motto"}} &middot; <a href="/panduan">{{.T "guide.title"}}</a></div></footer>
+  <script src="/static/app.js?v={{.AssetVer}}"></script>
+  {{block "scripts" .}}{{end}}
+</body>
+</html>{{end}}

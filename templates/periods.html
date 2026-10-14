@@ -1,0 +1,31 @@
+{{define "title"}}{{.T "tab.periods"}} &middot; {{.Data.Tally.Name}} &mdash; {{.T "app.name"}}{{end}}
+{{define "content"}}
+{{template "tallyhead" .}}
+{{$t := .Data.Tally}}
+
+{{if .Data.Periods}}
+<section class="card">
+  <h2>{{.T "tab.periods"}}</h2>
+  <ul class="rows">
+    {{range .Data.Periods}}
+    <li class="periodrow">
+      <div>
+        <strong>{{.Name}}</strong>{{if eq .ID $.Data.CurrentID}} <span class="badge gold">{{$.T "period.current"}}</span>{{end}}
+        <div class="muted small">{{$.Date .StartsOn}} – {{$.Date .EndsOn}} &middot; {{$.Rule .Scoring}}</div>
+      </div>
+      <a class="btn small ghost" href="/t/{{$t.Slug}}/periods/{{.ID}}">{{$.T "common.edit"}}</a>
+    </li>
+    {{end}}
+  </ul>
+</section>
+{{end}}
+
+<section class="card">
+  <h2>{{.T "period.new_title"}}</h2>
+  <p class="muted small">{{if not .Data.Periods}}{{.T "period.first_hint"}} {{end}}<a href="/panduan#aturan-poin">{{.T "guide.rules_link"}}</a></p>
+  <form method="post" action="/t/{{$t.Slug}}/periods" class="stack">
+    {{template "periodfields" .}}
+    <button type="submit" class="btn primary">{{.T "period.create_submit"}}</button>
+  </form>
+</section>
+{{end}}

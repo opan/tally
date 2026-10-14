@@ -1,0 +1,17 @@
+{{define "content"}}
+<section class="hero">
+  <p class="eyebrow">{{.T "app.tagline"}}</p>
+  <h1>{{.T "landing.title"}}</h1>
+  <p class="lead">{{.T "landing.lead"}}</p>
+  <div class="actions">
+    <a class="btn primary" href="/register">{{.T "landing.cta_register"}}</a>
+    <a class="btn ghost" href="/login">{{.T "landing.cta_login"}}</a>
+  </div>
+  <p class="small"><a href="/panduan">{{.T "guide.read"}}</a></p>
+</section>
+<ol class="steps">
+  <li class="step"><span class="n">1</span><h3>{{.T "landing.step1.title"}}</h3><p>{{.T "landing.step1.body"}}</p></li>
+  <li class="step"><span class="n">2</span><h3>{{.T "landing.step2.title"}}</h3><p>{{.T "landing.step2.body"}}</p></li>
+  <li class="step"><span class="n">3</span><h3>{{.T "landing.step3.title"}}</h3><p>{{.T "landing.step3.body"}}</p></li>
+</ol>
+{{end}}

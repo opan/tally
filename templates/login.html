@@ -1,0 +1,17 @@
+{{define "title"}}{{.T "login.title"}} &mdash; {{.T "app.name"}}{{end}}
+{{define "content"}}
+<section class="card authcard">
+  <h1>{{.T "login.title"}}</h1>
+  {{if .Data.Err}}<div class="alert error" role="alert">{{.Data.Err}}</div>{{end}}
+  <form method="post" class="stack">
+    <label>{{.T "auth.username"}}
+      <input type="text" name="username" value="{{.Data.Username}}" placeholder="{{.T "auth.username_placeholder"}}" required autofocus autocapitalize="none" autocomplete="username" spellcheck="false">
+    </label>
+    <label>{{.T "auth.password"}}
+      <input type="password" name="password" required autocomplete="current-password">
+    </label>
+    <button type="submit" class="btn primary">{{.T "login.submit"}}</button>
+  </form>
+  <p class="muted small">{{.T "login.no_account"}} <a href="/register">{{.T "login.register_link"}}</a>.</p>
+</section>
+{{end}}

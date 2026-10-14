@@ -1,0 +1,49 @@
+{{define "title"}}{{.T "dashboard.title"}} &mdash; {{.T "app.name"}}{{end}}
+{{define "content"}}
+<h1>{{.T "dashboard.title"}}</h1>
+{{if .Data.Cards}}
+<ul class="cards">
+  {{range .Data.Cards}}
+  <li>
+    <a class="tallycard" href="/t/{{.Tally.Slug}}">
+      <span class="eyebrow">{{$.T .Tally.Preset.NameKey}}</span>
+      <strong class="tname">{{.Tally.Name}}</strong>
+      <span class="muted small">
+        {{$.T "dashboard.players" .Players}}
+        &middot; {{if .Current}}{{.Current.Name}}{{else}}{{$.T "dashboard.no_period"}}{{end}}
+        {{if eq .Role "owner"}}&middot; {{$.T "role.owner"}}{{end}}
+      </span>
+    </a>
+  </li>
+  {{end}}
+</ul>
+{{else}}
+<p class="muted">{{.T "dashboard.empty"}} <a href="/panduan#mulai">{{.T "guide.read"}}</a></p>
+{{end}}
+
+<section class="card" id="new">
+  <h2>{{.T "create.title"}}</h2>
+  {{if .Data.Err}}<div class="alert error" role="alert">{{.Data.Err}}</div>{{end}}
+  <form method="post" action="/tallies" class="stack">
+    <label>{{.T "create.name"}}
+      <input type="text" name="name" id="tallyName" value="{{.Data.FName}}" placeholder="{{.T "create.name_placeholder"}}" maxlength="80" required>
+    </label>
+    <label>{{.T "create.slug"}} <span class="muted hint">{{.T "create.slug_hint"}}</span>
+      <span class="prefixed"><span class="prefix">/t/</span><input type="text" name="slug" id="tallySlug" value="{{.Data.FSlug}}" placeholder="badminton-sampai-pingsan" maxlength="40" autocapitalize="none" spellcheck="false"></span>
+    </label>
+    <label>{{.T "create.template"}}
+      <select name="template" data-preset-toggle aria-describedby="presetHelp">
+        {{range .Data.Presets}}<option value="{{.ID}}" data-help="{{$.T .HelpKey}}" {{if eq .ID $.Data.FTemplate}}selected{{end}}>{{$.T .NameKey}}</option>{{end}}
+      </select>
+      <span class="muted small hint" id="presetHelp">{{range .Data.Presets}}{{if eq .ID $.Data.FTemplate}}{{$.T .HelpKey}}{{end}}{{end}}</span>
+    </label>
+    <label data-for-preset="team">{{.T "create.team_size"}}
+      <select name="side_size">{{range $n := 9}}{{$v := add1 (add1 (add1 $n))}}<option value="{{$v}}" {{if eq (print $v) $.Data.FSideSize}}selected{{end}}>{{$v}}</option>{{end}}</select>
+    </label>
+    <label>{{.T "create.description"}} <span class="muted hint">{{.T "common.optional"}}</span>
+      <textarea name="description" rows="2" maxlength="500">{{.Data.FDesc}}</textarea>
+    </label>
+    <button type="submit" class="btn primary">{{.T "create.submit"}}</button>
+  </form>
+</section>
+{{end}}
