@@ -24,6 +24,7 @@
   <h2>{{.T "period.new_title"}}</h2>
   <p class="muted small">{{if not .Data.Periods}}{{.T "period.first_hint"}} {{end}}<a href="/panduan#aturan-poin">{{.T "guide.rules_link"}}</a></p>
   <form method="post" action="/t/{{$t.Slug}}/periods" class="stack">
+  <input type="hidden" name="form_token" value="{{formToken}}">
     {{template "periodfields" .}}
     <button type="submit" class="btn primary">{{.T "period.create_submit"}}</button>
   </form>

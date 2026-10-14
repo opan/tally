@@ -276,6 +276,20 @@ Change from the plan: the guide's prose lives in `templates/guide_{id,en}.html`
 rather than locale keys (long text is easier to revise there); only the page
 chrome uses `locales/`. Not done yet: printable quick-start, opan's review.
 
+## Double-submit protection (2026-10-14)
+
+Two layers, as in cashflow. **Browser** (`static/app.js`): every POST form
+locks on submit (after `data-confirm`); the pressed button shows a spinner and
+"Menyimpan…" / "Mengunggah…" (file attached); it unlocks after 20s with no
+answer and on bfcache restore. **Server** (`submitguard.go`): one-time
+`form_token` on the forms that create records (new tally, new season, manual
+match, extra points); a duplicate redirects to where the first landed; a
+failed submission releases its token. In-memory, so per pod and lost on
+restart; a DB-backed guard if that ever matters. Other forms were already
+harmless to repeat (upserts, dedupes, or an error message). Tested in a
+browser: double/triple taps → one request and one record; a replayed token
+→ no second record.
+
 ## Metrics (2026-10-14)
 
 App metrics added on top of HTTP + runtime: DB totals as gauges (users,
@@ -316,4 +330,4 @@ still in the security backlog.
 
 Have from day one: bcrypt, HttpOnly/SameSite=Lax sessions, strict CSP,
 body limits, parameterized SQL, html/template escaping, session pruning.
-Still to do: login rate limiting, CSRF tokens, least‑privilege DB role.
+Done: double-submit protection (see above). Still to do: login rate limiting, CSRF tokens, least‑privilege DB role.

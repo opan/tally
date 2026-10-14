@@ -337,5 +337,7 @@
   "guide.back_top": "Back to top",
   "guide.read": "Read the guide →",
   "guide.rules_link": "How points rules work →",
-  "guide.more": "More"
+  "guide.more": "More",
+  "common.saving": "Saving…",
+  "common.uploading": "Uploading…"
 }

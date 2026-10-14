@@ -63,7 +63,7 @@
   <details class="manual" {{if eq $d.AutoOpen "new"}}open{{end}}>
     <summary class="btn small ghost">{{.T "round.add_manual"}}</summary>
     <p class="muted small">{{.T "round.add_manual_help"}}</p>
-    {{template "matchform" (dict "P" $ "F" (index $d.Forms "new") "Opts" $d.Options "SideSize" $d.SideSize "Games" $d.Games "Submit" "match.save" "From" "" "Collapse" false "Cancel" true)}}
+    {{template "matchform" (dict "P" $ "F" (index $d.Forms "new") "Opts" $d.Options "SideSize" $d.SideSize "Games" $d.Games "Submit" "match.save" "From" "" "Collapse" false "Cancel" true "Token" true)}}
   </details>
 </section>
 

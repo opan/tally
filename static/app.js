@@ -96,3 +96,52 @@ document.addEventListener('click', function (e) {
     details.querySelector('summary').focus();
   }
 });
+
+// Lock a form once it is really submitting (after data-confirm above had its
+// say), so a slow connection at the court doesn't invite a second tap: submit
+// buttons are disabled and the one pressed says "Menyimpan…" (or
+// "Mengunggah…" with a file attached). Forms that create records also carry a
+// one-time token, so the server ignores a duplicate that gets through anyway.
+(function () {
+  var labels = document.body.dataset;
+  function buttons(form) {
+    var list = Array.prototype.slice.call(form.querySelectorAll('button:not([type=button])'));
+    if (form.id) list = list.concat(Array.prototype.slice.call(document.querySelectorAll('button[form="' + form.id + '"]')));
+    return list;
+  }
+  function hasFile(form) {
+    return Array.prototype.some.call(form.querySelectorAll('input[type=file]'), function (i) { return i.files && i.files.length; });
+  }
+  function unlock(form) {
+    clearTimeout(form._unlockTimer);
+    delete form.dataset.submitting;
+    buttons(form).forEach(function (b) {
+      b.disabled = false;
+      b.classList.remove('busy');
+      if (b.dataset.label) { b.textContent = b.dataset.label; delete b.dataset.label; }
+    });
+  }
+  document.addEventListener('submit', function (e) {
+    var form = e.target;
+    if (e.defaultPrevented || form.method.toLowerCase() !== 'post') return;
+    if (form.dataset.submitting) { e.preventDefault(); return; }
+    form.dataset.submitting = '1';
+    var pressed = e.submitter;
+    var label = hasFile(form) ? labels.uploading : labels.saving;
+    // Disable after the browser has collected the form data, not before.
+    setTimeout(function () {
+      buttons(form).forEach(function (b) { b.disabled = true; });
+      if (pressed && label) {
+        pressed.dataset.label = pressed.textContent;
+        pressed.textContent = label;
+        pressed.classList.add('busy');
+      }
+    }, 0);
+    // If nothing comes back (the connection dropped), allow another try.
+    form._unlockTimer = setTimeout(function () { unlock(form); }, 20000);
+  });
+  // Back/forward restores pages from the bfcache with the buttons still locked.
+  window.addEventListener('pageshow', function (e) {
+    if (e.persisted) document.querySelectorAll('form[data-submitting]').forEach(unlock);
+  });
+})();

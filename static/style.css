@@ -406,3 +406,11 @@ details[open] > .summaryhead::after { transform: rotate(45deg); margin-top: -7px
 .guideback { text-align: center; }
 .foot a { color: inherit; }
 @media (max-width: 480px) { .guidetoc ol { columns: 1; } }
+
+/* Submit lock (app.js): the pressed button shows a spinner while saving. */
+form[data-submitting] .btn:disabled, .btn.busy { cursor: progress; }
+.btn.busy { opacity: .8; }
+.btn.busy::before { content: ""; display: inline-block; width: .9em; height: .9em; margin-right: .5em; vertical-align: -.1em;
+  border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .btn.busy::before { animation-duration: 2s; } }

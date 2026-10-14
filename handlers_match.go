@@ -494,6 +494,12 @@ func (a *App) handleAddMatch(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	done, ok := a.claimSubmit(w, r, roundPath(tc.Tally, d.round.ID)+"?ok=match_saved#done")
+	if !ok {
+		return
+	}
+	saved := false
+	defer done(&saved)
 	f := readMatchForm(r, tallyPath(tc.Tally, "/rounds/"+d.round.ID+"/matches"), tc.Tally.SideSize(), d.period.Scoring.GamesPerMatch())
 	res, msg := f.parse(r, d.period.Scoring, d.validPlayers())
 	if msg != "" {
@@ -505,6 +511,7 @@ func (a *App) handleAddMatch(w http.ResponseWriter, r *http.Request) {
 		internalError(w, "save match", err)
 		return
 	}
+	saved = true
 	recordMatchEvent(r.Context(), "added", 1)
 	http.Redirect(w, r, roundPath(tc.Tally, d.round.ID)+"?ok=match_saved#done", http.StatusSeeOther)
 }
@@ -631,6 +638,12 @@ func (a *App) handleAddAwards(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	done, ok := a.claimSubmit(w, r, roundPath(tc.Tally, d.round.ID)+"?ok=awards_saved#awards")
+	if !ok {
+		return
+	}
+	saved := false
+	defer done(&saved)
 	reason := strings.Join(strings.Fields(r.FormValue("reason")), " ")
 	typed := map[string]string{}
 	var entries []AwardInput
@@ -673,6 +686,7 @@ func (a *App) handleAddAwards(w http.ResponseWriter, r *http.Request) {
 		internalError(w, "add awards", err)
 		return
 	}
+	saved = true
 	recordAwards(r.Context(), len(entries))
 	http.Redirect(w, r, roundPath(tc.Tally, d.round.ID)+"?ok=awards_saved#awards", http.StatusSeeOther)
 }

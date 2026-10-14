@@ -20,8 +20,9 @@ type App struct {
 	store    *Store
 	aio      *AioAuth // login through all-in-one (AUTH_PROVIDER=aio); nil-safe when disabled
 	tmpl     map[string]*template.Template
-	assetVer string // content hash appended to static asset URLs for cache-busting
-	guideVer string // content hash of the guide's screenshots
+	assetVer string       // content hash appended to static asset URLs for cache-busting
+	guideVer string       // content hash of the guide's screenshots
+	guard    *submitGuard // one-time form tokens against double submits; nil-safe
 }
 
 const maxFormBytes = 256 << 10 // 256 KiB cap for ordinary form posts
@@ -39,7 +40,9 @@ var pageExtras = map[string][]string{
 }
 
 var templateFuncs = template.FuncMap{
-	"add1": func(i int) int { return i + 1 },
+	// formToken is a fresh one-time token for forms guarded by submitGuard.
+	"formToken": newToken,
+	"add1":      func(i int) int { return i + 1 },
 	// dict builds the argument map for a sub-template: dict "k1" v1 "k2" v2.
 	"dict": func(kv ...any) (map[string]any, error) {
 		if len(kv)%2 != 0 {

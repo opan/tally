@@ -69,7 +69,7 @@ func main() {
 		log.Print("login: local username/password (set AUTH_PROVIDER=aio to log in through all-in-one)")
 	}
 
-	app := &App{store: &Store{pool: pool}, aio: aio, tmpl: buildTemplates(), guideVer: guideVersion(), assetVer: assetVersion("static/style.css", "static/app.js", "static/poster.js", "static/vendor/html-to-image.js")}
+	app := &App{store: &Store{pool: pool}, aio: aio, tmpl: buildTemplates(), guideVer: guideVersion(), guard: newSubmitGuard(24 * time.Hour), assetVer: assetVersion("static/style.css", "static/app.js", "static/poster.js", "static/vendor/html-to-image.js")}
 
 	staticFS, err := fs.Sub(staticEmbed, "static")
 	if err != nil {

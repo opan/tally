@@ -25,6 +25,7 @@
   <h2>{{.T "create.title"}}</h2>
   {{if .Data.Err}}<div class="alert error" role="alert">{{.Data.Err}}</div>{{end}}
   <form method="post" action="/tallies" class="stack">
+  <input type="hidden" name="form_token" value="{{formToken}}">
     <label>{{.T "create.name"}}
       <input type="text" name="name" id="tallyName" value="{{.Data.FName}}" placeholder="{{.T "create.name_placeholder"}}" maxlength="80" required>
     </label>

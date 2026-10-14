@@ -65,6 +65,7 @@
 {{define "matchform"}}{{$P := .P}}{{$F := .F}}
 <form method="post" action="{{$F.Action}}" class="matchform">
   <input type="hidden" name="action" value="save">
+  {{if .Token}}<input type="hidden" name="form_token" value="{{formToken}}">{{end}}
   {{if .From}}<input type="hidden" name="from" value="{{.From}}">{{end}}
   {{if .Collapse}}<details class="mf-swap"><summary>{{$P.T "match.swap"}}</summary>{{end}}
   <div class="mf-sides">
@@ -154,6 +155,7 @@
 {{/* awardsform: dict P D (roundVM) */}}
 {{define "awardsform"}}{{$P := .P}}{{$d := .D}}
 <form method="post" action="/t/{{$d.Tally.Slug}}/rounds/{{$d.Round.ID}}/awards" class="stack">
+  <input type="hidden" name="form_token" value="{{formToken}}">
   <div class="award-grid">
     {{range $d.EntryFor}}
     <label class="award"><span>{{.Name}}</span>

@@ -167,6 +167,12 @@ func (a *App) handleCreateTally(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	limitBody(w, r, maxFormBytes)
+	done, ok := a.claimSubmit(w, r, "/")
+	if !ok {
+		return
+	}
+	saved := false
+	defer done(&saved)
 	name := strings.TrimSpace(r.FormValue("name"))
 	desc := strings.TrimSpace(r.FormValue("description"))
 	tmpl := r.FormValue("template")
@@ -216,6 +222,7 @@ func (a *App) handleCreateTally(w http.ResponseWriter, r *http.Request) {
 		internalError(w, "create tally", err)
 		return
 	}
+	saved = true
 	recordTallyCreated(r.Context(), tmpl)
 	redirectOK(w, r, tallyPath(t, "/players"), "tally_created")
 }
@@ -544,6 +551,12 @@ func (a *App) handleCreatePeriod(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	limitBody(w, r, maxFormBytes)
+	done, ok := a.claimSubmit(w, r, tallyPath(tc.Tally, "/periods")+"?ok=period_created")
+	if !ok {
+		return
+	}
+	saved := false
+	defer done(&saved)
 	f := readPeriodForm(r)
 	p, msg := f.parse(r, tc.Tally.Preset())
 	if msg != "" {
@@ -556,6 +569,7 @@ func (a *App) handleCreatePeriod(w http.ResponseWriter, r *http.Request) {
 		internalError(w, "create period", err)
 		return
 	}
+	saved = true
 	redirectOK(w, r, tallyPath(tc.Tally, "/periods"), "period_created")
 }
 
