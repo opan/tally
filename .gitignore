@@ -1,2 +1,31 @@
+# Build output
 /tally
+*.test
+*.out
+/bin/
+/dist/
+
+# Local config and secrets
 .env
+*.env
+.env.*
+
+# Test and coverage artifacts
+coverage.*
+*.prof
+
+# Node (for the guide screenshot script, if installed locally)
+node_modules/
+
+# Editors and OS
+.idea/
+.vscode/
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# Temp files
+/tmp/
+*.tmp
+*.log
