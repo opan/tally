@@ -291,6 +291,9 @@ GO-2026-5932 (x/crypto/openpgp, unmaintained), not imported by tally.
 Moved to Go 1.27.2 (Dependabot PR #1, merged 2026-10-14): build image, go.mod
 `toolchain`, and CI `go-version: '1.27.x'` move together; `go 1.26.0` language
 line unchanged. Re-ran race tests, govulncheck and Trivy on 1.27.2: clean.
+gosec v2.29.0 (latest) bundles x/tools v0.49.0, which can't read Go 1.27
+export data ("export data version 5"), so CI builds it against x/tools v0.52.0;
+drop that step once a gosec release bumps x/tools.
 
 ## Double-submit protection (2026-10-14)
 
