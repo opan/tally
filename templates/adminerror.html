@@ -1,0 +1,8 @@
+{{define "title"}}{{.T "admin.unavailable.title"}} &mdash; {{.T "app.name"}}{{end}}
+{{define "content"}}
+<section class="card">
+  <h1>{{.T "admin.unavailable.title"}}</h1>
+  <div class="alert error" role="alert">{{.T "admin.unavailable.body"}}</div>
+  <p class="muted small"><a href="/">{{.T "notfound.back"}}</a></p>
+</section>
+{{end}}

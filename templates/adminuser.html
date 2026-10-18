@@ -1,0 +1,33 @@
+{{define "title"}}{{.Data.User.Username}} &mdash; {{.T "nav.admin"}} &mdash; {{.T "app.name"}}{{end}}
+{{define "content"}}
+<p class="small"><a href="/admin">&larr; {{.T "admin.back"}}</a></p>
+<h1>{{.Data.User.Username}}</h1>
+<p class="muted">{{.T "admin.user_lead" (.Date .Data.User.CreatedAt)}}{{if not .Data.User.AioUserID}} &middot; {{.T "admin.local_account"}}{{end}}</p>
+{{if .Data.Tallies}}
+<section class="card">
+  <div class="tablewrap">
+    <table class="board">
+      <thead>
+        <tr><th>{{.T "admin.col.tally"}}</th><th>{{.T "admin.col.role"}}</th><th>{{.T "admin.col.visibility"}}</th><th class="num">{{.T "admin.col.players"}}</th><th class="num">{{.T "admin.col.play_days"}}</th><th class="num">{{.T "admin.col.matches"}}</th><th>{{.T "admin.col.last_played"}}</th></tr>
+      </thead>
+      <tbody>
+        {{range .Data.Tallies}}
+        <tr>
+          <td>{{if eq .Tally.Visibility "private"}}{{.Tally.Name}}{{else}}<a href="/t/{{.Tally.Slug}}">{{.Tally.Name}}</a>{{end}}<br><span class="muted small">/t/{{.Tally.Slug}}</span></td>
+          <td>{{if eq .Role "owner"}}{{$.T "role.owner"}}{{else}}{{$.T "role.admin"}}{{end}}</td>
+          <td>{{if eq .Tally.Visibility "private"}}{{$.T "visibility.private"}}{{else}}{{$.T "visibility.link"}}{{end}}</td>
+          <td class="num">{{.Players}}</td>
+          <td class="num">{{.PlayDays}}</td>
+          <td class="num">{{.Matches}}</td>
+          <td>{{if .LastPlayed}}{{$.Date .LastPlayed}}{{else}}<span class="muted">&mdash;</span>{{end}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+</section>
+<p class="muted small">{{.T "admin.private_note"}}</p>
+{{else}}
+<p class="muted">{{.T "admin.no_tallies"}}</p>
+{{end}}
+{{end}}

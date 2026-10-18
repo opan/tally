@@ -32,7 +32,7 @@ func limitBody(w http.ResponseWriter, r *http.Request, max int64) {
 	r.Body = http.MaxBytesReader(w, r.Body, max)
 }
 
-var pageNames = []string{"landing", "login", "register", "autherror", "panduan", "dashboard", "notfound", "tally", "players", "periods", "period_edit", "settings", "play", "round", "match_edit", "poster", "player"}
+var pageNames = []string{"landing", "login", "register", "autherror", "panduan", "dashboard", "notfound", "tally", "players", "periods", "period_edit", "settings", "play", "round", "match_edit", "poster", "player", "admin", "adminuser", "adminerror"}
 
 // pageExtras are additional template files a page needs.
 var pageExtras = map[string][]string{
@@ -89,6 +89,7 @@ func buildTemplates() map[string]*template.Template {
 // reach strings through {{$.T "key"}}.
 type pageData struct {
 	Username string
+	IsAdmin  bool // show the site admin link (a hint; admin pages check with aio)
 	AssetVer string
 	Lang     string
 	Path     string // current path, for the language switcher's ?next=
@@ -131,6 +132,7 @@ func (a *App) renderStatus(w http.ResponseWriter, r *http.Request, name string, 
 	pd := pageData{Data: data, AssetVer: a.assetVer, Lang: requestLang(r), Path: r.URL.RequestURI()}
 	if u := currentUser(r); u != nil {
 		pd.Username = u.Username
+		pd.IsAdmin = u.AdminHint && a.aio.Enabled()
 	}
 	// Render into a buffer first so a template error becomes a clean 500
 	// instead of a half-written response.
@@ -229,7 +231,7 @@ func (a *App) handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	recordUserCreated(r.Context(), "local")
-	if err := a.startSession(w, r, u.ID, ""); err != nil {
+	if err := a.startSession(w, r, u.ID, "", false); err != nil {
 		internalError(w, "start session", err)
 		return
 	}
@@ -268,7 +270,7 @@ func (a *App) handleLogin(w http.ResponseWriter, r *http.Request) {
 		internalError(w, "login lookup", err)
 		return
 	}
-	if err := a.startSession(w, r, u.ID, ""); err != nil {
+	if err := a.startSession(w, r, u.ID, "", false); err != nil {
 		internalError(w, "start session", err)
 		return
 	}

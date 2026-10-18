@@ -24,6 +24,10 @@ type User struct {
 	ID        string
 	Username  string
 	CreatedAt time.Time
+	AioUserID string // "" for local-only accounts
+	// AdminHint is the session's aio admin status from login, for the nav
+	// only. Admin pages never trust it (see requireAdmin).
+	AdminHint bool
 }
 
 // newToken returns an unguessable, URL-safe token (~26 lowercase chars).
@@ -71,10 +75,10 @@ func (s *Store) UserByUsername(ctx context.Context, username string) (*User, str
 	return u, hash, nil
 }
 
-func (s *Store) CreateSession(ctx context.Context, token, userID string, expires time.Time, idToken string) error {
+func (s *Store) CreateSession(ctx context.Context, token, userID string, expires time.Time, idToken string, adminHint bool) error {
 	_, err := s.pool.Exec(ctx,
-		`INSERT INTO sessions (id, user_id, expires_at, id_token) VALUES ($1, $2, $3, NULLIF($4, ''))`,
-		token, userID, expires, idToken)
+		`INSERT INTO sessions (id, user_id, expires_at, id_token, is_admin_hint) VALUES ($1, $2, $3, NULLIF($4, ''), $5)`,
+		token, userID, expires, idToken, adminHint)
 	return err
 }
 
@@ -89,10 +93,10 @@ func (s *Store) SessionIDToken(ctx context.Context, token string) (string, error
 func (s *Store) UserBySession(ctx context.Context, token string) (*User, error) {
 	u := &User{}
 	err := s.pool.QueryRow(ctx,
-		`SELECT u.id, u.username, u.created_at
+		`SELECT u.id, u.username, u.created_at, COALESCE(u.aio_user_id, ''), s.is_admin_hint
 		 FROM sessions s JOIN users u ON u.id = s.user_id
 		 WHERE s.id = $1 AND s.expires_at > now()`, token,
-	).Scan(&u.ID, &u.Username, &u.CreatedAt)
+	).Scan(&u.ID, &u.Username, &u.CreatedAt, &u.AioUserID, &u.AdminHint)
 	if err != nil {
 		return nil, err
 	}
@@ -169,4 +173,95 @@ func (s *Store) Totals(ctx context.Context) (Totals, error) {
 		(SELECT count(*) FROM rounds)`,
 	).Scan(&t.Users, &t.Tallies, &t.ActiveTallies, &t.Players, &t.Matches, &t.PlayDays)
 	return t, err
+}
+
+// --- Site admin (read-only) ---
+
+// AdminUserRow is one account on the site admin overview.
+type AdminUserRow struct {
+	User         User
+	TallyCount   int        // tallies the user owns or co-runs
+	LastActivity *time.Time // newest change they made (audit log); nil if none
+}
+
+// AdminUsers lists every account, most recently active first.
+func (s *Store) AdminUsers(ctx context.Context) ([]AdminUserRow, error) {
+	rows, err := s.pool.Query(ctx,
+		`SELECT u.id, u.username, u.created_at, COALESCE(u.aio_user_id, ''),
+		        (SELECT COUNT(*) FROM tally_admins ta WHERE ta.user_id = u.id),
+		        (SELECT MAX(al.at) FROM audit_log al WHERE al.actor_id = u.id)
+		 FROM users u
+		 ORDER BY 6 DESC NULLS LAST, u.created_at DESC`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []AdminUserRow
+	for rows.Next() {
+		var r AdminUserRow
+		if err := rows.Scan(&r.User.ID, &r.User.Username, &r.User.CreatedAt, &r.User.AioUserID,
+			&r.TallyCount, &r.LastActivity); err != nil {
+			return nil, err
+		}
+		out = append(out, r)
+	}
+	return out, rows.Err()
+}
+
+// AdminTallyRow is one tally a user owns or co-runs, for the drill-down.
+type AdminTallyRow struct {
+	Tally      Tally
+	Role       string
+	Players    int
+	PlayDays   int
+	Matches    int
+	LastPlayed *time.Time
+}
+
+// AdminTalliesOf lists the tallies a user owns or co-runs, newest first.
+func (s *Store) AdminTalliesOf(ctx context.Context, userID string) ([]AdminTallyRow, error) {
+	rows, err := s.pool.Query(ctx,
+		`SELECT t.id, t.slug, t.name, t.visibility, t.created_at, ta.role,
+		        (SELECT COUNT(*) FROM participants p WHERE p.tally_id = t.id),
+		        (SELECT COUNT(*) FROM rounds r JOIN periods pe ON pe.id = r.period_id WHERE pe.tally_id = t.id),
+		        (SELECT COUNT(*) FROM matches m JOIN periods pe ON pe.id = m.period_id WHERE pe.tally_id = t.id),
+		        (SELECT MAX(r.played_on) FROM rounds r JOIN periods pe ON pe.id = r.period_id WHERE pe.tally_id = t.id)
+		 FROM tally_admins ta JOIN tallies t ON t.id = ta.tally_id
+		 WHERE ta.user_id = $1
+		 ORDER BY t.created_at DESC`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []AdminTallyRow
+	for rows.Next() {
+		var r AdminTallyRow
+		if err := rows.Scan(&r.Tally.ID, &r.Tally.Slug, &r.Tally.Name, &r.Tally.Visibility, &r.Tally.CreatedAt,
+			&r.Role, &r.Players, &r.PlayDays, &r.Matches, &r.LastPlayed); err != nil {
+			return nil, err
+		}
+		out = append(out, r)
+	}
+	return out, rows.Err()
+}
+
+// UserByID returns a user for the admin drill-down; pgx.ErrNoRows if none.
+func (s *Store) UserByID(ctx context.Context, id string) (*User, error) {
+	u := &User{}
+	err := s.pool.QueryRow(ctx,
+		`SELECT id, username, created_at, COALESCE(aio_user_id, '') FROM users WHERE id = $1`, id,
+	).Scan(&u.ID, &u.Username, &u.CreatedAt, &u.AioUserID)
+	if err != nil {
+		return nil, err
+	}
+	return u, nil
+}
+
+// LogAdminView records that an admin opened an admin page. subjectID is the
+// user whose data was shown, "" for the overview.
+func (s *Store) LogAdminView(ctx context.Context, adminID, page, subjectID string) error {
+	_, err := s.pool.Exec(ctx,
+		`INSERT INTO admin_views (admin_id, page, subject_user_id) VALUES ($1, $2, NULLIF($3, '')::uuid)`,
+		adminID, page, subjectID)
+	return err
 }

@@ -176,3 +176,16 @@ ALTER TABLE tallies ADD COLUMN IF NOT EXISTS side_size smallint CHECK (side_size
 ALTER TABLE point_awards ADD COLUMN IF NOT EXISTS round_id uuid REFERENCES rounds(id) ON DELETE CASCADE;
 UPDATE point_awards pa SET round_id = m.round_id FROM matches m WHERE pa.match_id = m.id AND pa.round_id IS NULL;
 CREATE INDEX IF NOT EXISTS point_awards_round_idx ON point_awards (round_id);
+
+-- Site admin pages (RFC-002 in all-in-one): aio decides who is an admin on
+-- every admin request. is_admin_hint is the status at login, used only to show
+-- the link. admin_views records every admin page view (who looked at whose data).
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS is_admin_hint boolean NOT NULL DEFAULT false;
+CREATE TABLE IF NOT EXISTS admin_views (
+    id              bigserial   PRIMARY KEY,
+    admin_id        uuid        NOT NULL REFERENCES users(id),
+    page            text        NOT NULL,
+    subject_user_id uuid        REFERENCES users(id),  -- NULL for the overview
+    viewed_at       timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS admin_views_admin_idx ON admin_views (admin_id, viewed_at DESC);

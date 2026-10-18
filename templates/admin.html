@@ -1,0 +1,29 @@
+{{define "title"}}{{.T "admin.title"}} &mdash; {{.T "app.name"}}{{end}}
+{{define "content"}}
+<h1>{{.T "admin.title"}}</h1>
+<p class="muted">{{.T "admin.lead"}}</p>
+{{if .Data.Users}}
+<section class="card">
+  <div class="tablewrap">
+    <table class="board">
+      <thead>
+        <tr><th>{{.T "admin.col.user"}}</th><th>{{.T "admin.col.joined"}}</th><th class="num">{{.T "admin.col.tallies"}}</th><th>{{.T "admin.col.last_activity"}}</th><th></th></tr>
+      </thead>
+      <tbody>
+        {{range .Data.Users}}
+        <tr>
+          <td>{{.User.Username}}{{if not .User.AioUserID}} <span class="muted small">({{$.T "admin.local_account"}})</span>{{end}}</td>
+          <td>{{$.Date .User.CreatedAt}}</td>
+          <td class="num">{{.TallyCount}}</td>
+          <td>{{if .LastActivity}}{{$.Date .LastActivity}}{{else}}<span class="muted">&mdash;</span>{{end}}</td>
+          <td><a href="/admin/users/{{.User.ID}}">{{$.T "admin.view"}}</a></td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+</section>
+{{else}}
+<p class="muted">{{.T "admin.empty"}}</p>
+{{end}}
+{{end}}
