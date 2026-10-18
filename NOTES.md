@@ -2,7 +2,7 @@
 
 Living plan + backlog so we don't lose context between sessions.
 
-_Last updated: 2026-10-14 (P7 login)_
+_Last updated: 2026-10-18 (P8 site admin)_
 
 > **Status 2026-10-14:** aio's OIDC is live (opan tested it with cashflow) and
 > tally's aio login is built and tested end to end against a local aio. Now:
@@ -111,6 +111,7 @@ given round. Movement arrow = rank after round N vs rank after round N‑1.
 | DOC | User guide: getting started + how to use each feature, in the app (`/panduan`), ID + EN | first version 2026-10-14; opan to review on a phone and revise |
 | P6 | Best‑of‑3 / rubber game where winning matters | later |
 | P7 | Login through aio (`AUTH_PROVIDER=aio`) | ✅ done 2026-10-14 (linking players to accounts: later) |
+| P8 | Read-only site admin pages, admin decided by aio (RFC-002 in all-in-one) | ✅ built 2026-10-18, PR #2 |
 | — | k8s deploy in `homelab/k8s/tally`, domain | when P3 is usable |
 
 ## P1 notes (2026-10-13)
@@ -340,6 +341,27 @@ still in the security backlog.
   tally on the host (port 8091): signup → back logged in, logout ends both
   sessions (next login shows aio's form, not SSO), login with `?next=` in
   English, and an aio `qa_owner` colliding with the local `qa_owner` → 409 page.
+
+## P8 notes: site admin pages (2026-10-18)
+
+- Design: all-in-one RFC-002 / ADR-O10. On **every** request to `/admin` and
+  `/admin/users/{id}`, tally asks aio `GET /api/v1/oidc/users/{sub}/status` with
+  the OIDC client id + secret, no cache, so removal or blocking in aio applies on
+  the next request. 404 for non-admins, local accounts and `AUTH_PROVIDER=local`;
+  503 when aio can't be reached (fails closed), rest of tally unaffected.
+- Called "Site admin" / "Admin situs" so it isn't confused with a tally's own
+  admins. Overview: accounts, tallies run, last activity (audit log). User page:
+  tallies with role, visibility, players, play days, matches, last played;
+  private tallies listed but not linked.
+- `sessions.is_admin_hint` (status at login) only shows the nav link.
+  `admin_views` records every admin page view. Metric `tally.admin.checks{result}`.
+- `AIO_INTERNAL_URL` (optional) sends the check to aio's cluster address;
+  empty uses `AIO_ISSUER`.
+- `sub` is parsed as a UUID before it goes into the URL; the two gosec G704
+  lines carry `#nosec` with the reason (host is config, path is a parsed UUID).
+- Tested end to end against a local aio + Postgres (curl-scripted aio login):
+  link only for the admin, 404 for others, live demotion, 503 with aio down,
+  audit rows; screenshots taken with Playwright.
 
 ## Open questions
 
