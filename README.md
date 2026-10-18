@@ -53,6 +53,7 @@ TALLY_TEST_DATABASE_URL='postgres://tally:tally@localhost:5433/tally_test?sslmod
 | `AIO_CLIENT_SECRET` | | printed once by `oidc:client:create`; keep it in a Secret |
 | `AIO_REDIRECT_URL` | | `https://<tally host>/auth/callback` |
 | `AIO_POST_LOGOUT_URL` | optional | `https://<tally host>/`, where aio sends the browser after logout |
+| `AIO_INTERNAL_URL` | `AIO_ISSUER` | where tally asks aio, server to server, whether a user is a site admin; in the cluster use aio's Service, e.g. `http://all-in-one.app.svc.cluster.local` |
 
 The `AIO_*` settings are required when `AUTH_PROVIDER=aio`; a missing one stops
 tally at startup instead of silently falling back to local passwords.
@@ -97,6 +98,22 @@ AUTH_PROVIDER=aio AIO_ISSUER=http://localhost:18080 ...`). The issuer must be
 the same URL for the browser and for tally, which is why tally runs on the host
 here rather than in Docker Compose.
 
+### Site admin pages
+
+`GET /admin` (every account, how many tallies they run, last activity) and
+`GET /admin/users/{id}` (one account's tallies: role, visibility, players, play
+days, matches, last played). Read-only, and only with `AUTH_PROVIDER=aio`. This
+is the site admin, unrelated to a tally's own admins.
+
+All-in-one decides who is a site admin (its `admin` group), on **every** admin
+request (RFC-002 in all-in-one): tally calls `GET /api/v1/oidc/users/{sub}/status`
+with `AIO_CLIENT_ID` and `AIO_CLIENT_SECRET`, with no cache, so someone removed
+or blocked in aio loses access on their next request. Everyone else gets 404;
+if aio can't be reached the pages answer 503 (fails closed) while the rest of
+tally keeps working. The **Site admin** link in the menu uses the status at
+login and is display-only. Private tallies are listed but not linked. Every
+view is recorded in `admin_views` (admin, page, whose data).
+
 ## Metrics
 
 Metrics are pushed over OTLP/HTTP every 15s when `OTEL_EXPORTER_OTLP_ENDPOINT`
@@ -124,6 +141,7 @@ Names as they appear in VictoriaMetrics / Grafana (label `job="tally"`):
 | `tally_play_days_started_total` | counter | | Play days started |
 | `tally_match_events_total` | counter | `action` = scheduled, scored, added, edited, deleted, cancelled | Match activity |
 | `tally_players_added_total`, `tally_awards_recorded_total` | counter | | Players added, extra-point entries |
+| `tally_admin_checks_total` | counter | `result` = admin, not_admin, local_account, error | Site admin page requests by aio's answer (`error`: aio unreachable or unexpected reply) |
 
 A ready-made Grafana dashboard for these metrics is kept as a Kubernetes
 ConfigMap (`tally-dashboard`, for Grafana's dashboard sidecar) alongside the

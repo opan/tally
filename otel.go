@@ -31,6 +31,7 @@ var (
 	matchEvents  metric.Int64Counter // {action: scheduled|scored|added|edited|deleted|cancelled}
 	awardsMade   metric.Int64Counter
 	playersAdded metric.Int64Counter
+	adminChecks  metric.Int64Counter // {result: admin|not_admin|local_account|error}
 )
 
 // initOTel wires up OTLP metric export (push) to the collector. Endpoint,
@@ -88,6 +89,7 @@ func initOTel(ctx context.Context) (shutdown func(context.Context) error, enable
 		{&matchEvents, "tally.match.events", "Match changes, by action."},
 		{&awardsMade, "tally.awards.recorded", "Extra-point entries recorded (one per player)."},
 		{&playersAdded, "tally.players.added", "Players added to tallies."},
+		{&adminChecks, "tally.admin.checks", "Site admin page requests, by the result of asking all-in-one."},
 	}
 	for _, c := range counters {
 		if *c.dst, err = meter.Int64Counter(c.name, metric.WithDescription(c.desc)); err != nil {
@@ -203,4 +205,8 @@ func registerBusinessMetrics(store *Store) {
 	if err != nil {
 		log.Printf("otel business metrics: %v", err)
 	}
+}
+
+func recordAdminCheck(ctx context.Context, result string) {
+	add(ctx, adminChecks, 1, attribute.String("result", result))
 }

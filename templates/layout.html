@@ -17,6 +17,7 @@
           <a href="/lang/en?next={{.Path}}" {{if eq .Lang "en"}}class="on" aria-current="true"{{end}}>EN</a>
         </span>
         {{if .Username}}
+          {{if .IsAdmin}}<a href="/admin">{{.T "nav.admin"}}</a>{{end}}
           <span class="who" title="{{.Username}}">{{.Username}}</span>
           <form method="post" action="/logout" class="inline"><button class="linkbtn" type="submit">{{.T "nav.logout"}}</button></form>
         {{else}}

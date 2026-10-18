@@ -24,4 +24,6 @@ var (
 	scoringSrc string
 	//go:embed aioauth.go
 	aioauthSrc string
+	//go:embed admin.go
+	adminSrc string
 )
