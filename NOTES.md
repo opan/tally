@@ -112,6 +112,7 @@ given round. Movement arrow = rank after round N vs rank after round N‑1.
 | P6 | Best‑of‑3 / rubber game where winning matters | later |
 | P7 | Login through aio (`AUTH_PROVIDER=aio`) | ✅ done 2026-10-14 (linking players to accounts: later) |
 | P8 | Read-only site admin pages, admin decided by aio (RFC-002 in all-in-one) | ✅ built 2026-10-18, PR #2 |
+| P9 | Forgot / change password and email links to aio (RFC-003 in all-in-one) | ✅ built 2026-10-27, waits for all-in-one#36 |
 | — | k8s deploy in `homelab/k8s/tally`, domain | when P3 is usable |
 
 ## P1 notes (2026-10-13)
@@ -362,6 +363,23 @@ still in the security backlog.
 - Tested end to end against a local aio + Postgres (curl-scripted aio login):
   link only for the admin, 404 for others, live demotion, 503 with aio down,
   audit rows; screenshots taken with Playwright.
+
+## P9 notes: password reset links (2026-10-27)
+
+- all-in-one RFC-003 (password reset by email) keeps every password form on
+  aio; apps link to its pages. "Lupa kata sandi?" on the landing page opens
+  aio's `/forgot-password`, and the new `/akun` page ("Akun" in the nav, aio
+  login only) links to aio's `/account` ("Ubah kata sandi & email").
+- Links carry `client_id=tally`, `return_to` (tally's origin from
+  `AIO_REDIRECT_URL` + `/login` or `/akun`; aio drops it unless it matches a
+  registered URI) and `ui_locales` from the current language.
+- Before leaving, tally shows "you'll be taken to <aio host>, where your
+  account is managed"; the host comes from `AIO_ISSUER` (RFC-003 §6.8).
+- Guide: step 1 names aio's address and asks for an email; two FAQ entries
+  (forgot password, add email / change password), aio login only. The guide
+  now reads `pageData.Aio` instead of its own flag.
+- Needs aio with RFC-003 deployed; until then the links lead to aio pages that
+  don't exist yet, so merge after all-in-one#36 is live.
 
 ## Open questions
 

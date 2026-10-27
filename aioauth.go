@@ -42,6 +42,42 @@ type AioAuth struct {
 	verifier      *oidc.IDTokenVerifier
 	endSessionURL string
 	ready         bool
+
+	links *AioLinks
+}
+
+// AioLinks point to aio's own pages for forgetting and changing a password or
+// email (RFC-003 §6.7). The forms stay on aio, so passwords are only ever
+// typed there; client_id brands the pages as tally and return_to (checked by
+// aio against the registered URIs) brings users back.
+type AioLinks struct {
+	Host     string // aio's address, named before users leave (RFC-003 §6.8)
+	issuer   string
+	clientID string
+	self     string // tally's own origin
+}
+
+// newAioLinks takes tally's origin from the redirect URL that aio already has
+// registered.
+func newAioLinks(issuer, clientID, redirectURL string) *AioLinks {
+	iu, err := url.Parse(issuer)
+	if err != nil || iu.Host == "" {
+		return nil
+	}
+	ru, err := url.Parse(redirectURL)
+	if err != nil || ru.Host == "" {
+		return nil
+	}
+	return &AioLinks{Host: iu.Host, issuer: issuer, clientID: clientID, self: ru.Scheme + "://" + ru.Host}
+}
+
+// ForgotURL and AccountURL open aio's pages in the user's language.
+func (l *AioLinks) ForgotURL(lang string) string  { return l.link("/forgot-password", "/login", lang) }
+func (l *AioLinks) AccountURL(lang string) string { return l.link("/account", "/akun", lang) }
+
+func (l *AioLinks) link(page, returnTo, lang string) string {
+	q := url.Values{"client_id": {l.clientID}, "return_to": {l.self + returnTo}, "ui_locales": {lang}}
+	return l.issuer + page + "?" + q.Encode()
 }
 
 const (
@@ -81,10 +117,19 @@ func NewAioAuthFromEnv() (*AioAuth, error) {
 	if len(missing) > 0 {
 		return nil, fmt.Errorf("AUTH_PROVIDER=aio requires %s", strings.Join(missing, ", "))
 	}
+	a.links = newAioLinks(a.issuer, a.clientID, a.redirectURL)
 	return a, nil
 }
 
 func (a *AioAuth) Enabled() bool { return a != nil && a.enabled }
+
+// Links returns the account page links, nil when aio is disabled.
+func (a *AioAuth) Links() *AioLinks {
+	if !a.Enabled() {
+		return nil
+	}
+	return a.links
+}
 
 // origin is aio's scheme://host[:port] ("" when disabled), for the CSP.
 func (a *AioAuth) origin() string {

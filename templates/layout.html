@@ -19,6 +19,7 @@
         {{if .Username}}
           {{if .IsAdmin}}<a href="/admin">{{.T "nav.admin"}}</a>{{end}}
           <span class="who" title="{{.Username}}">{{.Username}}</span>
+          {{if .Aio}}<a href="/akun">{{.T "nav.account"}}</a>{{end}}
           <form method="post" action="/logout" class="inline"><button class="linkbtn" type="submit">{{.T "nav.logout"}}</button></form>
         {{else}}
           <a href="/login">{{.T "nav.login"}}</a>

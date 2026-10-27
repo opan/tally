@@ -4,8 +4,10 @@
   <p>Five steps from nothing to your first recorded match.</p>
   <ol class="gsteps">
     <li><strong>Sign up or log in.</strong>
-      {{if .Data.Aio}}Tap <em>Sign up</em> or <em>Log in</em>. You go to All-in-one's page, one account for Tally
-      and other apps, and come back to Tally when you're done.
+      {{if .Aio}}Tap <em>Sign up</em> or <em>Log in</em>. You go to All-in-one's page at
+      <strong>{{.Aio.Host}}</strong>, one account for Tally and other apps, and come back to Tally when you're
+      done. Only enter your password on that address. Add your email too (see <a href="#faq">FAQ</a>), so you
+      can reset your password yourself.
       {{else}}Tap <em>Sign up</em> and pick a username and password.{{end}}
       Accounts are only for the <strong>admins</strong> who keep score. Players don't need one.</li>
     <li><strong>Create a tally.</strong> On <em>My tallies</em>, enter a name (e.g. <em>Sunday Smashers</em>),
@@ -157,7 +159,7 @@
   <h3>New season</h3>
   <p>On the <em>Seasons</em> tab. Old seasons are kept and can be viewed from the <em>Season</em> picker on the leaderboard.</p>
   <h3>Other admins</h3>
-  <p>In <em>Settings → Admins</em>, type their username. They have to {{if .Data.Aio}}log in to Tally{{else}}sign up{{end}}
+  <p>In <em>Settings → Admins</em>, type their username. They have to {{if .Aio}}log in to Tally{{else}}sign up{{end}}
     once first. Admins can manage players, seasons, and matches; only the owner can add or remove admins.</p>
   <h3>Who can see it</h3>
   <p><strong>Anyone with the link</strong> (the default) or <strong>admins only</strong>.</p>
@@ -176,6 +178,12 @@
 
 <section class="card gsec" id="faq">
   <h2>9. FAQ</h2>
+  {{if .Aio}}
+  <details><summary>Forgot your password?</summary>
+    <p>Tap <a href="{{.Aio.ForgotURL .Lang}}">Forgot password?</a> on the home page. If your email is confirmed, a temporary password is sent there (it works for 30 minutes). Log in with it, then choose a new password. Your old password keeps working until then. No email yet? That page explains how to ask the admin for help.</p></details>
+  <details><summary>How do I add an email or change my password?</summary>
+    <p>Open the <a href="/akun">Account</a> menu and tap <em>Change password &amp; email</em>. The page is on <strong>{{.Aio.Host}}</strong> because your account is managed by All-in-one. After adding an email, click the confirmation link sent to it.</p></details>
+  {{end}}
   <details><summary>Why can't I delete a player?</summary>
     <p>They already have matches or points. Deactivate them instead: their name leaves the pickers, and the history stays correct.</p></details>
   <details><summary>I entered a wrong score. How do I fix it?</summary>
