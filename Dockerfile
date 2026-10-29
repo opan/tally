@@ -1,6 +1,6 @@
 # Build with the latest Go patch release: older 1.26.x have net/http fixes
 # tally needs (govulncheck). Dependabot bumps this tag.
-FROM golang:1.27.2-alpine AS build
+FROM golang:1.27.3-alpine AS build
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
