@@ -7,6 +7,10 @@
     <a class="btn primary" href="/register">{{.T "landing.cta_register"}}</a>
     <a class="btn ghost" href="/login">{{.T "landing.cta_login"}}</a>
   </div>
+  {{if .Aio}}
+  <p class="small"><a href="{{.Aio.ForgotURL .Lang}}">{{.T "account.forgot"}}</a></p>
+  {{template "aioleaving" .}}
+  {{end}}
   <p class="small"><a href="/panduan">{{.T "guide.read"}}</a></p>
 </section>
 <ol class="steps">

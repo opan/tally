@@ -4,8 +4,10 @@
   <p>Lima langkah dari nol sampai pertandingan pertama tercatat.</p>
   <ol class="gsteps">
     <li><strong>Daftar atau masuk.</strong>
-      {{if .Data.Aio}}Tekan <em>Daftar</em> atau <em>Masuk</em>. Anda dibawa ke halaman All-in-one, satu akun
-      untuk Tally dan aplikasi lain, lalu kembali ke Tally setelah selesai.
+      {{if .Aio}}Tekan <em>Daftar</em> atau <em>Masuk</em>. Anda dibawa ke halaman All-in-one di
+      <strong>{{.Aio.Host}}</strong>, satu akun untuk Tally dan aplikasi lain, lalu kembali ke Tally setelah
+      selesai. Masukkan kata sandi hanya di alamat itu. Isi juga email Anda (lihat <a href="#faq">Tanya
+      jawab</a>), supaya bisa mengatur ulang kata sandi sendiri.
       {{else}}Tekan <em>Daftar</em>, pilih nama pengguna dan kata sandi.{{end}}
       Akun hanya untuk <strong>admin</strong> yang mencatat. Pemain tidak perlu akun.</li>
     <li><strong>Buat tally.</strong> Di halaman <em>Tally saya</em>, isi nama (mis. <em>Badminton Sampai
@@ -155,7 +157,7 @@
   <h3>Musim baru</h3>
   <p>Di tab <em>Musim</em>. Musim lama tetap tersimpan dan bisa dilihat dari pilihan <em>Musim</em> di papan peringkat.</p>
   <h3>Admin lain</h3>
-  <p>Di <em>Setelan → Admin</em>, tulis nama penggunanya. Orang itu harus {{if .Data.Aio}}masuk ke Tally{{else}}daftar{{end}}
+  <p>Di <em>Setelan → Admin</em>, tulis nama penggunanya. Orang itu harus {{if .Aio}}masuk ke Tally{{else}}daftar{{end}}
     sekali dulu. Admin bisa mengelola pemain, musim, dan pertandingan; hanya pemilik yang bisa menambah atau menghapus admin.</p>
   <h3>Siapa yang bisa melihat</h3>
   <p><strong>Siapa saja yang punya tautan</strong> (bawaan) atau <strong>hanya admin</strong>.</p>
@@ -174,6 +176,12 @@
 
 <section class="card gsec" id="faq">
   <h2>9. Tanya jawab</h2>
+  {{if .Aio}}
+  <details><summary>Lupa kata sandi?</summary>
+    <p>Tekan <a href="{{.Aio.ForgotURL .Lang}}">Lupa kata sandi?</a> di beranda. Jika email Anda sudah dikonfirmasi, kata sandi sementara dikirim ke sana (berlaku 30 menit). Masuk dengan kata sandi itu, lalu buat kata sandi baru. Kata sandi lama tetap bisa dipakai sampai saat itu. Belum punya email? Halaman itu menjelaskan cara meminta bantuan admin.</p></details>
+  <details><summary>Bagaimana menambah email atau mengganti kata sandi?</summary>
+    <p>Buka menu <a href="/akun">Akun</a>, lalu tekan <em>Ubah kata sandi &amp; email</em>. Halamannya ada di <strong>{{.Aio.Host}}</strong> karena akun Anda dikelola oleh All-in-one. Setelah menambah email, klik tautan konfirmasi yang dikirim ke email itu.</p></details>
+  {{end}}
   <details><summary>Kenapa pemain tidak bisa dihapus?</summary>
     <p>Pemain itu sudah punya pertandingan atau poin. Nonaktifkan saja: namanya hilang dari pilihan, tapi riwayatnya tetap benar.</p></details>
   <details><summary>Salah input skor, bagaimana memperbaikinya?</summary>

@@ -32,7 +32,7 @@ func limitBody(w http.ResponseWriter, r *http.Request, max int64) {
 	r.Body = http.MaxBytesReader(w, r.Body, max)
 }
 
-var pageNames = []string{"landing", "login", "register", "autherror", "panduan", "dashboard", "notfound", "tally", "players", "periods", "period_edit", "settings", "play", "round", "match_edit", "poster", "player", "admin", "adminuser", "adminerror"}
+var pageNames = []string{"landing", "login", "register", "autherror", "panduan", "dashboard", "notfound", "tally", "players", "periods", "period_edit", "settings", "play", "round", "match_edit", "poster", "player", "admin", "adminuser", "adminerror", "akun"}
 
 // pageExtras are additional template files a page needs.
 var pageExtras = map[string][]string{
@@ -89,7 +89,8 @@ func buildTemplates() map[string]*template.Template {
 // reach strings through {{$.T "key"}}.
 type pageData struct {
 	Username string
-	IsAdmin  bool // show the site admin link (a hint; admin pages check with aio)
+	IsAdmin  bool      // show the site admin link (a hint; admin pages check with aio)
+	Aio      *AioLinks // aio's account pages; nil with local login
 	AssetVer string
 	Lang     string
 	Path     string // current path, for the language switcher's ?next=
@@ -129,7 +130,7 @@ func (a *App) renderStatus(w http.ResponseWriter, r *http.Request, name string, 
 		http.Error(w, "template not found: "+name, http.StatusInternalServerError)
 		return
 	}
-	pd := pageData{Data: data, AssetVer: a.assetVer, Lang: requestLang(r), Path: r.URL.RequestURI()}
+	pd := pageData{Data: data, Aio: a.aio.Links(), AssetVer: a.assetVer, Lang: requestLang(r), Path: r.URL.RequestURI()}
 	if u := currentUser(r); u != nil {
 		pd.Username = u.Username
 		pd.IsAdmin = u.AdminHint && a.aio.Enabled()
@@ -166,13 +167,26 @@ func (a *App) handleHome(w http.ResponseWriter, r *http.Request) {
 
 // --- User guide ---
 
+// The guide also reads pageData.Aio: login goes through All-in-one.
 type guideVM struct {
-	Aio    bool   // login goes through All-in-one: the guide says so
 	ImgVer string // cache-buster for the screenshots
 }
 
 func (a *App) handleGuide(w http.ResponseWriter, r *http.Request) {
-	a.render(w, r, "panduan", guideVM{Aio: a.aio.Enabled(), ImgVer: a.guideVer})
+	a.render(w, r, "panduan", guideVM{ImgVer: a.guideVer})
+}
+
+// handleAccount explains that the account lives in all-in-one and links to
+// aio's password and email page. With local login there is nothing to manage.
+func (a *App) handleAccount(w http.ResponseWriter, r *http.Request) {
+	if a.aio.Links() == nil {
+		a.notFound(w, r)
+		return
+	}
+	if a.requireUser(w, r) == nil {
+		return
+	}
+	a.render(w, r, "akun", nil)
 }
 
 // --- Auth ---

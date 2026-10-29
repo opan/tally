@@ -361,5 +361,13 @@
   "admin.no_tallies": "This user doesn't run any tally.",
   "admin.private_note": "Private tallies are listed but can't be opened from here.",
   "admin.unavailable.title": "Site admin unavailable",
-  "admin.unavailable.body": "Admin status can't be checked because all-in-one can't be reached right now. Try again in a moment."
+  "admin.unavailable.body": "Admin status can't be checked because all-in-one can't be reached right now. Try again in a moment.",
+  "nav.account": "Account",
+  "account.title": "Account",
+  "account.signed_in": "You're logged in as %s.",
+  "account.managed": "Your Tally account is managed by All-in-one, so your password and email are changed there, not in Tally.",
+  "account.add_email": "Add an email so you can reset your password yourself if you forget it.",
+  "account.change": "Change password & email",
+  "account.forgot": "Forgot password?",
+  "account.leaving": "🔒 You'll be taken to %s, where your account is managed. Only enter your password on that address."
 }

@@ -1,0 +1,13 @@
+{{define "title"}}{{.T "account.title"}} &mdash; {{.T "app.name"}}{{end}}
+{{define "content"}}
+<section class="card authcard">
+  <h1>{{.T "account.title"}}</h1>
+  <p>{{.T "account.signed_in" .Username}}</p>
+  <p>{{.T "account.managed"}}</p>
+  <p class="muted">{{.T "account.add_email"}}</p>
+  <div class="actions">
+    <a class="btn primary" href="{{.Aio.AccountURL .Lang}}">{{.T "account.change"}}</a>
+  </div>
+  {{template "aioleaving" .}}
+</section>
+{{end}}

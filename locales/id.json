@@ -361,5 +361,13 @@
   "admin.no_tallies": "Pengguna ini belum mengelola tally.",
   "admin.private_note": "Tally privat ditampilkan, tetapi tidak bisa dibuka dari sini.",
   "admin.unavailable.title": "Admin situs tidak tersedia",
-  "admin.unavailable.body": "Status admin tidak bisa diperiksa karena all-in-one sedang tidak terjangkau. Coba lagi beberapa saat lagi."
+  "admin.unavailable.body": "Status admin tidak bisa diperiksa karena all-in-one sedang tidak terjangkau. Coba lagi beberapa saat lagi.",
+  "nav.account": "Akun",
+  "account.title": "Akun",
+  "account.signed_in": "Anda masuk sebagai %s.",
+  "account.managed": "Akun Tally Anda dikelola oleh All-in-one, jadi kata sandi dan email diubah di sana, bukan di Tally.",
+  "account.add_email": "Tambahkan email agar Anda bisa mengatur ulang kata sandi sendiri jika lupa.",
+  "account.change": "Ubah kata sandi & email",
+  "account.forgot": "Lupa kata sandi?",
+  "account.leaving": "🔒 Anda akan dibawa ke %s, tempat akun Anda dikelola. Masukkan kata sandi hanya di alamat itu."
 }

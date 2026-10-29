@@ -194,3 +194,60 @@ func TestLocalAuthRedirectsToAio(t *testing.T) {
 		}
 	}
 }
+
+func TestAioLinks(t *testing.T) {
+	l := newAioLinks("https://auth.example.com", "tally", "https://tally.example.com/auth/callback")
+	if l == nil || l.Host != "auth.example.com" {
+		t.Fatalf("got %+v", l)
+	}
+	for _, c := range []struct{ link, path, returnTo, lang string }{
+		{l.ForgotURL("id"), "/forgot-password", "https://tally.example.com/login", "id"},
+		{l.AccountURL("en"), "/account", "https://tally.example.com/akun", "en"},
+	} {
+		u, err := url.Parse(c.link)
+		if err != nil {
+			t.Fatal(err)
+		}
+		q := u.Query()
+		if u.Host != "auth.example.com" || u.Path != c.path || q.Get("client_id") != "tally" ||
+			q.Get("return_to") != c.returnTo || q.Get("ui_locales") != c.lang {
+			t.Errorf("unexpected link %s", c.link)
+		}
+	}
+	if (&AioAuth{links: l}).Links() != nil {
+		t.Error("no links while aio is disabled")
+	}
+}
+
+func TestAccountLinksOnlyWithAio(t *testing.T) {
+	tmpl := buildTemplates()
+	links := newAioLinks("https://auth.example.com", "tally", "https://tally.example.com/auth/callback")
+	for _, c := range []struct {
+		name    string
+		pd      pageData
+		want    []string
+		notWant []string
+	}{
+		{"landing", pageData{Lang: "id", Aio: links}, []string{"Lupa kata sandi?", "/forgot-password?", "auth.example.com"}, nil},
+		{"landing", pageData{Lang: "en"}, nil, []string{"Forgot password?"}},
+		{"akun", pageData{Lang: "en", Username: "budi", Aio: links}, []string{"budi", "/account?", "ui_locales=en", `href="/akun"`, "auth.example.com"}, nil},
+		{"panduan", pageData{Lang: "id", Aio: links, Data: guideVM{}}, []string{"Lupa kata sandi?", "auth.example.com"}, nil},
+		{"panduan", pageData{Lang: "en", Data: guideVM{}}, nil, []string{"Forgot your password?"}},
+	} {
+		var buf strings.Builder
+		if err := tmpl[c.name].ExecuteTemplate(&buf, "layout", c.pd); err != nil {
+			t.Fatal(err)
+		}
+		out := buf.String()
+		for _, s := range c.want {
+			if !strings.Contains(out, s) {
+				t.Errorf("%s/%s (aio=%v): missing %q", c.name, c.pd.Lang, c.pd.Aio != nil, s)
+			}
+		}
+		for _, s := range c.notWant {
+			if strings.Contains(out, s) {
+				t.Errorf("%s/%s (aio=%v): must not show %q", c.name, c.pd.Lang, c.pd.Aio != nil, s)
+			}
+		}
+	}
+}

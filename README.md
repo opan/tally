@@ -67,6 +67,14 @@ logged in to aio goes straight through (single sign-on). **Keluar** ends both
 the tally and the aio session. `POST /login` and `POST /register` redirect to
 aio.
 
+Passwords and email are changed and reset on aio too (all-in-one RFC-003).
+**Lupa kata sandi?** on the home page opens aio's `/forgot-password`, and
+**Akun** (`GET /akun`, logged in) links to aio's `/account`; both pass
+`client_id`, `return_to` (tally's origin, from `AIO_REDIRECT_URL`) and
+`ui_locales`, so aio shows them as tally and links back. Before users leave,
+tally names aio's address (from `AIO_ISSUER`) so they know where their password
+belongs.
+
 How it works (same as cashflow's `aioauth.go`): authorization code + PKCE +
 nonce. State, nonce, and the PKCE verifier sit in a 10-minute `tally_oidc`
 cookie. The ID token is verified (signature, issuer, audience, expiry, nonce),
