@@ -140,11 +140,11 @@ The year (`2026`) and month (`OCT`) sit in column B above the blocks.
 the sheet already has mistakes:
 
 - One running total is **10 points short** (722 + 140 written as 852).
-- A **`-1`** in the 7th slot of one W1 match for four players. It means **"not played"**
-  (opan), yet three of the four subtotals subtracted it.
-- Two scores of **43** in one W1 match (typo, or play went past 42). Tally accepts 43.
-- Every play day balances: as many winning scores (42, or 43) as losing ones, so every
-  recorded match was played to the end.
+- One W1 match went to **deuce, 43–41**. The club's rule caps a score at **42**, so the
+  sheet adds a **`-1`** in the 7th slot for all four players. Three of the four subtotals
+  include it, one doesn't. Confirmed by the club: the `-1` can be ignored.
+- Every play day balances: as many winning scores (42, or the 43 above) as losing ones,
+  so every recorded match was played to the end.
 
 **What it tells us about the UX:**
 
@@ -208,7 +208,8 @@ Ideas from §1.1 and §4.1, **ranked below the first slice** (§6, §7). They st
 8. **Points entry and matches both stay** on the play-day page. The page must make it obvious
    which is which and how to move between them (§7.2).
 9. **Several play days per week**, up to 7 (one per date), like `W4A` and `W4B`.
-10. **`-1` in the sheet means "not played"**: no entry.
+10. **A score is at most 42** (the season's target; the club plays no points past it). The
+    sheet's `-1` was a deuce correction and is ignored.
 11. **Backlog:** linking a player in the list to a real tally user (§9).
 
 ## 7. First slice: points sheet (proposed design)
@@ -249,7 +250,8 @@ Two clearly named parts, with a switch at the top of the page:
   - **Player:** a text input bound to a `<datalist>` of the tally's players. It drops down on
     tap and narrows as you type. Native HTML, no script, so it fits the strict CSP and works on
     phones.
-  - **Points:** a numeric input (`inputmode="numeric"`).
+  - **Points:** a numeric input (`inputmode="numeric"`), from 0 up to the season's target
+    (42). A higher number is refused with a clear message (§6.10).
   - **Tambah** saves one entry and puts the cursor back in *Player* for the next one.
     It uses the existing double-submit guard.
   - A name that matches no player is not saved silently: the form asks "add new player
@@ -277,8 +279,9 @@ in the grid, on the board's play-day picker and on the poster.
   fetching in this slice: the server would have to fetch URLs it's given, which needs SSRF care.
 - **Parsing** finds the block headers (date cells like `Sun, 4 Oct`, with year and month from
   column B), takes slot columns from the numbered headers up to `SubTot`, and player names
-  from column A. `-`, blanks and **`-1` (not played)** mean no entry. `SubTot`, `Total`, `Rank`
-  and `Movement` are ignored, then recomputed.
+  from column A. `-`, blanks and **`-1`** (the old deuce correction) mean no entry. Scores
+  above the target (`43`) are **capped at 42**. `SubTot`, `Total`, `Rank` and `Movement` are
+  ignored, then recomputed.
 - A block with **more than 7 slot columns**, or a player with more than 7 scores in a day, is
   shown as an error in the preview and nothing is imported until it's fixed.
 - **Preview before anything is saved:**
@@ -286,8 +289,8 @@ in the grid, on the board's play-day picker and on the poster.
   - play days that will be created, with their week labels;
   - number of entries per play day;
   - **mismatches** between the sheet's typed totals and the recomputed ones (e.g. the 10-point
-    gap, and the subtotals that subtracted `-1`);
-  - scores above the season's target (`43`): kept, listed so the admin can check them;
+    gap, and the subtotals that included the `-1`);
+  - every score capped from above 42 down to 42, and every `-1` ignored, so the admin can check them;
   - if the play days fall outside the season's dates, an option to extend the season.
 - **Confirm** writes everything in one transaction and records it in the audit log.
 - **Re-running** is allowed: play days that already have entries are skipped unless the admin
@@ -302,8 +305,8 @@ and saving checks that every play day still falls inside. No change in this slic
 
 ## 8. Open questions
 
-Answered 2026-10-29 (now in §6): what `-1` means, the cap per play day, who sees the sheet
-view, how season dates are set, and whether points and matches both show.
+Answered 2026-10-29 (now in §6): what `-1` means and the 42-point cap, the cap per play day,
+who sees the sheet view, how season dates are set, and whether points and matches both show.
 
 1. **Money:** keep fees/memberships out of tally, link tally to the cashflow app (both log in
    through aio), or add only a simple *paid* tick at check-in?
@@ -318,6 +321,8 @@ view, how season dates are set, and whether points and matches both show.
 - **Link a player to a tally user** (`participants.user_id` already exists), so players can
   see "my matches" and get notified. From §6.11.
 - A setting to raise the 7-matches-per-play-day cap.
+- A season option "no deuce" so **match** scores are also capped at the target. Today match
+  entry accepts deuce scores (e.g. 43–41, or 22–20 in 21-point games) for other clubs.
 - Recording matches (pairs, winner) as the main way of entering points, for clubs that want it.
 - The §5 directions, re-ranked after the first slice ships.
 
