@@ -8,7 +8,7 @@
 
 ## Complexity score: **5 / 10** (first slice, §7)
 
-Points entered per player, a spreadsheet-style view, and an import of the club's sheet.
+Points entered per player, a clearer play-day page, an admin sheet view, and an import of the club's sheet.
 Small schema change (entry kind and order on `point_awards`, a play-day label); the XLSX
 import is the largest part. The live-night items in §5.1 come later and would score higher.
 
@@ -140,8 +140,8 @@ The year (`2026`) and month (`OCT`) sit in column B above the blocks.
 the sheet already has mistakes:
 
 - One running total is **10 points short** (722 + 140 written as 852).
-- A **`-1`** in the 7th slot of one W1 match for four players. Three of their subtotals include it, one doesn't.
-  Meaning unknown: a penalty, or a "not played" mark?
+- A **`-1`** in the 7th slot of one W1 match for four players. It means **"not played"**
+  (opan), yet three of the four subtotals subtracted it.
 - Two scores of **43** in one W1 match (typo, or play went past 42).
 - W1 has 30 winning scores (42) against 38 others: some matches ended with nobody at 42
   (court time ran out). Tally already accepts that, and accepts 43.
@@ -157,7 +157,7 @@ the sheet already has mistakes:
    week after week. Tally shows totals; detail is a tap away on the player page.
 4. **The club counts weeks of the month, not play days.** Two play days in week 4 are
    `W4A` and `W4B`; tally's "Minggu #N" would call them #4 and #5.
-5. **The hard-coded 7 slots** is a limit of the sheet, not a rule: several players hit 7.
+5. **7 slots per play day**: several players hit 7. Kept as the cap for now (§6.3).
 6. **Top 10 with movement** is what they share, which matches tally's poster.
 
 ## 5. Candidate directions
@@ -196,15 +196,20 @@ Ideas from §1.1 and §4.1, **ranked below the first slice** (§6, §7). They st
    **lower priority** and stays optional.
 2. **Keep the sheet's format:** players × play days, a score per match, subtotal, running
    total, rank, movement.
-3. **No fixed number of matches per player per day.** The sheet's 7 slots are its limit,
-   not the club's rule.
+3. **At most 7 matches per player per play day**, as in the sheet, for now. A setting can
+   raise it later if a club needs more.
 4. **Backfill from the sheet, then switch.** The admin imports the existing sheet once; after
    that, points are entered in tally directly and the sheet is retired.
-5. **Season dates stay editable** by the admin, e.g. from the first week of October to the
-   fourth week of December.
+5. **Season dates are picked with the date pickers** when creating or editing a season (e.g.
+   early October to late December). Already supported; nothing to add.
 6. **Picking a player** when entering points is a dropdown that also accepts typing, with
    autocomplete on the name.
-7. **Backlog:** linking a player in the list to a real tally user (§9).
+7. **The sheet view is for admins only.** Players keep the board, player pages and poster.
+8. **Points entry and matches both stay** on the play-day page. The page must make it obvious
+   which is which and how to move between them (§7.2).
+9. **Several play days per week**, up to 7 (one per date), like `W4A` and `W4B`.
+10. **`-1` in the sheet means "not played"**: no entry.
+11. **Backlog:** linking a player in the list to a real tally user (§9).
 
 ## 7. First slice: points sheet (proposed design)
 
@@ -218,14 +223,29 @@ day (`round_id`) without a match (`match_id IS NULL`, today used for extra point
     the average on the board).
   - `extra`: today's bonus/penalty. Changes the total, not "played".
   - Match-derived awards (`match_id` set) keep working and count as played, as now.
-- Add `seq smallint` for the slot order within a player's play day (1, 2, 3, … no upper
-  limit in the schema; a sanity cap in the form, see open question 6).
+- Add `seq smallint CHECK (seq BETWEEN 1 AND 7)` for the slot order within a player's play
+  day. The cap of 7 (§6.3) counts **all** of a player's matches that day: points-only entries
+  plus recorded matches.
 - Totals, rank and movement are **always computed**, never stored or typed. That removes the
   sheet's arithmetic mistakes.
+- Play days stay **one per date per season**, so a week holds at most 7 (§6.9).
 
-### 7.2 Entering points (admin, on the play-day page)
+### 7.2 The play-day page
 
-- A **"Input poin"** card at the top of the play day:
+Two clearly named parts, with a switch at the top of the page:
+
+| **Poin** (default) | **Pertandingan** |
+|---|---|
+| Points per player, like the sheet (below). | What exists today: courts, shuffle, scores per match, manual match, extra points. |
+
+- The switch is two large tabs under the play-day title, each with a one-line hint
+  ("Tulis poin tiap pemain" / "Acak pasangan & skor per pertandingan"), and it remembers the
+  last one used on this tally. Each tab links to its section of the guide.
+- Points from both parts land on the same board, and a player's 7-match cap counts both.
+
+**Poin** tab:
+
+- An **"Input poin"** form at the top:
   - **Player:** a text input bound to a `<datalist>` of the tally's players. It drops down on
     tap and narrows as you type. Native HTML, no script, so it fits the strict CSP and works on
     phones.
@@ -234,40 +254,41 @@ day (`round_id`) without a match (`match_id IS NULL`, today used for extra point
     It uses the existing double-submit guard.
   - A name that matches no player is not saved silently: the form asks "add new player
     *X*?" to avoid duplicates from typos.
+  - A player who already has 7 matches that day is refused with a clear message.
 - Below it, **today's rows**: each player who has entries, their scores as chips in order
-  (`42 · 35 · 40`), the subtotal, and a **+**. Tap a chip to edit or delete it.
+  (`42 · 35 · 40`), the subtotal, and a **+** (hidden at 7). Tap a chip to edit or delete it.
 - Players with entries count as present, so the attendance list fills itself.
-- Matches and the shuffle stay on the page for clubs that use them; for this club's tally the
-  points card comes first.
 
-### 7.3 The sheet view
+### 7.3 The sheet view (admins only)
 
 A grid page per season, like the sheet: players as rows (name column sticky), play days as
-column groups with each score, then subtotal, running total, rank and movement. It scrolls
-sideways on a phone. An admin sees **edit** on each cell group, which opens that play day's
-entries for the player.
+column groups with up to 7 scores each, then subtotal, running total, rank and movement. It
+scrolls sideways on a phone. Each cell group links to that play day's **Poin** tab for the
+player. Not visible to players (§6.7).
 
 Week labels follow the club: **the week of the month**, from the date (days 1–7 → W1,
-8–14 → W2, 15–21 → W3, 22–28 → W4, 29–31 → W5), with `A`/`B` when a week has more than one
-play day. That reproduces `W1 … W4A, W4B` exactly. Shown in the grid, on the board's play-day
-picker and on the poster.
+8–14 → W2, 15–21 → W3, 22–28 → W4, 29–31 → W5), with a letter when a week has more than one
+play day: `A`, `B`, … up to `G` (7 play days). That reproduces `W1 … W4A, W4B` exactly. Shown
+in the grid, on the board's play-day picker and on the poster.
 
 ### 7.4 Importing the sheet
 
 - **Upload an `.xlsx`** (Google Sheets: *File → Download → Microsoft Excel*). No Google link
   fetching in this slice: the server would have to fetch URLs it's given, which needs SSRF care.
 - **Parsing** finds the block headers (date cells like `Sun, 4 Oct`, with year and month from
-  column B), takes slot columns from the numbered headers **up to `SubTot`, however many there
-  are**, and player names from column A. `-` and blanks mean no entry. `SubTot`, `Total`, `Rank`
+  column B), takes slot columns from the numbered headers up to `SubTot`, and player names
+  from column A. `-`, blanks and **`-1` (not played)** mean no entry. `SubTot`, `Total`, `Rank`
   and `Movement` are ignored, then recomputed.
+- A block with **more than 7 slot columns**, or a player with more than 7 scores in a day, is
+  shown as an error in the preview and nothing is imported until it's fixed.
 - **Preview before anything is saved:**
   - players that will be created (names not found, matched case-insensitively);
   - play days that will be created, with their week labels;
   - number of entries per play day;
-  - **mismatches** between the sheet's typed totals and the recomputed ones (e.g. the 10-point gap);
-  - **odd values** to decide on: negative scores (`-1`: skip, or import as an extra −1) and
-    scores above the season's target (`43`: keep).
-  - If the play days fall outside the season's dates, an option to extend the season.
+  - **mismatches** between the sheet's typed totals and the recomputed ones (e.g. the 10-point
+    gap, and the subtotals that subtracted `-1`);
+  - scores above the season's target (`43`): kept, listed so the admin can check them;
+  - if the play days fall outside the season's dates, an option to extend the season.
 - **Confirm** writes everything in one transaction and records it in the audit log.
 - **Re-running** is allowed: play days that already have entries are skipped unless the admin
   ticks "replace these play days".
@@ -276,12 +297,13 @@ picker and on the poster.
 
 ### 7.5 Season dates
 
-Season start and end dates are already editable (*Seasons → edit*, date pickers), and saving
-checks that every play day still falls inside. Add a plain-language summary next to the
-pickers, e.g. "**Oktober minggu 1 – Desember minggu 4** (1 Okt – 28 Des)", using the same
-week-of-month rule as §7.3, so "fourth week of December" is unambiguous.
+Already supported: start and end dates are date pickers when creating or editing a season,
+and saving checks that every play day still falls inside. No change in this slice (§6.5).
 
 ## 8. Open questions
+
+Answered 2026-10-29 (now in §6): what `-1` means, the cap per play day, who sees the sheet
+view, how season dates are set, and whether points and matches both show.
 
 1. **Money:** keep fees/memberships out of tally, link tally to the cashflow app (both log in
    through aio), or add only a simple *paid* tick at check-in?
@@ -290,25 +312,19 @@ week-of-month rule as §7.3, so "fourth week of December" is unambiguous.
 3. **Courts:** what upper limit do the clubs actually need?
 4. **Players without accounts:** is the "tonight" view for anyone with the link, or should players
    log in (through aio) to see "my matches"?
-5. **What does `-1` mean** in the sheet: a penalty, or a slot marked "not played"?
-6. **Sanity cap** on matches per player per play day: none, or a warning above, say, 12?
-7. **Is the sheet view public** (anyone with the link, like the board) or admin-only?
-8. **Season end:** does "fourth week of December" end on the 28th, or run to the 31st
-   (which is W5 under §7.3)?
-9. **Points-only vs matches:** should points-only be a setting on the tally (hiding shuffle and
-   courts), or should both always be on the play-day page?
 
 ## 9. Backlog
 
 - **Link a player to a tally user** (`participants.user_id` already exists), so players can
-  see "my matches" and get notified. From §6.7.
-- Recording matches (pairs, winner) alongside points-only entries, for clubs that want it.
+  see "my matches" and get notified. From §6.11.
+- A setting to raise the 7-matches-per-play-day cap.
+- Recording matches (pairs, winner) as the main way of entering points, for clubs that want it.
 - The §5 directions, re-ranked after the first slice ships.
 
 ## 10. Next steps
 
 - [x] Analyse the club's sheet (§4.2) and record decisions (§6).
-- [ ] opan answers §8 questions 5–9.
-- [ ] Build §7.1–7.2 (data + entry), then 7.3 (sheet view), then 7.4 (import), then 7.5.
+- [x] opan answers the first-slice questions (§6.3, 6.5, 6.7–6.10).
+- [ ] Build §7.1–7.2 (data + play-day page), then 7.3 (sheet view), then 7.4 (import).
 - [ ] Import the October sheet into a test tally and compare totals with the sheet.
 - [ ] Collect concrete feedback from the users who found tally complex, once points-only ships.
