@@ -128,7 +128,7 @@ The year (`2026`) and month (`OCT`) sit in column B above the blocks.
 
 | Play day | Players | Matches (approx.) | Matches per player |
 |---|---|---|---|
-| W1 · Sun 4 Oct | 15 | 17 | 3–7 |
+| W1 · Sun 4 Oct | 15 | 16 | 3–6 |
 | W2 · Sun 11 Oct | 23 | 25 | 2–7 |
 | W3 · Sun 18 Oct | 9 | 12 | 4–7 |
 | W4A · Fri 23 Oct | 22 | 25 | 2–7 |
@@ -142,9 +142,9 @@ the sheet already has mistakes:
 - One running total is **10 points short** (722 + 140 written as 852).
 - A **`-1`** in the 7th slot of one W1 match for four players. It means **"not played"**
   (opan), yet three of the four subtotals subtracted it.
-- Two scores of **43** in one W1 match (typo, or play went past 42).
-- W1 has 30 winning scores (42) against 38 others: some matches ended with nobody at 42
-  (court time ran out). Tally already accepts that, and accepts 43.
+- Two scores of **43** in one W1 match (typo, or play went past 42). Tally accepts 43.
+- Every play day balances: as many winning scores (42, or 43) as losing ones, so every
+  recorded match was played to the end.
 
 **What it tells us about the UX:**
 
