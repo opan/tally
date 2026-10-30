@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"strconv"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -12,6 +13,7 @@ import (
 var (
 	ErrRoundExists   = errors.New("round exists for that date")
 	ErrScoringLocked = errors.New("format can't change once a season has matches")
+	ErrPlayCap       = errors.New("player reached the plays-per-day cap")
 )
 
 const (
@@ -34,6 +36,23 @@ type Round struct {
 	Courts   int
 	Done     int // scored matches, filled by RoundsForPeriod
 	Awards   int // point awards of any kind, filled by RoundsForPeriod
+	Scores   int // points entered without match details, filled by RoundsForPeriod
+	WeekPart int // 1-based position among the season's play days in the same Week
+	WeekDays int // how many play days the season has in that Week
+}
+
+// Week is the week of the month by date, like the club's sheet: days 1–7 are
+// week 1, 8–14 week 2, 15–21 week 3, 22–28 week 4, 29–31 week 5.
+func (r Round) Week() int { return (r.PlayedOn.Day()-1)/7 + 1 }
+
+// WeekLabel names the play day, e.g. "4", or "4A" and "4B" when the week has
+// two play days.
+func (r Round) WeekLabel() string {
+	label := strconv.Itoa(r.Week())
+	if r.WeekDays > 1 && r.WeekPart >= 1 && r.WeekPart <= 26 {
+		label += string(rune('A' + r.WeekPart - 1))
+	}
+	return label
 }
 
 type MatchSide struct {
@@ -73,7 +92,7 @@ type Standing struct {
 	ParticipantID string
 	Name          string
 	Points        int
-	Played        int // matches
+	Played        int // matches, plus points entered without match details
 	Entries       int // all awards, matches and manual; "played" for counter tallies
 }
 
@@ -86,14 +105,23 @@ func (s Standing) Avg() float64 {
 
 // --- Rounds ---
 
-// roundSelect computes the round's number from its date order in the period.
+// sameWeek matches r2 to the play days of r's season in r's Week (same
+// month, same 7-day block of the month).
+const sameWeek = `r2.period_id = r.period_id
+	AND date_trunc('month', r2.played_on) = date_trunc('month', r.played_on)
+	AND (extract(day FROM r2.played_on)::int - 1) / 7 = (extract(day FROM r.played_on)::int - 1) / 7`
+
+// roundSelect computes the round's number from its date order in the period,
+// and its place in its week.
 const roundSelect = `SELECT r.id, r.period_id, r.played_on, r.courts,
-	(SELECT count(*) FROM rounds r2 WHERE r2.period_id = r.period_id AND r2.played_on <= r.played_on)
+	(SELECT count(*) FROM rounds r2 WHERE r2.period_id = r.period_id AND r2.played_on <= r.played_on),
+	(SELECT count(*) FROM rounds r2 WHERE ` + sameWeek + ` AND r2.played_on <= r.played_on),
+	(SELECT count(*) FROM rounds r2 WHERE ` + sameWeek + `)
 	FROM rounds r JOIN periods p ON p.id = r.period_id `
 
 func scanRound(row pgx.Row) (*Round, error) {
 	r := &Round{}
-	if err := row.Scan(&r.ID, &r.PeriodID, &r.PlayedOn, &r.Courts, &r.Number); err != nil {
+	if err := row.Scan(&r.ID, &r.PeriodID, &r.PlayedOn, &r.Courts, &r.Number, &r.WeekPart, &r.WeekDays); err != nil {
 		return nil, err
 	}
 	return r, nil
@@ -113,14 +141,17 @@ func (s *Store) RoundsForPeriod(ctx context.Context, periodID string) ([]Round, 
 		`SELECT r.id, r.period_id, r.played_on, r.courts,
 		        row_number() OVER (ORDER BY r.played_on),
 		        (SELECT count(*) FROM matches m WHERE m.round_id = r.id AND m.status = 'done'),
-		        (SELECT count(*) FROM point_awards pa WHERE pa.round_id = r.id)
+		        (SELECT count(*) FROM point_awards pa WHERE pa.round_id = r.id),
+		        (SELECT count(*) FROM point_awards pa WHERE pa.round_id = r.id AND pa.kind = 'score'),
+		        (SELECT count(*) FROM rounds r2 WHERE `+sameWeek+` AND r2.played_on <= r.played_on),
+		        (SELECT count(*) FROM rounds r2 WHERE `+sameWeek+`)
 		 FROM rounds r WHERE r.period_id = $1 ORDER BY r.played_on DESC`, periodID)
 	if err != nil {
 		return nil, err
 	}
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (Round, error) {
 		var r Round
-		err := row.Scan(&r.ID, &r.PeriodID, &r.PlayedOn, &r.Courts, &r.Number, &r.Done, &r.Awards)
+		err := row.Scan(&r.ID, &r.PeriodID, &r.PlayedOn, &r.Courts, &r.Number, &r.Done, &r.Awards, &r.Scores, &r.WeekPart, &r.WeekDays)
 		return r, err
 	})
 }
@@ -392,8 +423,8 @@ func (s *Store) SaveMatch(ctx context.Context, tallyID, actorID string, r *Round
 			}
 			for _, pid := range res.Players[i] {
 				if _, err := tx.Exec(ctx,
-					`INSERT INTO point_awards (period_id, round_id, participant_id, match_id, points, created_by)
-					 VALUES ($1, $2, $3, $4, $5, $6)`, r.PeriodID, r.ID, pid, id, o.Points, actorID); err != nil {
+					`INSERT INTO point_awards (period_id, round_id, participant_id, match_id, points, kind, created_by)
+					 VALUES ($1, $2, $3, $4, $5, 'match', $6)`, r.PeriodID, r.ID, pid, id, o.Points, actorID); err != nil {
 					return err
 				}
 			}
@@ -420,7 +451,7 @@ func (s *Store) DeleteMatch(ctx context.Context, tallyID, actorID string, m *Mat
 // before asOf (all play days when asOf is zero). Order with sortStandings.
 func (s *Store) StandingsAsOf(ctx context.Context, periodID string, asOf time.Time) ([]Standing, error) {
 	rows, err := s.pool.Query(ctx,
-		`SELECT p.id, p.display_name, SUM(pa.points), COUNT(pa.match_id), COUNT(*)
+		`SELECT p.id, p.display_name, SUM(pa.points), COUNT(*) FILTER (WHERE pa.kind <> 'extra'), COUNT(*)
 		 FROM point_awards pa
 		 JOIN participants p ON p.id = pa.participant_id
 		 LEFT JOIN rounds r ON r.id = pa.round_id
@@ -434,6 +465,64 @@ func (s *Store) StandingsAsOf(ctx context.Context, periodID string, asOf time.Ti
 		err := row.Scan(&st.ParticipantID, &st.Name, &st.Points, &st.Played, &st.Entries)
 		return st, err
 	})
+}
+
+// StandingsForRound totals each player's points on one play day only.
+func (s *Store) StandingsForRound(ctx context.Context, roundID string) ([]Standing, error) {
+	rows, err := s.pool.Query(ctx,
+		`SELECT p.id, p.display_name, SUM(pa.points), COUNT(*) FILTER (WHERE pa.kind <> 'extra'), COUNT(*)
+		 FROM point_awards pa
+		 JOIN participants p ON p.id = pa.participant_id
+		 WHERE pa.round_id = $1
+		 GROUP BY p.id, p.display_name`, roundID)
+	if err != nil {
+		return nil, err
+	}
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (Standing, error) {
+		var st Standing
+		err := row.Scan(&st.ParticipantID, &st.Name, &st.Points, &st.Played, &st.Entries)
+		return st, err
+	})
+}
+
+// DayStats sums up one play day for the season page.
+type DayStats struct {
+	Players   int    // players with any points that day
+	Plays     int    // scores plus match plays
+	Points    int    // all points, extras included
+	TopName   string // most points that day (ties: by name)
+	TopPoints int
+}
+
+// SeasonDayStats returns DayStats per play day (round id) of a season, and
+// how many players have points in the season.
+func (s *Store) SeasonDayStats(ctx context.Context, periodID string) (map[string]DayStats, int, error) {
+	rows, err := s.pool.Query(ctx,
+		`WITH per AS (
+		   SELECT pa.round_id, pa.participant_id, SUM(pa.points) AS pts,
+		          COUNT(*) FILTER (WHERE pa.kind <> 'extra') AS plays
+		   FROM point_awards pa WHERE pa.period_id = $1 AND pa.round_id IS NOT NULL
+		   GROUP BY pa.round_id, pa.participant_id)
+		 SELECT per.round_id, count(*), sum(per.plays), sum(per.pts),
+		        (array_agg(p.display_name ORDER BY per.pts DESC, lower(p.display_name)))[1], max(per.pts)
+		 FROM per JOIN participants p ON p.id = per.participant_id
+		 GROUP BY per.round_id`, periodID)
+	if err != nil {
+		return nil, 0, err
+	}
+	out := map[string]DayStats{}
+	var id string
+	var d DayStats
+	if _, err := pgx.ForEachRow(rows, []any{&id, &d.Players, &d.Plays, &d.Points, &d.TopName, &d.TopPoints}, func() error {
+		out[id] = d
+		return nil
+	}); err != nil {
+		return nil, 0, err
+	}
+	var players int
+	err = s.pool.QueryRow(ctx,
+		`SELECT count(DISTINCT participant_id) FROM point_awards WHERE period_id = $1`, periodID).Scan(&players)
+	return out, players, err
 }
 
 func nullDate(t time.Time) any {
@@ -479,7 +568,15 @@ func (s *Store) PeriodHasMatches(ctx context.Context, periodID string) (bool, er
 
 // --- Manual points ---
 
-// Award is a manual point entry: a bonus, penalty, or a counter tally's points.
+// Award kinds. A point_awards row with a match_id is AwardMatch.
+const (
+	AwardMatch = "match" // from a recorded match
+	AwardScore = "score" // one match's points entered without match details (RFC-001)
+	AwardExtra = "extra" // bonus, penalty, or a counter tally's points
+)
+
+// Award is a point entry made by hand: a score (AwardScore) or an extra
+// (AwardExtra).
 type Award struct {
 	ID            string
 	ParticipantID string
@@ -487,6 +584,7 @@ type Award struct {
 	Points        int
 	Reason        string
 	RoundID       string
+	Kind          string
 	CreatedAt     time.Time
 }
 
@@ -525,38 +623,108 @@ func (s *Store) AddAwards(ctx context.Context, tallyID, actorID string, r *Round
 func scanAwards(rows pgx.Rows) ([]Award, error) {
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (Award, error) {
 		var a Award
-		err := row.Scan(&a.ID, &a.ParticipantID, &a.Name, &a.Points, &a.Reason, &a.RoundID, &a.CreatedAt)
+		err := row.Scan(&a.ID, &a.ParticipantID, &a.Name, &a.Points, &a.Reason, &a.RoundID, &a.Kind, &a.CreatedAt)
 		return a, err
 	})
 }
 
-const awardSelect = `SELECT pa.id, p.id, p.display_name, pa.points, pa.reason, pa.round_id, pa.created_at
+const awardSelect = `SELECT pa.id, p.id, p.display_name, pa.points, pa.reason, pa.round_id, pa.kind, pa.created_at
 	FROM point_awards pa JOIN participants p ON p.id = pa.participant_id `
 
-// ManualAwards lists a play day's manual entries, newest first.
+// ManualAwards lists a play day's extras (bonuses, penalties, counter
+// entries), newest first.
 func (s *Store) ManualAwards(ctx context.Context, roundID string) ([]Award, error) {
-	rows, err := s.pool.Query(ctx, awardSelect+`WHERE pa.round_id = $1 AND pa.match_id IS NULL ORDER BY pa.created_at DESC`, roundID)
+	rows, err := s.pool.Query(ctx, awardSelect+`WHERE pa.round_id = $1 AND pa.kind = 'extra' ORDER BY pa.created_at DESC`, roundID)
 	if err != nil {
 		return nil, err
 	}
 	return scanAwards(rows)
 }
 
-// DeleteAward removes a manual entry of this tally; pgx.ErrNoRows if none.
-func (s *Store) DeleteAward(ctx context.Context, tallyID, actorID, id string) (roundID string, err error) {
+// ScoreAwards lists a play day's scores entered without match details, in
+// the order they were entered.
+func (s *Store) ScoreAwards(ctx context.Context, roundID string) ([]Award, error) {
+	rows, err := s.pool.Query(ctx, awardSelect+`WHERE pa.round_id = $1 AND pa.kind = 'score' ORDER BY pa.created_at, pa.id`, roundID)
+	if err != nil {
+		return nil, err
+	}
+	return scanAwards(rows)
+}
+
+// AddScore records one match's points for a player without match details
+// (RFC-001). With newName set instead of participantID it adds that player
+// first (ErrNameTaken if the name exists). The player counts as present.
+// ErrPlayCap when the player already has maxPlays scores and matches that
+// day; pgx.ErrNoRows when participantID isn't in the tally.
+func (s *Store) AddScore(ctx context.Context, tallyID, actorID string, r *Round, participantID, newName string, points, maxPlays int) error {
+	return pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
+		var name string
+		if newName != "" {
+			err := tx.QueryRow(ctx,
+				`INSERT INTO participants (tally_id, display_name) VALUES ($1, $2)
+				 ON CONFLICT (tally_id, lower(display_name)) DO NOTHING
+				 RETURNING id`, tallyID, newName).Scan(&participantID)
+			if errors.Is(err, pgx.ErrNoRows) {
+				return ErrNameTaken
+			}
+			if err != nil {
+				return err
+			}
+			name = newName
+			if err := audit(ctx, tx, tallyID, actorID, "create", "participant", participantID, nil,
+				Participant{ID: participantID, Name: name, Active: true}); err != nil {
+				return err
+			}
+		} else {
+			// The row lock keeps two quick taps from both passing the cap.
+			if err := tx.QueryRow(ctx,
+				`SELECT display_name FROM participants WHERE tally_id = $1 AND id = $2 FOR UPDATE`,
+				tallyID, participantID).Scan(&name); err != nil {
+				return err
+			}
+		}
+		var plays int
+		if err := tx.QueryRow(ctx,
+			`SELECT (SELECT count(*) FROM point_awards WHERE round_id = $1 AND participant_id = $2 AND kind = 'score')
+			      + (SELECT count(*) FROM match_players mp JOIN matches m ON m.id = mp.match_id
+			         WHERE m.round_id = $1 AND mp.participant_id = $2)`, r.ID, participantID).Scan(&plays); err != nil {
+			return err
+		}
+		if plays >= maxPlays {
+			return ErrPlayCap
+		}
+		var id string
+		if err := tx.QueryRow(ctx,
+			`INSERT INTO point_awards (period_id, round_id, participant_id, points, kind, created_by)
+			 VALUES ($1, $2, $3, $4, 'score', $5) RETURNING id`,
+			r.PeriodID, r.ID, participantID, points, actorID).Scan(&id); err != nil {
+			return err
+		}
+		if _, err := tx.Exec(ctx,
+			`INSERT INTO round_attendance (round_id, participant_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+			r.ID, participantID); err != nil {
+			return err
+		}
+		return audit(ctx, tx, tallyID, actorID, "create", "award", id, nil,
+			map[string]any{"player": name, "points": points, "kind": AwardScore, "played_on": r.PlayedOn.Format(dateLayout)})
+	})
+}
+
+// DeleteAward removes a score or extra of this tally; pgx.ErrNoRows if none.
+func (s *Store) DeleteAward(ctx context.Context, tallyID, actorID, id string) (roundID, kind string, err error) {
 	err = pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
 		var name, reason string
 		var points int
 		if err := tx.QueryRow(ctx,
 			`DELETE FROM point_awards pa USING participants p
 			 WHERE pa.id = $2 AND pa.match_id IS NULL AND p.id = pa.participant_id AND p.tally_id = $1
-			 RETURNING pa.round_id, p.display_name, pa.points, pa.reason`, tallyID, id).Scan(&roundID, &name, &points, &reason); err != nil {
+			 RETURNING pa.round_id, pa.kind, p.display_name, pa.points, pa.reason`, tallyID, id).Scan(&roundID, &kind, &name, &points, &reason); err != nil {
 			return err
 		}
 		return audit(ctx, tx, tallyID, actorID, "delete", "award", id,
-			map[string]any{"player": name, "points": points, "reason": reason}, nil)
+			map[string]any{"player": name, "points": points, "reason": reason, "kind": kind}, nil)
 	})
-	return roundID, err
+	return roundID, kind, err
 }
 
 // --- Player pages ---

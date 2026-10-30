@@ -74,10 +74,26 @@
 <section class="card gsec" id="hari-main">
   <h2>4. Play day</h2>
   <h3>Starting</h3>
-  <p>On the <em>Play</em> tab, pick the <strong>date</strong>, the <strong>number of courts</strong> (1–3),
-    and tick <strong>who's here</strong>. A date has only one play day; picking a date that already has one
-    opens it. The date must fall inside a season.</p>
-  {{template "gimg" (dict "P" $P "N" "start-day" "Alt" "The Start a play day form: date, courts, who's here")}}
+  <p>On the <em>Play</em> tab, pick the <strong>date</strong> and press <strong>Start</strong>. Below the date
+    you can see which season it goes into; the date must fall inside a season. A date has only one play day;
+    picking a date that already has one opens it. There's no need to tick who's here: players with points
+    count as present.</p>
+  <p>Play days are named by the week of the month, like on the spreadsheet: days 1–7 are <em>Week 1</em>,
+    8–14 <em>Week 2</em>, 15–21 <em>Week 3</em>, 22–28 <em>Week 4</em>, 29–31 <em>Week 5</em>. When a week
+    has two or more play days, they get letters: <em>Week 4A</em>, <em>Week 4B</em>.</p>
+  <h3 id="input-poin">Points or Matches</h3>
+  <p>A play day has two tabs. Use either one, or both:</p>
+  <ul>
+    <li><strong>Points</strong>: enter each player's points like on a spreadsheet, without the pairs and
+      opponents. Type a player's name (or pick it from the list), enter the points (0 up to the season's
+      target, e.g. 42), then press <strong>Add</strong>. Each entry is one play, and a player can play at most
+      7 times a day. A name that isn't on the list is checked with you before it's added as a new player. In
+      <em>Today's points</em>, tap a number to delete it, or <strong>+</strong> to add points for that
+      player.</li>
+    <li><strong>Matches</strong>: shuffle pairs, enter each match's score, and set who's here and the
+      courts, as described below.</li>
+  </ul>
+  <p>Points from both tabs go to the same leaderboard, and the tab you used last opens next time.</p>
   <h3>Shuffle pairs</h3>
   <p>Tap <strong>Shuffle pairs</strong> to fill every free court. So everyone gets a turn:</p>
   <ol>
@@ -104,8 +120,9 @@
     pairs were arranged by hand.</p>
   {{template "gimg" (dict "P" $P "N" "done" "Alt" "The finished matches list with Edit and Delete")}}
   <h3>Extra points</h3>
-  <p>For bonuses or penalties outside matches (e.g. winning a tournament, arriving late). Enter points per
-    player and a note; use a minus number for a penalty. Extra points count toward that play day.</p>
+  <p>For bonuses or penalties outside matches (e.g. winning a tournament, arriving late). On the <em>Points</em>
+    tab, open <strong>Extra points</strong>, pick the player, and enter the points and a note; use a minus number
+    for a penalty. Extra points count toward that play day and don't count as a play.</p>
   {{template "gimg" (dict "P" $P "N" "awards" "Alt" "The Extra points form with a note")}}
   <p class="muted"><em>Free counter</em> tallies have no courts: the <em>Record</em> tab is simply the list of
     players to enter points for.</p>
@@ -118,10 +135,11 @@
     <li><strong>Order:</strong> total points. On equal points, whoever played fewer matches is higher, then by
       name. Every row keeps its own number.</li>
     <li><strong>Played</strong> = number of matches, <strong>Avg</strong> = points per match (wide screens only).</li>
-    <li><strong>Arrows</strong> compare with the previous play day: ↑ up, ↓ down, ↔ same, and
-      <strong>NEW</strong> for someone on the board for the first time.</li>
-    <li><strong>As of</strong>: see the ranking as it was after a given week. Older seasons are under <em>Season</em>.</li>
-    <li>Below the board are that play day's <strong>match results</strong>.</li>
+    <li>The board shows the <strong>season's total points</strong>. <strong>Arrows</strong> compare with before
+      the latest play day: ↑ up, ↓ down, ↔ same, and <strong>NEW</strong> for someone on the board for the first time.</li>
+    <li><strong>Week</strong>: pick a play day to see only that day's points; <em>All weeks</em> goes back to
+      the season total. Older seasons are under <em>Season</em>.</li>
+    <li>Below the board are that play day's (or the latest one's) <strong>match results</strong>.</li>
   </ul>
   {{template "gimg" (dict "P" $P "N" "board" "Alt" "The leaderboard with up and down arrows and a NEW label")}}
   <h3>Player page</h3>
@@ -157,7 +175,8 @@
     never played or received points.</p>
   {{template "gimg" (dict "P" $P "N" "player-list" "Alt" "The player list with rename, deactivate, and delete")}}
   <h3>New season</h3>
-  <p>On the <em>Seasons</em> tab. Old seasons are kept and can be viewed from the <em>Season</em> picker on the leaderboard.</p>
+  <p>On the <em>Seasons</em> tab. Old seasons are kept and can be viewed from the <em>Season</em> picker on the leaderboard.
+    Tap a season's name to see all its weeks: each week's play days, players, plays, points, and who's on top.</p>
   <h3>Other admins</h3>
   <p>In <em>Settings → Admins</em>, type their username. They have to {{if .Aio}}log in to Tally{{else}}sign up{{end}}
     once first. Admins can manage players, seasons, and matches; only the owner can add or remove admins.</p>

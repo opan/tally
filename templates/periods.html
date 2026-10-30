@@ -10,17 +10,20 @@
     {{range .Data.Periods}}
     <li class="periodrow">
       <div>
-        <strong>{{.Name}}</strong>{{if eq .ID $.Data.CurrentID}} <span class="badge gold">{{$.T "period.current"}}</span>{{end}}
+        <a href="/t/{{$t.Slug}}/periods/{{.ID}}"><strong>{{.Name}}</strong></a> {{template "seasonbadge" (dict "P" $ "S" .)}}
         <div class="muted small">{{$.Date .StartsOn}} – {{$.Date .EndsOn}} &middot; {{$.Rule .Scoring}}</div>
       </div>
-      <a class="btn small ghost" href="/t/{{$t.Slug}}/periods/{{.ID}}">{{$.T "common.edit"}}</a>
+      <span class="actions-inline">
+        <a class="btn small" href="/t/{{$t.Slug}}/periods/{{.ID}}">{{$.T "period.details"}}</a>
+        <a class="btn small ghost" href="/t/{{$t.Slug}}/periods/{{.ID}}/edit">{{$.T "common.edit"}}</a>
+      </span>
     </li>
     {{end}}
   </ul>
 </section>
 {{end}}
 
-<section class="card">
+<section class="card" id="baru">
   <h2>{{.T "period.new_title"}}</h2>
   <p class="muted small">{{if not .Data.Periods}}{{.T "period.first_hint"}} {{end}}<a href="/panduan#aturan-poin">{{.T "guide.rules_link"}}</a></p>
   <form method="post" action="/t/{{$t.Slug}}/periods" class="stack">

@@ -89,6 +89,26 @@ type Period struct {
 	Scoring  ScoringConfig
 }
 
+// Season status by date, against today in Jakarta.
+const (
+	SeasonUpcoming = "upcoming"
+	SeasonRunning  = "running"
+	SeasonEnded    = "ended"
+)
+
+// Status is SeasonUpcoming, SeasonRunning or SeasonEnded. A season ends by
+// its dates only; there is no separate "close".
+func (p Period) Status() string {
+	t := today()
+	switch {
+	case t.Before(p.StartsOn):
+		return SeasonUpcoming
+	case t.After(p.EndsOn):
+		return SeasonEnded
+	}
+	return SeasonRunning
+}
+
 // Contains reports whether d falls inside the period (inclusive).
 func (p *Period) Contains(d time.Time) bool {
 	return !d.Before(p.StartsOn) && !d.After(p.EndsOn)

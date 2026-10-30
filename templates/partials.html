@@ -6,8 +6,8 @@
   <nav class="tabs" aria-label="{{.T "tally.tabs"}}">
     <a href="/t/{{$t.Slug}}" {{if eq .Data.Tab "overview"}}class="on" aria-current="page"{{end}}>{{.T "tab.overview"}}</a>
     <a href="/t/{{$t.Slug}}/play" {{if eq .Data.Tab "play"}}class="on" aria-current="page"{{end}}>{{if $t.Preset.IsCounter}}{{.T "tab.record"}}{{else}}{{.T "tab.play"}}{{end}}</a>
-    <a href="/t/{{$t.Slug}}/players" {{if eq .Data.Tab "players"}}class="on" aria-current="page"{{end}}>{{.T "tab.players"}}</a>
     <a href="/t/{{$t.Slug}}/periods" {{if eq .Data.Tab "periods"}}class="on" aria-current="page"{{end}}>{{.T "tab.periods"}}</a>
+    <a href="/t/{{$t.Slug}}/players" {{if eq .Data.Tab "players"}}class="on" aria-current="page"{{end}}>{{.T "tab.players"}}</a>
     <a href="/t/{{$t.Slug}}/settings" {{if eq .Data.Tab "settings"}}class="on" aria-current="page"{{end}}>{{.T "tab.settings"}}</a>
   </nav>
   {{end}}
@@ -102,7 +102,7 @@
 
 {{/* matchrow: dict P (page) M (*Match) Slug Actions (bool) */}}
 {{define "matchrow"}}{{$P := .P}}{{$m := .M}}
-<div class="mrow">
+<div class="mrow" id="m-{{$m.ID}}">
   {{range $i, $side := $m.Sides}}
   <div class="mr-side {{if $side.Won}}won{{end}} {{if eq $i 1}}right{{end}}">
     <span class="mr-names">{{range $j, $p := $side.Players}}{{if $j}} &amp; {{end}}{{$p.Name}}{{end}}</span>
@@ -171,6 +171,10 @@
     {{if not $d.Counter}}<button type="button" class="btn ghost" data-close-details>{{$P.T "common.cancel"}}</button>{{end}}
   </div>
 </form>
+{{template "awardslist" (dict "P" $P "D" $d)}}
+{{end}}
+
+{{define "awardslist"}}{{$P := .P}}{{$d := .D}}
 {{if $d.Awards}}
 <ul class="rows awards-list">
   {{range $d.Awards}}
@@ -184,5 +188,7 @@
 </ul>
 {{end}}
 {{end}}
+
+{{define "seasonbadge"}}{{$s := .S.Status}}<span class="badge{{if eq $s "running"}} gold{{else if eq $s "ended"}} ended{{end}}">{{.P.T (print "season.status_" $s)}}</span>{{end}}
 
 {{define "aioleaving"}}<p class="muted small">{{.T "account.leaving" .Aio.Host}}</p>{{end}}

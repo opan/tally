@@ -32,7 +32,7 @@ func limitBody(w http.ResponseWriter, r *http.Request, max int64) {
 	r.Body = http.MaxBytesReader(w, r.Body, max)
 }
 
-var pageNames = []string{"landing", "login", "register", "autherror", "panduan", "dashboard", "notfound", "tally", "players", "periods", "period_edit", "settings", "play", "round", "match_edit", "poster", "player", "admin", "adminuser", "adminerror", "akun"}
+var pageNames = []string{"landing", "login", "register", "autherror", "panduan", "dashboard", "notfound", "tally", "players", "periods", "period", "period_edit", "settings", "play", "round", "match_edit", "poster", "player", "admin", "adminuser", "adminerror", "akun"}
 
 // pageExtras are additional template files a page needs.
 var pageExtras = map[string][]string{
@@ -43,6 +43,7 @@ var templateFuncs = template.FuncMap{
 	// formToken is a fresh one-time token for forms guarded by submitGuard.
 	"formToken": newToken,
 	"add1":      func(i int) int { return i + 1 },
+	"iso":       func(t time.Time) string { return t.Format(dateLayout) },
 	// dict builds the argument map for a sub-template: dict "k1" v1 "k2" v2.
 	"dict": func(kv ...any) (map[string]any, error) {
 		if len(kv)%2 != 0 {
@@ -100,6 +101,12 @@ type pageData struct {
 func (p pageData) T(key string, args ...any) string { return translate(p.Lang, key, args...) }
 
 func (p pageData) Date(t time.Time) string { return formatDate(p.Lang, t) }
+
+func (p pageData) DayMonth(t time.Time) string { return dayMonth(p.Lang, t) }
+
+func (p pageData) Weekday(t time.Time) string { return weekday(p.Lang, t) }
+
+func (p pageData) MonthYear(t time.Time) string { return monthYear(p.Lang, t) }
 
 // Rule is a one-line, human description of a points rule.
 func (p pageData) Rule(c ScoringConfig) string {

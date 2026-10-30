@@ -1,19 +1,97 @@
-{{define "title"}}{{.T "round.label" .Data.Round.Number}} &middot; {{.Data.Tally.Name}} &mdash; {{.T "app.name"}}{{end}}
+{{define "title"}}{{.T "round.label" .Data.Round.WeekLabel}} &middot; {{.Data.Tally.Name}} &mdash; {{.T "app.name"}}{{end}}
 {{define "content"}}
 {{template "tallyhead" .}}
 {{$t := .Data.Tally}}{{$d := .Data}}
 <div class="roundhead">
   <div>
-    <h2>{{.T "round.label" $d.Round.Number}} &middot; {{.Date $d.Round.PlayedOn}}</h2>
+    <h2>{{.T "round.label" $d.Round.WeekLabel}} &middot; {{.Date $d.Round.PlayedOn}}</h2>
     <p class="muted small">{{$d.Period.Name}} &middot; {{.Rule $d.Period.Scoring}}</p>
   </div>
-  <a class="btn small ghost" href="/t/{{$t.Slug}}/play?new=1">{{.T "round.other_day"}}</a>
+  <a class="btn small" href="/t/{{$t.Slug}}/play#mulai">{{.T "round.new_day"}}</a>
 </div>
 
 {{if $d.Counter}}
 <section class="card" id="awards">
   <div class="cardhead"><h2>{{.T "awards.counter_title"}}</h2><span class="muted small">{{.T "awards.counter_help"}}</span></div>
   {{template "awardsform" (dict "P" $ "D" $d)}}
+</section>
+{{else}}
+{{if $d.Tabs}}
+<nav class="daytabs" aria-label="{{.T "round.tabs_label"}}">
+  <a href="?tab=poin" class="daytab{{if eq $d.DayTab "poin"}} on{{end}}"{{if eq $d.DayTab "poin"}} aria-current="page"{{end}}>
+    <strong>{{.T "round.tab_points"}}</strong><span>{{.T "round.tab_points_help"}}</span>
+  </a>
+  <a href="?tab=match" class="daytab{{if eq $d.DayTab "match"}} on{{end}}"{{if eq $d.DayTab "match"}} aria-current="page"{{end}}>
+    <strong>{{.T "round.tab_matches"}}</strong><span>{{.T "round.tab_matches_help"}}</span>
+  </a>
+</nav>
+{{end}}
+{{if and $d.Tabs (eq $d.DayTab "poin")}}
+<section class="card" id="poin">
+  <div class="cardhead"><h2>{{.T "score.title"}}</h2><span class="muted small">{{.T "score.cap_note" $d.MaxPlays}}</span></div>
+  {{if $d.ConfirmNew}}
+  <div class="confirmbox" role="alert">
+    <p>{{.T "score.new_player" $d.ConfirmNew}}</p>
+    <form method="post" action="/t/{{$t.Slug}}/rounds/{{$d.Round.ID}}/scores" class="actions">
+      <input type="hidden" name="form_token" value="{{formToken}}">
+      <input type="hidden" name="player" value="{{$d.ConfirmNew}}">
+      <input type="hidden" name="points" value="{{$d.FScore}}">
+      <input type="hidden" name="confirm_new" value="1">
+      <button type="submit" class="btn primary">{{.T "score.new_player_yes" $d.FScore}}</button>
+      <a class="btn ghost" href="?tab=poin#poin">{{.T "score.new_player_no"}}</a>
+    </form>
+  </div>
+  {{end}}
+  <form method="post" action="/t/{{$t.Slug}}/rounds/{{$d.Round.ID}}/scores" class="scoreform">
+    <input type="hidden" name="form_token" value="{{formToken}}">
+    <label class="sf-player">{{.T "score.player"}}
+      <input type="text" name="player" value="{{$d.FPlayer}}" list="pick-players" maxlength="40" required autocomplete="off" autocapitalize="words" placeholder="{{.T "score.player_placeholder"}}"{{if eq $d.Focus "player"}} autofocus{{end}}>
+    </label>
+    <label class="sf-points">{{.T "score.points"}}
+      <input type="number" name="points" value="{{$d.FScore}}" min="0" max="{{$d.ScoreMax}}" step="1" inputmode="numeric" required placeholder="0–{{$d.ScoreMax}}"{{if eq $d.Focus "points"}} autofocus{{end}}>
+    </label>
+    <button type="submit" class="btn primary sf-add">{{.T "score.add"}}</button>
+  </form>
+  <datalist id="pick-players">{{range $d.PickNames}}<option value="{{.}}">{{end}}</datalist>
+  <p class="muted small">{{.T "score.help" $d.ScoreMax}} <a href="/panduan#input-poin">{{.T "guide.more"}}</a></p>
+</section>
+
+<section class="card" id="today">
+  <div class="cardhead"><h2>{{.T "score.today"}}</h2><span class="muted small">{{.T "score.today_n" (len $d.ScoreRows) $d.ScorePlays}}</span></div>
+  {{range $row := $d.ScoreRows}}
+  <div class="scorerow">
+    <span class="sr-name">{{$row.Player.Name}}</span>
+    <ul class="sr-chips">
+      {{range $row.Chips}}<li>{{if .AwardID}}<form method="post" action="/t/{{$t.Slug}}/awards/{{.AwardID}}/delete" data-confirm="{{$.T "score.delete_confirm" .Points $row.Player.Name}}"><button type="submit" class="chip" title="{{$.T "score.delete_title"}}">{{.Points}}</button></form>{{else if .OnCourt}}<a class="chip match" href="?tab=match#court" title="{{$.T "score.chip_on_court"}}">…</a>{{else}}<a class="chip match" href="?tab=match#m-{{.MatchID}}" title="{{$.T "score.chip_match"}}">{{.Points}}</a>{{end}}</li>{{end}}
+      {{if $row.CanAdd}}<li><a class="chip add" href="?tab=poin&amp;player={{$row.Player.Name}}" aria-label="{{$.T "score.add_for" $row.Player.Name}}">+</a></li>{{end}}
+    </ul>
+    <span class="sr-total">{{$row.Total}}</span>
+  </div>
+  {{else}}
+  <p class="muted">{{.T "score.none"}}</p>
+  {{end}}
+  {{if $d.ScoreRows}}<p class="muted small">{{.T "score.chips_help"}}</p>{{end}}
+</section>
+
+<section class="card" id="awards">
+  <details {{if eq $d.AutoOpen "awards"}}open{{end}}>
+    <summary class="cardhead summaryhead"><h2>{{.T "awards.title"}}</h2><span class="muted small">{{.T "awards.help"}}{{if $d.Awards}} &middot; {{.T "play.entries_n" (len $d.Awards)}}{{end}}</span></summary>
+    <form method="post" action="/t/{{$t.Slug}}/rounds/{{$d.Round.ID}}/extras" class="scoreform extraform">
+      <input type="hidden" name="form_token" value="{{formToken}}">
+      <label class="sf-player">{{.T "score.player"}}
+        <input type="text" name="player" value="{{$d.FXPlayer}}" list="pick-players" maxlength="40" required autocomplete="off" autocapitalize="words" placeholder="{{.T "score.player_placeholder"}}"{{if eq $d.Focus "xplayer"}} autofocus{{end}}>
+      </label>
+      <label class="sf-points">{{.T "score.points"}}
+        <input type="number" name="points" value="{{$d.FXPoints}}" min="-9999" max="9999" step="1" required placeholder="+5 / -5"{{if eq $d.Focus "xpoints"}} autofocus{{end}}>
+      </label>
+      <label class="sf-reason">{{.T "awards.reason"}}
+        <input type="text" name="reason" value="{{$d.FReason}}" maxlength="120" placeholder="{{.T "awards.reason_placeholder"}}">
+      </label>
+      <button type="submit" class="btn primary sf-add">{{.T "score.add"}}</button>
+    </form>
+    <p class="muted small">{{.T "awards.extra_help"}}</p>
+    {{template "awardslist" (dict "P" $ "D" $d)}}
+  </details>
 </section>
 {{else}}
 <section class="card" id="court">
@@ -67,6 +145,7 @@
   </details>
 </section>
 
+{{if not $d.Tabs}}
 <section class="card" id="awards">
   <details {{if or $d.Awards (eq $d.AutoOpen "awards")}}open{{end}}>
     <summary class="cardhead summaryhead"><h2>{{.T "awards.title"}}</h2><span class="muted small">{{.T "awards.help"}}</span></summary>
@@ -74,7 +153,10 @@
   </details>
 </section>
 {{end}}
+{{end}}
+{{end}}
 
+{{if or (not $d.Tabs) (eq $d.DayTab "match")}}
 <section class="card">
   <details {{if not $d.PresentN}}open{{end}}>
     <summary class="cardhead summaryhead"><h2>{{if $d.Counter}}{{.T "play.present"}}{{else}}{{.T "round.setup"}}{{end}}</h2><span class="muted small">{{.T "round.present_n" $d.PresentN}}{{if not $d.Counter}} &middot; {{.T "round.courts_n" $d.Round.Courts}}{{end}}</span></summary>
@@ -87,4 +169,5 @@
     </form>
   </details>
 </section>
+{{end}}
 {{end}}

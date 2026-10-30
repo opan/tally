@@ -8,17 +8,42 @@
   <a class="btn primary" href="/t/{{$t.Slug}}/periods">{{.T "setup.period"}}</a>
 </section>
 {{else}}
-<section class="card">
+{{with .Data.Ended}}
+<section class="card endedcard">
+  <h2>{{$.T "play.season_ended" .Name ($.Date .EndsOn)}}</h2>
+  <p class="muted small">{{$.T "play.season_ended_help"}}</p>
+  <div class="actions">
+    <a class="btn primary" href="/t/{{$t.Slug}}/periods#baru">{{$.T "play.new_season"}}</a>
+    <a class="btn ghost" href="/t/{{$t.Slug}}/periods/{{.ID}}">{{$.T "play.see_season" .Name}}</a>
+  </div>
+</section>
+{{end}}
+{{with .Data.Next}}
+<p class="alert info">{{$.T "play.season_next" .Name ($.Date .StartsOn)}}</p>
+{{end}}
+{{with .Data.Today}}
+<section class="card todaycard">
+  <div>
+    <p class="eyebrow">{{$.T "play.today"}}</p>
+    <h2>{{$.T "round.label" .WeekLabel}} &middot; {{$.Date .PlayedOn}}</h2>
+  </div>
+  <a class="btn primary" href="/t/{{$t.Slug}}/rounds/{{.ID}}">{{$.T "play.open_today"}}</a>
+</section>
+{{end}}
+<section class="card" id="mulai">
   <h2>{{.T "play.start_title"}}</h2>
   <p class="muted small">{{.T "play.start_help"}}</p>
-  <form method="post" action="/t/{{$t.Slug}}/rounds" class="stack">
-    <div class="row2">
-      <label>{{.T "play.date"}}<input type="date" name="played_on" value="{{.Data.FDate}}" required></label>
-      <label {{if $t.Preset.IsCounter}}hidden{{end}}>{{.T "play.courts"}}
-        <select name="courts">{{range $n := 3}}<option value="{{add1 $n}}" {{if eq (add1 $n) $.Data.FCourts}}selected{{end}}>{{add1 $n}}</option>{{end}}</select>
-      </label>
+  <form method="post" action="/t/{{$t.Slug}}/rounds" class="stack startday">
+    <label>{{.T "play.date"}}<input type="date" name="played_on" id="playDate" value="{{.Data.FDate}}" required></label>
+    <div class="seasonhint" data-season-hint="playDate">
+      {{range .Data.Periods}}
+      <p data-from="{{iso .StartsOn}}" data-to="{{iso .EndsOn}}"{{if ne .ID $.Data.Season}} hidden{{end}}>
+        {{$.T "play.season_is"}} <strong>{{.Name}}</strong> <span class="muted">({{$.Date .StartsOn}} – {{$.Date .EndsOn}})</span>
+        &middot; <a href="/t/{{$t.Slug}}/periods/{{.ID}}">{{$.T "period.details"}}</a>
+      </p>
+      {{end}}
+      <p class="warn" data-none{{if .Data.Season}} hidden{{end}}>{{.T "play.season_none"}} <a href="/t/{{$t.Slug}}/periods">{{.T "play.season_manage"}}</a></p>
     </div>
-    {{template "attendance" (dict "P" $ "Players" .Data.Players "Present" .Data.FPresent)}}
     <button type="submit" class="btn primary">{{.T "play.start_submit"}}</button>
   </form>
 </section>
@@ -29,8 +54,8 @@
   <ul class="rows">
     {{range .Data.Rounds}}
     <li class="periodrow">
-      <a href="/t/{{$t.Slug}}/rounds/{{.ID}}"><strong>{{$.T "round.label" .Number}}</strong> &middot; {{$.Date .PlayedOn}}</a>
-      <span class="muted small">{{if $t.Preset.IsCounter}}{{$.T "play.entries_n" .Awards}}{{else}}{{$.T "play.matches_n" .Done}}{{end}}</span>
+      <a href="/t/{{$t.Slug}}/rounds/{{.ID}}"><strong>{{$.T "round.label" .WeekLabel}}</strong> &middot; {{$.Date .PlayedOn}}</a>{{if and $.Data.Today (eq .ID $.Data.Today.ID)}} <span class="badge gold">{{$.T "play.today_badge"}}</span>{{end}}
+      <span class="muted small">{{if $t.Preset.IsCounter}}{{$.T "play.entries_n" .Awards}}{{else}}{{if or .Done (not .Scores)}}{{$.T "play.matches_n" .Done}}{{end}}{{if and .Done .Scores}} &middot; {{end}}{{if .Scores}}{{$.T "play.scores_n" .Scores}}{{end}}{{end}}</span>
     </li>
     {{end}}
   </ul>

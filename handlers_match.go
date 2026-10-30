@@ -93,12 +93,14 @@ func (f *matchForm) parse(r *http.Request, cfg ScoringConfig, valid map[string]b
 
 type playVM struct {
 	tallyCtx
-	Current  *Period
-	Rounds   []Round
-	Players  []Participant
-	FDate    string
-	FCourts  int
-	FPresent map[string]bool
+	Today   *Round  // today's play day, if it was started
+	Ended   *Period // no season runs or is coming: the one that ended last
+	Next    *Period // no season runs: the next one to start
+	Current *Period
+	Periods []Period // newest first, for the "which season" line
+	Season  string   // id of the season FDate falls in, "" if none
+	Rounds  []Round
+	FDate   string
 }
 
 func (a *App) renderPlay(w http.ResponseWriter, r *http.Request, vm playVM, status int) {
@@ -115,23 +117,41 @@ func (a *App) renderPlay(w http.ResponseWriter, r *http.Request, vm playVM, stat
 			return
 		}
 	}
-	all, err := a.store.ListParticipants(ctx, vm.Tally.ID)
-	if err != nil {
-		internalError(w, "list players", err)
+	if vm.Periods, err = a.store.ListPeriods(ctx, vm.Tally.ID); err != nil {
+		internalError(w, "list periods", err)
 		return
-	}
-	for _, p := range all {
-		if p.Active {
-			vm.Players = append(vm.Players, p)
-		}
 	}
 	if vm.FDate == "" {
 		vm.FDate = today().Format(dateLayout)
 	}
-	if vm.FCourts == 0 {
-		vm.FCourts = 1
-		if len(vm.Rounds) > 0 {
-			vm.FCourts = vm.Rounds[0].Courts
+	running := false
+	for i := range vm.Periods {
+		p := &vm.Periods[i]
+		switch p.Status() {
+		case SeasonRunning:
+			running = true
+		case SeasonUpcoming:
+			if vm.Next == nil || p.StartsOn.Before(vm.Next.StartsOn) {
+				vm.Next = p
+			}
+		case SeasonEnded:
+			if vm.Ended == nil || p.EndsOn.After(vm.Ended.EndsOn) {
+				vm.Ended = p
+			}
+		}
+	}
+	if running {
+		vm.Next, vm.Ended = nil, nil
+	} else if vm.Next != nil {
+		vm.Ended = nil
+	}
+	// Same pick as PeriodForDate: the latest-starting season covering the date.
+	if d, ok := parseDate(vm.FDate); ok {
+		for _, p := range vm.Periods {
+			if !d.Before(p.StartsOn) && !d.After(p.EndsOn) {
+				vm.Season = p.ID
+				break
+			}
 		}
 	}
 	a.renderStatus(w, r, "play", vm, status)
@@ -142,18 +162,14 @@ func (a *App) handlePlay(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if r.URL.Query().Get("new") == "" {
-		rd, err := a.store.RoundByDate(r.Context(), tc.Tally.ID, today())
-		if err == nil {
-			http.Redirect(w, r, tallyPath(tc.Tally, "/rounds/"+rd.ID), http.StatusSeeOther)
-			return
-		}
-		if !errors.Is(err, pgx.ErrNoRows) {
-			internalError(w, "round by date", err)
-			return
-		}
+	vm := playVM{tallyCtx: tc}
+	rd, err := a.store.RoundByDate(r.Context(), tc.Tally.ID, today())
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		internalError(w, "round by date", err)
+		return
 	}
-	a.renderPlay(w, r, playVM{tallyCtx: tc}, http.StatusOK)
+	vm.Today = rd
+	a.renderPlay(w, r, vm, http.StatusOK)
 }
 
 func readCourts(r *http.Request) (int, bool) {
@@ -176,20 +192,14 @@ func (a *App) handleCreateRound(w http.ResponseWriter, r *http.Request) {
 	}
 	limitBody(w, r, maxFormBytes)
 	_ = r.ParseForm()
-	present := r.Form["present"]
-	courts, okC := readCourts(r)
-	vm := playVM{tallyCtx: tc, FDate: r.FormValue("played_on"), FCourts: courts, FPresent: presentSet(present)}
+	vm := playVM{tallyCtx: tc, FDate: r.FormValue("played_on")}
 	fail := func(key string) {
 		vm.Err = tr(r, key)
 		a.renderPlay(w, r, vm, http.StatusUnprocessableEntity)
 	}
 	d, okD := parseDate(vm.FDate)
-	switch {
-	case !okD:
+	if !okD {
 		fail("err.date")
-		return
-	case !okC:
-		fail("err.courts")
 		return
 	}
 	ctx := r.Context()
@@ -202,7 +212,18 @@ func (a *App) handleCreateRound(w http.ResponseWriter, r *http.Request) {
 		internalError(w, "period for date", err)
 		return
 	}
-	id, err := a.store.CreateRound(ctx, tc.Tally.ID, u.ID, period.ID, d, courts, present)
+	// Who's here and the courts are set on the play day itself (or follow from
+	// the points entered); courts carry over from the season's last play day.
+	courts := 1
+	prev, err := a.store.RoundsForPeriod(ctx, period.ID)
+	if err != nil {
+		internalError(w, "list rounds", err)
+		return
+	}
+	if len(prev) > 0 {
+		courts = prev[0].Courts
+	}
+	id, err := a.store.CreateRound(ctx, tc.Tally.ID, u.ID, period.ID, d, courts, nil)
 	if errors.Is(err, ErrRoundExists) {
 		existing, err := a.store.RoundByDate(ctx, tc.Tally.ID, d)
 		if err != nil {
@@ -245,6 +266,48 @@ type roundVM struct {
 	EntryFor   []Participant // players offered in the points-entry grid
 	FReason    string
 	FPoints    map[string]string
+
+	// Poin tab (RFC-001): each player's points per play, without match details.
+	Tabs       bool   // show the Poin / Pertandingan tabs
+	DayTab     string // tabPoints or tabMatches (Tab is the tally menu's)
+	ScoreMax   int
+	MaxPlays   int
+	ScoreRows  []scoreRow
+	ScorePlays int
+	PickNames  []string // what the player field suggests
+	FPlayer    string
+	FScore     string
+	ConfirmNew string // typed name that isn't a player yet; asks before adding
+	Focus      string // "player", "points", "xplayer" or "xpoints": where the cursor goes
+	FXPlayer   string // the extras form, as typed
+	FXPoints   string
+}
+
+// maxPlaysPerDay caps how often one player plays on a play day, like the
+// club's sheet with its 7 slots (RFC-001 §6). Scores and matches both count.
+const maxPlaysPerDay = 7
+
+const (
+	tabPoints   = "poin"
+	tabMatches  = "match"
+	tabCookie   = "round_tab"
+	maxScoreLen = 4 // digits accepted in the points field
+)
+
+// playChip is one play in a player's row on the Poin tab.
+type playChip struct {
+	Points  int
+	AwardID string // set for a score entry, which can be deleted here
+	MatchID string // set for a play from a match, changed on the Pertandingan tab
+	OnCourt bool   // a match that has no score yet
+}
+
+// scoreRow is one player's plays on a play day.
+type scoreRow struct {
+	Player Participant
+	Chips  []playChip
+	Total  int
+	CanAdd bool
 }
 
 type roundData struct {
@@ -254,7 +317,8 @@ type roundData struct {
 	players []Participant
 	present []string
 	matches []*Match
-	awards  []Award
+	awards  []Award // extras
+	scores  []Award // points entered without match details
 }
 
 func (a *App) loadRound(w http.ResponseWriter, r *http.Request, tc tallyCtx, roundID string) (*roundData, bool) {
@@ -289,7 +353,82 @@ func (a *App) loadRound(w http.ResponseWriter, r *http.Request, tc tallyCtx, rou
 		internalError(w, "list awards", err)
 		return nil, false
 	}
+	if d.scores, err = a.store.ScoreAwards(ctx, rd.ID); err != nil {
+		internalError(w, "list scores", err)
+		return nil, false
+	}
 	return d, true
+}
+
+// scoreMax is the most points one play can earn when points are entered per
+// player, and false when the season's format doesn't support that: only a
+// race to a target (badminton to 42) does for now.
+func (d *roundData) scoreMax() (int, bool) {
+	c := d.period.Scoring
+	if d.tc.Tally.Preset().IsCounter() || c.Format != FormatContinuous {
+		return 0, false
+	}
+	return c.Target + c.WinBonus, true
+}
+
+// scoreRows lists everyone who played today, by name: their scores in the
+// order entered, then their matches.
+func (d *roundData) scoreRows() (rows []scoreRow, plays int) {
+	byID := map[string]*scoreRow{}
+	row := func(id string) *scoreRow {
+		if byID[id] == nil {
+			byID[id] = &scoreRow{}
+		}
+		return byID[id]
+	}
+	for _, s := range d.scores {
+		r := row(s.ParticipantID)
+		r.Chips = append(r.Chips, playChip{Points: s.Points, AwardID: s.ID})
+	}
+	for _, m := range d.matches {
+		for _, side := range m.Sides {
+			for _, p := range side.Players {
+				r := row(p.ID)
+				r.Chips = append(r.Chips, playChip{Points: side.Points, MatchID: m.ID, OnCourt: m.Scheduled()})
+			}
+		}
+	}
+	for _, p := range d.players {
+		r := byID[p.ID]
+		if r == nil {
+			continue
+		}
+		r.Player = p
+		for _, c := range r.Chips {
+			if !c.OnCourt {
+				r.Total += c.Points
+			}
+		}
+		r.CanAdd = len(r.Chips) < maxPlaysPerDay
+		plays += len(r.Chips)
+		rows = append(rows, *r)
+	}
+	slices.SortStableFunc(rows, func(a, b scoreRow) int {
+		return strings.Compare(strings.ToLower(a.Player.Name), strings.ToLower(b.Player.Name))
+	})
+	return rows, plays
+}
+
+// roundTab is the tab asked for in ?tab=, remembered in a cookie; otherwise
+// the last one used, Poin by default.
+func roundTab(w http.ResponseWriter, r *http.Request) string {
+	tab := r.URL.Query().Get("tab")
+	if tab == tabPoints || tab == tabMatches {
+		http.SetCookie(w, &http.Cookie{
+			Name: tabCookie, Value: tab, Path: "/t/", MaxAge: 365 * 24 * 3600,
+			HttpOnly: true, SameSite: http.SameSiteLaxMode, Secure: isHTTPS(r),
+		})
+		return tab
+	}
+	if c, err := r.Cookie(tabCookie); err == nil && c.Value == tabMatches {
+		return tabMatches
+	}
+	return tabPoints
 }
 
 func (d *roundData) validPlayers() map[string]bool {
@@ -344,6 +483,33 @@ func (a *App) renderRoundVM(w http.ResponseWriter, r *http.Request, d *roundData
 		tallyCtx: d.tc, Round: d.round, Period: d.period, SideSize: sideSize, Games: games,
 		Players: d.players, Present: presentSet(d.present), Forms: map[string]*matchForm{},
 		NeedPerCt: 2 * sideSize, Counter: t.Preset().IsCounter(), Awards: d.awards,
+		MaxPlays: maxPlaysPerDay,
+	}
+	if vm.ScoreMax, vm.Tabs = d.scoreMax(); vm.Tabs {
+		vm.DayTab = roundTab(w, r)
+		if len(override) > 0 {
+			vm.DayTab = tabMatches // a match form failed
+		}
+		vm.ScoreRows, vm.ScorePlays = d.scoreRows()
+		for _, p := range d.players {
+			if p.Active {
+				vm.PickNames = append(vm.PickNames, p.Name)
+			}
+		}
+		q := r.URL.Query()
+		if r.Method == http.MethodGet && vm.DayTab == tabPoints {
+			if name := q.Get("player"); name != "" && !tooLong(name, maxPlayerNameLen) {
+				vm.FPlayer, vm.Focus = name, "points"
+			}
+			switch q.Get("ok") {
+			case "score_saved":
+				vm.Focus = "player"
+			case "awards_saved":
+				vm.AutoOpen, vm.Focus = "awards", "xplayer"
+			case "award_deleted":
+				vm.AutoOpen = "awards"
+			}
+		}
 	}
 	inMatch := map[string]bool{}
 	for _, m := range d.matches {
@@ -637,7 +803,7 @@ func (a *App) handleAddAwards(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	done, ok := a.claimSubmit(w, r, roundPath(tc.Tally, d.round.ID)+"?ok=awards_saved#awards")
+	done, ok := a.claimSubmit(w, r, roundPath(tc.Tally, d.round.ID)+"?ok=awards_saved&tab=poin#awards")
 	if !ok {
 		return
 	}
@@ -677,7 +843,7 @@ func (a *App) handleAddAwards(w http.ResponseWriter, r *http.Request) {
 			d.tc.Err = tr(r, errKey)
 		}
 		a.renderRoundVM(w, r, d, nil, func(vm *roundVM) {
-			vm.FPoints, vm.FReason, vm.AutoOpen = typed, reason, "awards"
+			vm.FPoints, vm.FReason, vm.AutoOpen, vm.DayTab = typed, reason, "awards", tabPoints
 		}, http.StatusUnprocessableEntity)
 		return
 	}
@@ -687,7 +853,7 @@ func (a *App) handleAddAwards(w http.ResponseWriter, r *http.Request) {
 	}
 	saved = true
 	recordAwards(r.Context(), len(entries))
-	http.Redirect(w, r, roundPath(tc.Tally, d.round.ID)+"?ok=awards_saved#awards", http.StatusSeeOther)
+	http.Redirect(w, r, roundPath(tc.Tally, d.round.ID)+"?ok=awards_saved&tab=poin#awards", http.StatusSeeOther)
 }
 
 func (a *App) handleDeleteAward(w http.ResponseWriter, r *http.Request) {
@@ -696,7 +862,7 @@ func (a *App) handleDeleteAward(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	limitBody(w, r, maxFormBytes)
-	roundID, err := a.store.DeleteAward(r.Context(), tc.Tally.ID, u.ID, r.PathValue("aid"))
+	roundID, kind, err := a.store.DeleteAward(r.Context(), tc.Tally.ID, u.ID, r.PathValue("aid"))
 	if isNotFound(err) {
 		a.notFound(w, r)
 		return
@@ -705,5 +871,161 @@ func (a *App) handleDeleteAward(w http.ResponseWriter, r *http.Request) {
 		internalError(w, "delete award", err)
 		return
 	}
-	http.Redirect(w, r, roundPath(tc.Tally, roundID)+"?ok=award_deleted#awards", http.StatusSeeOther)
+	if kind == AwardScore {
+		http.Redirect(w, r, roundPath(tc.Tally, roundID)+"?ok=score_deleted&tab=poin#today", http.StatusSeeOther)
+		return
+	}
+	http.Redirect(w, r, roundPath(tc.Tally, roundID)+"?ok=award_deleted&tab=poin#awards", http.StatusSeeOther)
+}
+
+// handleAddExtra records a bonus or penalty for one player picked by name,
+// on the Poin tab. Unlike a score, an unknown name is refused.
+func (a *App) handleAddExtra(w http.ResponseWriter, r *http.Request) {
+	tc, u, ok := a.adminTally(w, r, "play")
+	if !ok {
+		return
+	}
+	limitBody(w, r, maxFormBytes)
+	d, ok := a.loadRound(w, r, tc, r.PathValue("rid"))
+	if !ok {
+		return
+	}
+	if _, ok := d.scoreMax(); !ok {
+		a.notFound(w, r)
+		return
+	}
+	back := roundPath(tc.Tally, d.round.ID) + "?ok=awards_saved&tab=poin" // no #fragment: it would stop autofocus
+	done, ok := a.claimSubmit(w, r, back)
+	if !ok {
+		return
+	}
+	saved := false
+	defer done(&saved)
+
+	name := strings.Join(strings.Fields(r.FormValue("player")), " ")
+	typed := strings.TrimSpace(r.FormValue("points"))
+	reason := strings.Join(strings.Fields(r.FormValue("reason")), " ")
+	fail := func(key, focus string, args ...any) {
+		d.tc.Err = tr(r, key, args...)
+		a.renderRoundVM(w, r, d, nil, func(vm *roundVM) {
+			vm.DayTab, vm.AutoOpen, vm.Focus = tabPoints, "awards", focus
+			vm.FXPlayer, vm.FXPoints, vm.FReason = name, typed, reason
+		}, http.StatusUnprocessableEntity)
+	}
+	var playerID string
+	for _, p := range d.players {
+		if strings.EqualFold(p.Name, name) {
+			playerID = p.ID
+		}
+	}
+	points, err := strconv.Atoi(strings.TrimPrefix(typed, "+"))
+	switch {
+	case name == "":
+		fail("err.score_player", "xplayer")
+	case playerID == "":
+		fail("err.extra_unknown", "xplayer", name)
+	case err != nil:
+		fail("err.number", "xpoints")
+	case points == 0:
+		fail("err.award_empty", "xpoints")
+	case points > maxAwardPoints || points < -maxAwardPoints:
+		fail("err.award_range", "xpoints", maxAwardPoints)
+	case tooLong(reason, maxReasonLen):
+		fail("err.reason_long", "xpoints")
+	default:
+		if err := a.store.AddAwards(r.Context(), tc.Tally.ID, u.ID, d.round, []AwardInput{{ParticipantID: playerID, Points: points}}, reason); err != nil {
+			internalError(w, "add extra", err)
+			return
+		}
+		saved = true
+		recordAwards(r.Context(), 1)
+		http.Redirect(w, r, back, http.StatusSeeOther)
+	}
+}
+
+// handleAddScore records one play's points for a player typed or picked by
+// name (RFC-001 Poin tab). A name that isn't a player yet is added only after
+// the admin confirms (confirm_new=1).
+func (a *App) handleAddScore(w http.ResponseWriter, r *http.Request) {
+	tc, u, ok := a.adminTally(w, r, "play")
+	if !ok {
+		return
+	}
+	limitBody(w, r, maxFormBytes)
+	d, ok := a.loadRound(w, r, tc, r.PathValue("rid"))
+	if !ok {
+		return
+	}
+	limit, ok := d.scoreMax()
+	if !ok {
+		a.notFound(w, r)
+		return
+	}
+	back := roundPath(tc.Tally, d.round.ID) + "?ok=score_saved&tab=poin" // no #fragment: it would stop autofocus
+	done, ok := a.claimSubmit(w, r, back)
+	if !ok {
+		return
+	}
+	saved := false
+	defer done(&saved)
+
+	name := strings.Join(strings.Fields(r.FormValue("player")), " ")
+	typed := strings.TrimSpace(r.FormValue("points"))
+	fail := func(status int, tweak func(*roundVM)) {
+		a.renderRoundVM(w, r, d, nil, func(vm *roundVM) {
+			vm.DayTab, vm.FPlayer, vm.FScore = tabPoints, name, typed
+			if tweak != nil {
+				tweak(vm)
+			}
+		}, status)
+	}
+	points, err := strconv.Atoi(typed)
+	switch {
+	case name == "":
+		d.tc.Err = tr(r, "err.score_player")
+		fail(http.StatusUnprocessableEntity, func(vm *roundVM) { vm.Focus = "player" })
+		return
+	case tooLong(name, maxPlayerNameLen):
+		d.tc.Err = tr(r, "err.player_name_long", name, maxPlayerNameLen)
+		fail(http.StatusUnprocessableEntity, func(vm *roundVM) { vm.Focus = "player" })
+		return
+	case len(typed) > maxScoreLen || err != nil || points < 0 || points > limit:
+		d.tc.Err = tr(r, "err.score_range", limit)
+		fail(http.StatusUnprocessableEntity, func(vm *roundVM) { vm.Focus = "points" })
+		return
+	}
+
+	var playerID, newName string
+	for _, p := range d.players {
+		if strings.EqualFold(p.Name, name) {
+			playerID, name = p.ID, p.Name
+		}
+	}
+	if playerID == "" {
+		if r.FormValue("confirm_new") != "1" {
+			fail(http.StatusOK, func(vm *roundVM) { vm.ConfirmNew = name })
+			return
+		}
+		newName = name
+	}
+	switch err := a.store.AddScore(r.Context(), tc.Tally.ID, u.ID, d.round, playerID, newName, points, maxPlaysPerDay); {
+	case errors.Is(err, ErrPlayCap):
+		d.tc.Err = tr(r, "err.score_cap", name, maxPlaysPerDay)
+		fail(http.StatusUnprocessableEntity, func(vm *roundVM) { vm.FPlayer, vm.Focus = "", "player" })
+		return
+	case errors.Is(err, ErrNameTaken):
+		// Someone added that name since the page loaded; the admin can resend.
+		d.tc.Err = tr(r, "err.score_retry")
+		fail(http.StatusConflict, nil)
+		return
+	case err != nil:
+		internalError(w, "add score", err)
+		return
+	}
+	saved = true
+	if newName != "" {
+		recordPlayersAdded(r.Context(), 1)
+	}
+	recordScores(r.Context(), 1)
+	http.Redirect(w, r, back, http.StatusSeeOther)
 }

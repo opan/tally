@@ -39,7 +39,8 @@ type playerVM struct {
 	Matches   []*Match  // newest first
 	Partners  []pairStat
 	Opponents []pairStat
-	Awards    []Award
+	Awards    []Award // extras
+	Scores    int     // plays entered as points only (no match details)
 	Counter   bool
 }
 
@@ -154,9 +155,17 @@ func (a *App) handlePlayer(w http.ResponseWriter, r *http.Request) {
 			count(opponents, p)
 		}
 	}
+	extras := vm.Awards[:0]
 	for _, aw := range vm.Awards {
 		dayPts[aw.RoundID] += aw.Points
+		if aw.Kind == AwardScore {
+			dayMatches[aw.RoundID]++
+			vm.Scores++
+		} else {
+			extras = append(extras, aw)
+		}
 	}
+	vm.Awards = extras
 	vm.Partners, vm.Opponents = sortPairs(partners), sortPairs(opponents)
 	slices.Reverse(matches)
 	vm.Matches = matches

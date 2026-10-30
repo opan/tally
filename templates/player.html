@@ -22,7 +22,7 @@
   <div class="stat"><span class="lbl">{{.T "board.entries"}}</span><span class="val">{{$d.Standing.Entries}}</span></div>
   {{else}}
   <div class="stat"><span class="lbl">{{.T "board.played"}}</span><span class="val">{{$d.Standing.Played}}</span></div>
-  <div class="stat"><span class="lbl">{{.T "player.record"}}</span><span class="val">{{$d.Won}}–{{$d.Drawn}}–{{$d.Lost}}</span><span class="muted small">{{.T "player.record_help"}}</span></div>
+  <div class="stat"><span class="lbl">{{.T "player.record"}}</span><span class="val">{{$d.Won}}–{{$d.Drawn}}–{{$d.Lost}}</span><span class="muted small">{{.T "player.record_help"}}{{if $d.Scores}} · {{.T "player.scores_only" $d.Scores}}{{end}}</span></div>
   <div class="stat"><span class="lbl">{{.T "board.avg"}}</span><span class="val">{{fmt1 $d.Standing.Avg}}</span></div>
   {{end}}
 </section>
@@ -34,7 +34,7 @@
     <tbody>
       {{range $d.Days}}
       <tr>
-        <td class="day"><a href="/t/{{$t.Slug}}?season={{$d.Period.ID}}&day={{.Round.ID}}">{{$.T "round.label" .Round.Number}}</a><span class="muted small">{{$.Date .Round.PlayedOn}}</span></td>
+        <td class="day"><a href="/t/{{$t.Slug}}?season={{$d.Period.ID}}&day={{.Round.ID}}">{{$.T "round.label" .Round.WeekLabel}}</a><span class="muted small">{{$.Date .Round.PlayedOn}}</span></td>
         <td class="num pts">{{.Points}}</td>
         <td class="bar"><svg viewBox="0 0 100 8" preserveAspectRatio="none" aria-hidden="true"><rect width="{{.BarPct}}" height="8" rx="2"/></svg></td>
         <td class="num">{{if .Rank}}#{{.Rank}}{{end}}</td>

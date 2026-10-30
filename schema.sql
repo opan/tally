@@ -189,3 +189,15 @@ CREATE TABLE IF NOT EXISTS admin_views (
     viewed_at       timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS admin_views_admin_idx ON admin_views (admin_id, viewed_at DESC);
+
+-- RFC-001: points entered per player without match details ('score', counts
+-- as one match played), next to points from matches ('match') and bonuses or
+-- penalties ('extra'). Backfill: rows with a match_id came from matches.
+ALTER TABLE point_awards ADD COLUMN IF NOT EXISTS kind text NOT NULL DEFAULT 'extra' CHECK (kind IN ('match', 'score', 'extra'));
+UPDATE point_awards SET kind = 'match' WHERE match_id IS NOT NULL AND kind <> 'match';
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'point_awards_kind_match') THEN
+        ALTER TABLE point_awards ADD CONSTRAINT point_awards_kind_match CHECK ((kind = 'match') = (match_id IS NOT NULL));
+    END IF;
+END $$;
+CREATE INDEX IF NOT EXISTS point_awards_round_player_idx ON point_awards (round_id, participant_id);

@@ -4,7 +4,7 @@
 {{$t := .Data.Tally}}{{$d := .Data}}
 <section class="card">
   <h2>{{.T "match.edit_title"}}</h2>
-  <p class="muted small">{{.T "round.label" $d.Round.Number}} &middot; {{.Date $d.Round.PlayedOn}} &middot; {{.Rule $d.Period.Scoring}}</p>
+  <p class="muted small">{{.T "round.label" $d.Round.WeekLabel}} &middot; {{.Date $d.Round.PlayedOn}} &middot; {{.Rule $d.Period.Scoring}}</p>
   {{template "matchform" (dict "P" $ "F" $d.Form "Opts" $d.Options "SideSize" $d.SideSize "Games" $d.Games "Submit" "common.save" "From" "edit" "Collapse" false)}}
   <p><a href="/t/{{$t.Slug}}/rounds/{{$d.Round.ID}}">{{.T "common.cancel"}}</a></p>
 </section>
