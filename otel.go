@@ -33,6 +33,7 @@ var (
 	scoresMade   metric.Int64Counter
 	playersAdded metric.Int64Counter
 	adminChecks  metric.Int64Counter // {result: admin|not_admin|local_account|error}
+	inviteEvents metric.Int64Counter // {action: sent|accepted|declined|ignored|unlinked}
 )
 
 // initOTel wires up OTLP metric export (push) to the collector. Endpoint,
@@ -91,6 +92,7 @@ func initOTel(ctx context.Context) (shutdown func(context.Context) error, enable
 		{&awardsMade, "tally.awards.recorded", "Extra-point entries recorded (one per player)."},
 		{&scoresMade, "tally.scores.recorded", "Points entered per player without match details (one per play)."},
 		{&playersAdded, "tally.players.added", "Players added to tallies."},
+		{&inviteEvents, "tally.player_invites", "Player-to-account invites and links (RFC-002), by action."},
 		{&adminChecks, "tally.admin.checks", "Site admin page requests, by the result of asking all-in-one."},
 	}
 	for _, c := range counters {
@@ -167,6 +169,10 @@ func recordAwards(ctx context.Context, n int) { add(ctx, awardsMade, n) }
 func recordScores(ctx context.Context, n int) { add(ctx, scoresMade, n) }
 
 func recordPlayersAdded(ctx context.Context, n int) { add(ctx, playersAdded, n) }
+
+func recordInviteEvent(ctx context.Context, action string) {
+	add(ctx, inviteEvents, 1, attribute.String("action", action))
+}
 
 // registerBusinessMetrics adds gauges sampled from the database on each export
 // (every 15s): totals for the dashboard, and the connection pool. Call it only

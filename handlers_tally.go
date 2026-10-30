@@ -63,13 +63,15 @@ type tallyCtx struct {
 	Tab    string
 	Notice string
 	Err    string
+	MeID   string // the viewer's linked player in this tally (RFC-002), or ""
 }
 
 func (c tallyCtx) IsAdmin() bool { return c.Role != "" }
 func (c tallyCtx) IsOwner() bool { return c.Role == RoleOwner }
 
 // loadTally resolves /t/{slug} and the viewer's role. Private tallies look
-// like 404s to non-admins. ok is false once a response has been written.
+// like 404s to everyone but admins and linked players, who get read-only
+// pages. ok is false once a response has been written.
 func (a *App) loadTally(w http.ResponseWriter, r *http.Request, tab string) (tc tallyCtx, ok bool) {
 	t, err := a.store.TallyBySlug(r.Context(), r.PathValue("slug"))
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -86,8 +88,12 @@ func (a *App) loadTally(w http.ResponseWriter, r *http.Request, tab string) (tc 
 			internalError(w, "load role", err)
 			return tc, false
 		}
+		if tc.MeID, err = a.store.LinkedPlayerID(r.Context(), t.ID, u.ID); err != nil {
+			internalError(w, "load linked player", err)
+			return tc, false
+		}
 	}
-	if t.Visibility == VisibilityPrivate && !tc.IsAdmin() {
+	if t.Visibility == VisibilityPrivate && !tc.IsAdmin() && tc.MeID == "" {
 		a.notFound(w, r)
 		return tc, false
 	}
@@ -116,6 +122,8 @@ var okNotices = map[string]bool{
 	"tally_created": true, "settings_saved": true, "admin_added": true, "admin_removed": true,
 	"branding_saved": true, "player_renamed": true, "player_activated": true, "player_deactivated": true, "player_deleted": true,
 	"period_created": true, "period_saved": true,
+	"invite_sent": true, "invite_cancelled": true, "player_unlinked": true,
+	"invite_accept": true, "invite_decline": true, "invite_mute": true, "unmuted": true, "link_removed": true,
 	"round_saved": true, "awards_saved": true, "award_deleted": true, "score_saved": true, "score_deleted": true, "import_done": true, "match_saved": true, "match_deleted": true, "match_cancelled": true,
 }
 
@@ -135,6 +143,11 @@ func tallyPath(t *Tally, sub string) string { return "/t/" + t.Slug + sub }
 // --- Dashboard & create ---
 
 type dashboardVM struct {
+	Invites   []IncomingInvite // RFC-002: invites to be a player
+	Mine      []MyPlayer       // "Mabar saya": players linked to this account
+	Muted     []MutedTally
+	Notice    string
+	InviteErr string
 	Cards     []TallyCard
 	Presets   []Preset
 	Err       string
@@ -146,12 +159,28 @@ type dashboardVM struct {
 }
 
 func (a *App) renderDashboard(w http.ResponseWriter, r *http.Request, vm dashboardVM, status int) {
-	cards, err := a.store.TalliesForUser(r.Context(), currentUser(r).ID)
+	ctx, u := r.Context(), currentUser(r)
+	cards, err := a.store.TalliesForUser(ctx, u.ID)
 	if err != nil {
 		internalError(w, "list tallies", err)
 		return
 	}
 	vm.Cards = cards
+	if vm.Invites, err = a.store.IncomingInvites(ctx, u); err != nil {
+		internalError(w, "list invites", err)
+		return
+	}
+	if vm.Mine, err = a.store.MyPlayers(ctx, u.ID); err != nil {
+		internalError(w, "list my players", err)
+		return
+	}
+	if vm.Muted, err = a.store.MutedTallies(ctx, u.ID); err != nil {
+		internalError(w, "list muted tallies", err)
+		return
+	}
+	if vm.Err == "" && vm.InviteErr == "" {
+		vm.Notice = okNotice(r)
+	}
 	vm.Presets = presets
 	if vm.FTemplate == "" {
 		vm.FTemplate = presets[0].ID
@@ -238,6 +267,14 @@ type playersVM struct {
 	Skipped     []string
 	FNames      string
 	JustCreated bool
+
+	// RFC-002: linking players to accounts.
+	Links       map[string]PlayerLink // by player id
+	LinkNames   []string              // players the invite form suggests: no account yet
+	FLinkPlayer string
+	FLinkUser   string
+	OpenLink    bool // keep the invite form open (after an error)
+	InviteDays  int
 }
 
 func (a *App) renderPlayers(w http.ResponseWriter, r *http.Request, vm playersVM, status int) {
@@ -247,11 +284,22 @@ func (a *App) renderPlayers(w http.ResponseWriter, r *http.Request, vm playersVM
 		return
 	}
 	vm.Players = players
+	if vm.Links, err = a.store.PlayerLinks(r.Context(), vm.Tally.ID); err != nil {
+		internalError(w, "player links", err)
+		return
+	}
 	for _, p := range players {
 		if p.Active {
 			vm.Active++
 		}
+		if l, ok := vm.Links[p.ID]; !ok || !l.Linked {
+			vm.LinkNames = append(vm.LinkNames, p.Name)
+		}
 	}
+	ttl, _ := a.inviteLimits()
+	vm.InviteDays = int(ttl / (24 * time.Hour))
+	vm.OpenLink = vm.OpenLink || r.URL.Query().Get("ok") == "invite_sent"
+
 	vm.JustCreated = r.URL.Query().Get("ok") == "tally_created"
 	a.renderStatus(w, r, "players", vm, status)
 }
@@ -351,6 +399,10 @@ func (a *App) handlePlayerAction(w http.ResponseWriter, r *http.Request) {
 		err, okKey = a.store.SetParticipantActive(ctx, tc.Tally.ID, u.ID, id, false), "player_deactivated"
 	case "delete":
 		err, okKey = a.store.DeleteParticipant(ctx, tc.Tally.ID, u.ID, id), "player_deleted"
+	case "cancel_invite":
+		err, okKey = a.store.CancelInvite(ctx, tc.Tally.ID, u.ID, id), "invite_cancelled"
+	case "unlink":
+		err, okKey = a.store.UnlinkPlayer(ctx, tc.Tally.ID, u.ID, id, ""), "player_unlinked"
 	default:
 		http.Error(w, "unknown action", http.StatusBadRequest)
 		return

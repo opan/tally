@@ -25,7 +25,10 @@
   <ul class="rows">
     {{range .Data.Players}}
     <li class="prow {{if not .Active}}inactive{{end}}">
-      <span class="pname">{{.Name}}{{if not .Active}} <span class="badge">{{$.T "players.inactive"}}</span>{{end}}</span>
+      {{$l := index $.Data.Links .ID}}
+      <span class="pname">{{.Name}}{{if not .Active}} <span class="badge">{{$.T "players.inactive"}}</span>{{end}}
+        {{if $l.Username}}<span class="plink muted small">{{if $l.Linked}}{{$.T "link.linked" $l.Username}}{{else}}{{$.T "link.pending" $l.Username ($.DayMonth $l.ExpiresAt)}}{{end}}</span>{{end}}
+      </span>
       <details class="pmenu">
         <summary class="btn small ghost">{{$.T "common.edit"}}</summary>
         <div class="pmenu-body">
@@ -49,6 +52,12 @@
               <button type="submit" class="btn small danger">{{$.T "common.delete"}}</button>
             </form>
           </div>
+          {{if $l.Username}}
+          <form method="post" action="/t/{{$t.Slug}}/players/{{.ID}}"{{if $l.Linked}} data-confirm="{{$.T "link.unlink_confirm" .Name $l.Username}}"{{end}}>
+            <input type="hidden" name="action" value="{{if $l.Linked}}unlink{{else}}cancel_invite{{end}}">
+            <button type="submit" class="btn small ghost">{{if $l.Linked}}{{$.T "link.unlink"}}{{else}}{{$.T "link.cancel"}}{{end}}</button>
+          </form>
+          {{end}}
           <p class="muted small">{{$.T "players.deactivate_help"}}</p>
           <div><button type="button" class="btn small ghost" data-close-details>{{$.T "common.cancel"}}</button></div>
         </div>
@@ -60,4 +69,24 @@
   <p class="muted">{{.T "players.empty"}}</p>
   {{end}}
 </section>
+
+{{if .Data.Players}}
+<section class="card" id="hubungkan">
+  <details {{if .Data.OpenLink}}open{{end}}>
+    <summary class="cardhead summaryhead"><h2>{{.T "link.title"}}</h2><span class="muted small">{{.T "link.summary"}}</span></summary>
+    <p class="muted small">{{.T "link.help" .Data.InviteDays}} <a href="/panduan#hubungkan">{{.T "guide.more"}}</a></p>
+    <form method="post" action="/t/{{$t.Slug}}/invites" class="stack linkform">
+      <input type="hidden" name="form_token" value="{{formToken}}">
+      <label>{{.T "score.player"}}
+        <input type="text" name="player" value="{{.Data.FLinkPlayer}}" list="link-players" maxlength="40" required autocomplete="off" autocapitalize="words" placeholder="{{.T "score.player_placeholder"}}">
+      </label>
+      <label>{{.T "link.username"}} <span class="muted hint">{{.T "link.username_hint"}}</span>
+        <input type="text" name="username" value="{{.Data.FLinkUser}}" maxlength="31" required autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="{{.T "auth.username_placeholder"}}">
+      </label>
+      <button type="submit" class="btn primary">{{.T "link.send"}}</button>
+    </form>
+    <datalist id="link-players">{{range .Data.LinkNames}}<option value="{{.}}">{{end}}</datalist>
+  </details>
+</section>
+{{end}}
 {{end}}
