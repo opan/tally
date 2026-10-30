@@ -93,6 +93,7 @@ func (f *matchForm) parse(r *http.Request, cfg ScoringConfig, valid map[string]b
 
 type playVM struct {
 	tallyCtx
+	Today   *Round // today's play day, if it was started
 	Current *Period
 	Periods []Period // newest first, for the "which season" line
 	Season  string   // id of the season FDate falls in, "" if none
@@ -138,18 +139,14 @@ func (a *App) handlePlay(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if r.URL.Query().Get("new") == "" {
-		rd, err := a.store.RoundByDate(r.Context(), tc.Tally.ID, today())
-		if err == nil {
-			http.Redirect(w, r, tallyPath(tc.Tally, "/rounds/"+rd.ID), http.StatusSeeOther)
-			return
-		}
-		if !errors.Is(err, pgx.ErrNoRows) {
-			internalError(w, "round by date", err)
-			return
-		}
+	vm := playVM{tallyCtx: tc}
+	rd, err := a.store.RoundByDate(r.Context(), tc.Tally.ID, today())
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		internalError(w, "round by date", err)
+		return
 	}
-	a.renderPlay(w, r, playVM{tallyCtx: tc}, http.StatusOK)
+	vm.Today = rd
+	a.renderPlay(w, r, vm, http.StatusOK)
 }
 
 func readCourts(r *http.Request) (int, bool) {

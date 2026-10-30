@@ -451,6 +451,19 @@ a.chip.match:hover { color: var(--ink); border-color: var(--muted); }
 .chip.add:hover { background: var(--card-2); }
 .extraform { grid-template-columns: 1fr 7em 1.2fr auto; }
 .startday { max-width: 420px; }
+.todaycard { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; border-color: var(--gold); }
+.todaycard h2 { margin: 0; }
+.todaycard .eyebrow { margin: 0 0 2px; }
+.actions-inline { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+.weeks { list-style: none; margin: 0; padding: 0; }
+.week { padding: 10px 0; border-top: 1px solid var(--line); }
+.week:first-child { border-top: 0; }
+.week.empty .week-head strong { color: var(--muted); }
+.week-head { margin-bottom: 4px; }
+.weekday { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 0 6px 12px; border-left: 2px solid var(--gold); margin: 6px 0; }
+.wd-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.wd-main a { color: var(--ink); text-decoration: none; }
+.wd-main a:hover { color: var(--gold-2); text-decoration: underline; }
 .seasonhint p { margin: 0; font-size: .92rem; }
 .seasonhint .warn { color: var(--danger); }
 @media (max-width: 520px) {

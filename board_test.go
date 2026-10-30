@@ -1,6 +1,7 @@
 package main
 
 import (
+	"slices"
 	"testing"
 	"time"
 )
@@ -73,5 +74,32 @@ func TestWeekLabel(t *testing.T) {
 		if got := c.r.WeekLabel(); got != c.want {
 			t.Errorf("%s part %d of %d: got %q, want %q", c.r.PlayedOn.Format("2 Jan"), c.r.WeekPart, c.r.WeekDays, got, c.want)
 		}
+	}
+}
+
+func TestSeasonMonths(t *testing.T) {
+	day := func(m time.Month, d int) time.Time { return time.Date(2026, m, d, 0, 0, 0, 0, time.UTC) }
+	p := &Period{StartsOn: day(10, 12), EndsOn: day(11, 10)}
+	rounds := []Round{{ID: "b", PlayedOn: day(10, 25)}, {ID: "a", PlayedOn: day(10, 22)}} // newest first
+	months := seasonMonths(p, rounds, nil)
+	if len(months) != 2 {
+		t.Fatalf("got %d months, want Oct and Nov", len(months))
+	}
+	var oct []int
+	for _, w := range months[0].Weeks {
+		oct = append(oct, w.Week)
+	}
+	// 12 Oct starts in week 2; week 5 is 29–31.
+	if want := []int{2, 3, 4, 5}; !slices.Equal(oct, want) {
+		t.Errorf("October weeks %v, want %v", oct, want)
+	}
+	if w4 := months[0].Weeks[2]; len(w4.Days) != 2 || w4.Days[0].Round.ID != "a" || w4.To.Day() != 28 {
+		t.Errorf("week 4 = %+v, want 22–28 Oct with a then b", w4)
+	}
+	if w5 := months[0].Weeks[3]; w5.From.Day() != 29 || w5.To.Day() != 31 {
+		t.Errorf("week 5 = %s – %s, want 29–31", w5.From.Format("2"), w5.To.Format("2"))
+	}
+	if n := len(months[1].Weeks); n != 2 {
+		t.Errorf("November has %d weeks up to the 10th, want 2", n)
 	}
 }

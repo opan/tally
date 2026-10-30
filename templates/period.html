@@ -1,0 +1,51 @@
+{{define "title"}}{{.Data.Period.Name}} &middot; {{.Data.Tally.Name}} &mdash; {{.T "app.name"}}{{end}}
+{{define "content"}}
+{{template "tallyhead" .}}
+{{$t := .Data.Tally}}{{$d := .Data}}{{$p := $d.Period}}
+<p class="small"><a href="/t/{{$t.Slug}}/periods">&larr; {{.T "tab.periods"}}</a></p>
+<section class="card">
+  <div class="cardhead">
+    <div>
+      <h2>{{$p.Name}}</h2>
+      <p class="muted small">{{.Date $p.StartsOn}} – {{.Date $p.EndsOn}} &middot; {{.Rule $p.Scoring}}</p>
+    </div>
+    <a class="btn small ghost" href="/t/{{$t.Slug}}/periods/{{$p.ID}}/edit">{{.T "common.edit"}}</a>
+  </div>
+  <div class="stats">
+    <div class="stat"><span class="lbl">{{.T "season.play_days"}}</span><span class="val">{{$d.PlayDays}}</span></div>
+    <div class="stat"><span class="lbl">{{.T "season.players"}}</span><span class="val">{{$d.Players}}</span></div>
+    <div class="stat"><span class="lbl">{{.T "season.plays"}}</span><span class="val">{{$d.Plays}}</span></div>
+    <div class="stat"><span class="lbl">{{.T "board.points"}}</span><span class="val">{{$d.Points}}</span></div>
+  </div>
+  <p class="small"><a href="/t/{{$t.Slug}}?season={{$p.ID}}">{{.T "season.board"}}</a></p>
+</section>
+
+{{range $d.Months}}
+<section class="card">
+  <h2>{{$.MonthYear .Month}}</h2>
+  <ul class="weeks">
+    {{range .Weeks}}
+    <li class="week{{if not .Days}} empty{{end}}">
+      <div class="week-head"><strong>{{$.T "round.label" (print .Week)}}</strong> <span class="muted small">{{$.DayMonth .From}} – {{$.DayMonth .To}}</span></div>
+      {{range .Days}}
+      <div class="weekday">
+        <div class="wd-main">
+          <a href="/t/{{$t.Slug}}/rounds/{{.Round.ID}}"><strong>{{$.T "round.label" .Round.WeekLabel}}</strong> &middot; {{$.Weekday .Round.PlayedOn}} {{$.DayMonth .Round.PlayedOn}}</a>
+          {{if .Stats.Players}}
+          <span class="muted small">{{$.T "season.day_stats" .Stats.Players .Stats.Plays .Stats.Points}}</span>
+          <span class="small">{{$.T "season.top" .Stats.TopName .Stats.TopPoints}}</span>
+          {{else}}
+          <span class="muted small">{{$.T "season.day_empty"}}</span>
+          {{end}}
+        </div>
+        {{if .Stats.Players}}<a class="btn small ghost" href="/t/{{$t.Slug}}?season={{$p.ID}}&day={{.Round.ID}}">{{$.T "season.day_board"}}</a>{{end}}
+      </div>
+      {{else}}
+      <div class="muted small">{{$.T "season.no_play_day"}}</div>
+      {{end}}
+    </li>
+    {{end}}
+  </ul>
+</section>
+{{end}}
+{{end}}

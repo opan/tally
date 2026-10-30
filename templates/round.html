@@ -7,7 +7,7 @@
     <h2>{{.T "round.label" $d.Round.WeekLabel}} &middot; {{.Date $d.Round.PlayedOn}}</h2>
     <p class="muted small">{{$d.Period.Name}} &middot; {{.Rule $d.Period.Scoring}}</p>
   </div>
-  <a class="btn small ghost" href="/t/{{$t.Slug}}/play?new=1">{{.T "round.other_day"}}</a>
+  <a class="btn small" href="/t/{{$t.Slug}}/play#mulai">{{.T "round.new_day"}}</a>
 </div>
 
 {{if $d.Counter}}

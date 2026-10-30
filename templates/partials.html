@@ -6,8 +6,8 @@
   <nav class="tabs" aria-label="{{.T "tally.tabs"}}">
     <a href="/t/{{$t.Slug}}" {{if eq .Data.Tab "overview"}}class="on" aria-current="page"{{end}}>{{.T "tab.overview"}}</a>
     <a href="/t/{{$t.Slug}}/play" {{if eq .Data.Tab "play"}}class="on" aria-current="page"{{end}}>{{if $t.Preset.IsCounter}}{{.T "tab.record"}}{{else}}{{.T "tab.play"}}{{end}}</a>
-    <a href="/t/{{$t.Slug}}/players" {{if eq .Data.Tab "players"}}class="on" aria-current="page"{{end}}>{{.T "tab.players"}}</a>
     <a href="/t/{{$t.Slug}}/periods" {{if eq .Data.Tab "periods"}}class="on" aria-current="page"{{end}}>{{.T "tab.periods"}}</a>
+    <a href="/t/{{$t.Slug}}/players" {{if eq .Data.Tab "players"}}class="on" aria-current="page"{{end}}>{{.T "tab.players"}}</a>
     <a href="/t/{{$t.Slug}}/settings" {{if eq .Data.Tab "settings"}}class="on" aria-current="page"{{end}}>{{.T "tab.settings"}}</a>
   </nav>
   {{end}}

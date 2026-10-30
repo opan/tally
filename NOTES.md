@@ -412,6 +412,16 @@ still in the security backlog.
   scores tick players present, courts carry over from the season's last play
   day, and both stay editable on the Pertandingan tab. The old start-day
   guide screenshots were removed.
+- Leaderboard shows the whole season (movement since before the latest play
+  day); the "Minggu" picker filters to one play day's points only (no
+  movement column). Poster follows the same filter.
+- Main tab always shows the start form (no jump to today's play day); today's
+  play day, if any, is a card on top. The play day's "Hari lain" became
+  "+ Hari main baru". Tab order: Ringkasan, Main, Musim, Pemain, Setelan.
+- Musim: a season's name opens `/periods/{id}` with totals and every week of
+  the month in the season (Minggu 1–5 per month, empty ones too), each play
+  day with players, plays, points, top player, and a link to its board.
+  Editing moved to `/periods/{id}/edit`.
 - Board: a points-only play day shows "entered without match details" where
   the match results would be. Metric `tally.scores.recorded`.
 

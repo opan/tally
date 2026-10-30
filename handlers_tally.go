@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5"
@@ -588,6 +589,85 @@ func (a *App) editablePeriod(w http.ResponseWriter, r *http.Request) (tallyCtx, 
 		return tc, nil, nil, false
 	}
 	return tc, u, p, true
+}
+
+// seasonWeek is one week of the month inside a season (days 1–7, 8–14, …,
+// 29–end), with its play days.
+type seasonWeek struct {
+	Week     int
+	From, To time.Time
+	Days     []seasonDay
+}
+
+type seasonDay struct {
+	Round Round
+	Stats DayStats
+}
+
+type seasonMonth struct {
+	Month time.Time // first of the month
+	Weeks []seasonWeek
+}
+
+type periodVM struct {
+	tallyCtx
+	Period   *Period
+	Months   []seasonMonth
+	PlayDays int
+	Players  int
+	Plays    int
+	Points   int
+}
+
+// seasonMonths lays out every week of the month that overlaps the season,
+// month by month, and puts each play day in its week.
+func seasonMonths(p *Period, rounds []Round, stats map[string]DayStats) []seasonMonth {
+	var out []seasonMonth
+	for m := time.Date(p.StartsOn.Year(), p.StartsOn.Month(), 1, 0, 0, 0, 0, time.UTC); !m.After(p.EndsOn); m = m.AddDate(0, 1, 0) {
+		sm := seasonMonth{Month: m}
+		last := m.AddDate(0, 1, -1).Day()
+		for w := 1; (w-1)*7+1 <= last; w++ {
+			from := m.AddDate(0, 0, (w-1)*7)
+			to := m.AddDate(0, 0, min(w*7, last)-1)
+			if to.Before(p.StartsOn) || from.After(p.EndsOn) {
+				continue
+			}
+			sw := seasonWeek{Week: w, From: from, To: to}
+			for i := len(rounds) - 1; i >= 0; i-- { // rounds are newest first
+				rd := rounds[i]
+				if !rd.PlayedOn.Before(from) && !rd.PlayedOn.After(to) {
+					sw.Days = append(sw.Days, seasonDay{Round: rd, Stats: stats[rd.ID]})
+				}
+			}
+			sm.Weeks = append(sm.Weeks, sw)
+		}
+		out = append(out, sm)
+	}
+	return out
+}
+
+func (a *App) handlePeriodDetail(w http.ResponseWriter, r *http.Request) {
+	tc, _, p, ok := a.editablePeriod(w, r)
+	if !ok {
+		return
+	}
+	ctx := r.Context()
+	rounds, err := a.store.RoundsForPeriod(ctx, p.ID)
+	if err != nil {
+		internalError(w, "list rounds", err)
+		return
+	}
+	stats, players, err := a.store.SeasonDayStats(ctx, p.ID)
+	if err != nil {
+		internalError(w, "season stats", err)
+		return
+	}
+	vm := periodVM{tallyCtx: tc, Period: p, Months: seasonMonths(p, rounds, stats), PlayDays: len(rounds), Players: players}
+	for _, s := range stats {
+		vm.Plays += s.Plays
+		vm.Points += s.Points
+	}
+	a.render(w, r, "period", vm)
 }
 
 func (a *App) handleEditPeriodForm(w http.ResponseWriter, r *http.Request) {

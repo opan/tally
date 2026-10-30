@@ -467,6 +467,64 @@ func (s *Store) StandingsAsOf(ctx context.Context, periodID string, asOf time.Ti
 	})
 }
 
+// StandingsForRound totals each player's points on one play day only.
+func (s *Store) StandingsForRound(ctx context.Context, roundID string) ([]Standing, error) {
+	rows, err := s.pool.Query(ctx,
+		`SELECT p.id, p.display_name, SUM(pa.points), COUNT(*) FILTER (WHERE pa.kind <> 'extra'), COUNT(*)
+		 FROM point_awards pa
+		 JOIN participants p ON p.id = pa.participant_id
+		 WHERE pa.round_id = $1
+		 GROUP BY p.id, p.display_name`, roundID)
+	if err != nil {
+		return nil, err
+	}
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (Standing, error) {
+		var st Standing
+		err := row.Scan(&st.ParticipantID, &st.Name, &st.Points, &st.Played, &st.Entries)
+		return st, err
+	})
+}
+
+// DayStats sums up one play day for the season page.
+type DayStats struct {
+	Players   int    // players with any points that day
+	Plays     int    // scores plus match plays
+	Points    int    // all points, extras included
+	TopName   string // most points that day (ties: by name)
+	TopPoints int
+}
+
+// SeasonDayStats returns DayStats per play day (round id) of a season, and
+// how many players have points in the season.
+func (s *Store) SeasonDayStats(ctx context.Context, periodID string) (map[string]DayStats, int, error) {
+	rows, err := s.pool.Query(ctx,
+		`WITH per AS (
+		   SELECT pa.round_id, pa.participant_id, SUM(pa.points) AS pts,
+		          COUNT(*) FILTER (WHERE pa.kind <> 'extra') AS plays
+		   FROM point_awards pa WHERE pa.period_id = $1 AND pa.round_id IS NOT NULL
+		   GROUP BY pa.round_id, pa.participant_id)
+		 SELECT per.round_id, count(*), sum(per.plays), sum(per.pts),
+		        (array_agg(p.display_name ORDER BY per.pts DESC, lower(p.display_name)))[1], max(per.pts)
+		 FROM per JOIN participants p ON p.id = per.participant_id
+		 GROUP BY per.round_id`, periodID)
+	if err != nil {
+		return nil, 0, err
+	}
+	out := map[string]DayStats{}
+	var id string
+	var d DayStats
+	if _, err := pgx.ForEachRow(rows, []any{&id, &d.Players, &d.Plays, &d.Points, &d.TopName, &d.TopPoints}, func() error {
+		out[id] = d
+		return nil
+	}); err != nil {
+		return nil, 0, err
+	}
+	var players int
+	err = s.pool.QueryRow(ctx,
+		`SELECT count(DISTINCT participant_id) FROM point_awards WHERE period_id = $1`, periodID).Scan(&players)
+	return out, players, err
+}
+
 func nullDate(t time.Time) any {
 	if t.IsZero() {
 		return nil

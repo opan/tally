@@ -220,3 +220,49 @@ func TestRoundWeekLabels(t *testing.T) {
 		}
 	}
 }
+
+func TestDayStandingsAndSeasonStats(t *testing.T) {
+	s := testStore(t)
+	ctx := context.Background()
+	u, _ := s.CreateUser(ctx, "owner", "x")
+	tl, err := s.CreateTally(ctx, u.ID, Tally{Slug: "club", Name: "Club", Template: "badminton_doubles", Visibility: VisibilityLink})
+	if err != nil {
+		t.Fatal(err)
+	}
+	d1 := time.Date(2026, 10, 11, 0, 0, 0, 0, time.UTC)
+	period, _ := s.CreatePeriod(ctx, u.ID, Period{TallyID: tl.ID, Name: "S1", StartsOn: d1, EndsOn: d1.AddDate(0, 3, 0), Scoring: DefaultContinuous})
+	id1, _ := s.CreateRound(ctx, tl.ID, u.ID, period.ID, d1, 1, nil)
+	id2, _ := s.CreateRound(ctx, tl.ID, u.ID, period.ID, d1.AddDate(0, 0, 7), 1, nil)
+	r1, _ := s.RoundByID(ctx, tl.ID, id1)
+	r2, _ := s.RoundByID(ctx, tl.ID, id2)
+	for _, e := range []struct {
+		r    *Round
+		name string
+		pts  int
+	}{{r1, "Aaron", 42}, {r1, "Aaron", 40}, {r1, "Dimas", 42}, {r2, "Dimas", 42}, {r2, "Dimas", 41}} {
+		players, _ := s.ListParticipants(ctx, tl.ID)
+		id, newName := "", e.name
+		for _, p := range players {
+			if p.Name == e.name {
+				id, newName = p.ID, ""
+			}
+		}
+		if err := s.AddScore(ctx, tl.ID, u.ID, e.r, id, newName, e.pts, 7); err != nil {
+			t.Fatal(err)
+		}
+	}
+	day2, err := s.StandingsForRound(ctx, r2.ID)
+	if err != nil || len(day2) != 1 || day2[0].Name != "Dimas" || day2[0].Points != 83 || day2[0].Played != 2 {
+		t.Fatalf("day 2 standings = %+v, %v; want only Dimas 83 in 2", day2, err)
+	}
+	stats, players, err := s.SeasonDayStats(ctx, period.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if players != 2 {
+		t.Errorf("season players = %d, want 2", players)
+	}
+	if got := stats[r1.ID]; got != (DayStats{Players: 2, Plays: 3, Points: 124, TopName: "Aaron", TopPoints: 82}) {
+		t.Errorf("day 1 stats = %+v", got)
+	}
+}
