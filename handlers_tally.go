@@ -115,7 +115,7 @@ var okNotices = map[string]bool{
 	"tally_created": true, "settings_saved": true, "admin_added": true, "admin_removed": true,
 	"branding_saved": true, "player_renamed": true, "player_activated": true, "player_deactivated": true, "player_deleted": true,
 	"period_created": true, "period_saved": true,
-	"round_saved": true, "awards_saved": true, "award_deleted": true, "match_saved": true, "match_deleted": true, "match_cancelled": true,
+	"round_saved": true, "awards_saved": true, "award_deleted": true, "score_saved": true, "score_deleted": true, "match_saved": true, "match_deleted": true, "match_cancelled": true,
 }
 
 func okNotice(r *http.Request) string {

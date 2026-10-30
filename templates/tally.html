@@ -86,6 +86,12 @@
   {{range $d.Results}}{{template "matchrow" (dict "P" $ "M" . "Slug" $t.Slug "Actions" false)}}{{end}}
   {{if $d.IsAdmin}}<p class="small"><a href="/t/{{$t.Slug}}/rounds/{{$d.Round.ID}}">{{$.T "board.manage_day"}}</a></p>{{end}}
 </section>
+{{else if and $d.Round (not $t.Preset.IsCounter)}}
+<section class="card">
+  <div class="cardhead"><h2>{{$.T "board.results"}}</h2><span class="muted small">{{$.T "round.label" $d.Round.Number}}</span></div>
+  <p class="muted">{{$.T "board.points_only"}}</p>
+  {{if $d.IsAdmin}}<p class="small"><a href="/t/{{$t.Slug}}/rounds/{{$d.Round.ID}}">{{$.T "board.manage_day"}}</a></p>{{end}}
+</section>
 {{end}}
 {{else}}
 <section class="card empty"><p>{{.T "tally.no_period"}}</p></section>

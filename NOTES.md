@@ -381,6 +381,29 @@ still in the security backlog.
 - Needs aio with RFC-003 deployed; until then the links lead to aio pages that
   don't exist yet, so merge after all-in-one#36 is live.
 
+## RFC-001 S1 notes: points per player (2026-10-30)
+
+- Play day gets two tabs, **Poin** (default) and **Pertandingan**, for
+  non-counter tallies whose season is a race to a target (`continuous`, e.g.
+  badminton to 42). Other formats keep the single page. The last tab is
+  remembered in a `round_tab` cookie; `?tab=` switches.
+- Poin tab: "Input poin" (player `<input list>` + points 0..target+win bonus,
+  one entry = one play), "Poin hari ini" (a row per player: score chips in
+  entry order, then grey chips from matches, `+`, day total), and the extras
+  ("Poin tambahan") moved here. Attendance & courts stay on Pertandingan.
+- `point_awards.kind`: `match` (has `match_id`, enforced by a CHECK), `score`
+  (Poin tab, counts as a match played on the board, player page and tie-break),
+  `extra` (bonus/penalty/counter). Upgrade backfills `match` for rows with a
+  match_id; checked on a copy of the dev DB.
+- Cap of 7 plays per player per day counts scores plus matches (scheduled
+  too); it is enforced on Poin entries only, so matches still work as before.
+  A score also ticks the player as present.
+- Unknown name: the form asks before adding the player (`confirm_new=1`).
+- Changes from RFC §7.1: no `seq` column (entries are ordered by time; the
+  import will write them in slot order); kind has three values, not two.
+- Board: a points-only play day shows "entered without match details" where
+  the match results would be. Metric `tally.scores.recorded`.
+
 ## Open questions
 
 - App name and domain (working name "Tally"; e.g. `tally.opan.dev`).

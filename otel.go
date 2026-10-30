@@ -30,6 +30,7 @@ var (
 	playDays     metric.Int64Counter
 	matchEvents  metric.Int64Counter // {action: scheduled|scored|added|edited|deleted|cancelled}
 	awardsMade   metric.Int64Counter
+	scoresMade   metric.Int64Counter
 	playersAdded metric.Int64Counter
 	adminChecks  metric.Int64Counter // {result: admin|not_admin|local_account|error}
 )
@@ -88,6 +89,7 @@ func initOTel(ctx context.Context) (shutdown func(context.Context) error, enable
 		{&playDays, "tally.play_days.started", "Play days started."},
 		{&matchEvents, "tally.match.events", "Match changes, by action."},
 		{&awardsMade, "tally.awards.recorded", "Extra-point entries recorded (one per player)."},
+		{&scoresMade, "tally.scores.recorded", "Points entered per player without match details (one per play)."},
 		{&playersAdded, "tally.players.added", "Players added to tallies."},
 		{&adminChecks, "tally.admin.checks", "Site admin page requests, by the result of asking all-in-one."},
 	}
@@ -161,6 +163,8 @@ func recordMatchEvent(ctx context.Context, action string, n int) {
 }
 
 func recordAwards(ctx context.Context, n int) { add(ctx, awardsMade, n) }
+
+func recordScores(ctx context.Context, n int) { add(ctx, scoresMade, n) }
 
 func recordPlayersAdded(ctx context.Context, n int) { add(ctx, playersAdded, n) }
 

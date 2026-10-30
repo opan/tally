@@ -22,7 +22,7 @@
   <div class="stat"><span class="lbl">{{.T "board.entries"}}</span><span class="val">{{$d.Standing.Entries}}</span></div>
   {{else}}
   <div class="stat"><span class="lbl">{{.T "board.played"}}</span><span class="val">{{$d.Standing.Played}}</span></div>
-  <div class="stat"><span class="lbl">{{.T "player.record"}}</span><span class="val">{{$d.Won}}–{{$d.Drawn}}–{{$d.Lost}}</span><span class="muted small">{{.T "player.record_help"}}</span></div>
+  <div class="stat"><span class="lbl">{{.T "player.record"}}</span><span class="val">{{$d.Won}}–{{$d.Drawn}}–{{$d.Lost}}</span><span class="muted small">{{.T "player.record_help"}}{{if $d.Scores}} · {{.T "player.scores_only" $d.Scores}}{{end}}</span></div>
   <div class="stat"><span class="lbl">{{.T "board.avg"}}</span><span class="val">{{fmt1 $d.Standing.Avg}}</span></div>
   {{end}}
 </section>
