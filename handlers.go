@@ -25,6 +25,9 @@ type App struct {
 	guard    *submitGuard // one-time form tokens against double submits; nil-safe
 
 	guideSizes map[string]imgSize // the guide's screenshot sizes, read once at startup
+
+	inviteTTL     time.Duration // how long a player invite stays open (INVITE_TTL_DAYS)
+	invitesPerDay int           // invites one tally can send per 24 hours (INVITES_PER_TALLY_DAY)
 }
 
 const maxFormBytes = 256 << 10 // 256 KiB cap for ordinary form posts
@@ -180,10 +183,13 @@ func (a *App) handleHome(w http.ResponseWriter, r *http.Request) {
 type guideVM struct {
 	ImgVer string             // cache-buster for the screenshots
 	Sizes  map[string]imgSize // "id/courts" → pixel size, so the page doesn't jump as they load
+
+	InviteDays int // how long a player invite lasts (RFC-002)
 }
 
 func (a *App) handleGuide(w http.ResponseWriter, r *http.Request) {
-	a.render(w, r, "panduan", guideVM{ImgVer: a.guideVer, Sizes: a.guideSizes})
+	ttl, _ := a.inviteLimits()
+	a.render(w, r, "panduan", guideVM{ImgVer: a.guideVer, Sizes: a.guideSizes, InviteDays: int(ttl / (24 * time.Hour))})
 }
 
 // handleAccount explains that the account lives in all-in-one and links to

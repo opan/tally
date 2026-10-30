@@ -49,6 +49,8 @@ TALLY_TEST_DATABASE_URL='postgres://tally:tally@localhost:5433/tally_test?sslmod
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | unset | enables OTLP metric export (see Metrics) |
 | `OTEL_SERVICE_NAME` | `tally` | becomes the `job` label in VictoriaMetrics |
 | `AUTH_PROVIDER` | `local` | `aio` = log in through All-in-one (below) |
+| `INVITE_TTL_DAYS` | `14` | days a player invite stays open (linking players to accounts) |
+| `INVITES_PER_TALLY_DAY` | `30` | invites one tally can send in 24 hours; a site setting so a tally's admins can't raise it |
 | `AIO_ISSUER` | | aio's public base URL, e.g. `https://aio.example.com` |
 | `AIO_CLIENT_ID` | | the client id registered in aio (`tally`) |
 | `AIO_CLIENT_SECRET` | | printed once by `oidc:client:create`; keep it in a Secret |
@@ -156,6 +158,7 @@ Names as they appear in VictoriaMetrics / Grafana (label `job="tally"`):
 | `tally_match_events_total` | counter | `action` = scheduled, scored, added, edited, deleted, cancelled | Match activity |
 | `tally_players_added_total`, `tally_awards_recorded_total` | counter | | Players added, extra-point entries |
 | `tally_scores_recorded_total` | counter | | Points entered per player without match details (one per play; the Poin tab and sheet imports) |
+| `tally_player_invites_total` | counter | `action` = sent, accepted, declined, ignored, unlinked | Linking players to accounts (RFC-002) |
 | `tally_admin_checks_total` | counter | `result` = admin, not_admin, local_account, error | Site admin page requests by aio's answer (`error`: aio unreachable or unexpected reply) |
 
 A ready-made Grafana dashboard for these metrics is kept as a Kubernetes

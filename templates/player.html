@@ -4,7 +4,7 @@
 <p class="eyebrow"><a href="{{$d.BackHref}}">← {{$t.Name}}</a></p>
 {{if $d.Admin}}<p class="alert info">{{.T "admin.readonly"}}</p>{{end}}
 <header class="playerhead">
-  <h1>{{$d.Player.Name}}{{if not $d.Player.Active}} <span class="badge">{{.T "players.inactive"}}</span>{{end}}</h1>
+  <h1>{{$d.Player.Name}}{{if not $d.Player.Active}} <span class="badge">{{.T "players.inactive"}}</span>{{end}}{{if and (not $d.Admin) (eq $d.MeID $d.Player.ID)}} <span class="badge gold">{{.T "player.me"}}</span>{{end}}</h1>
   {{if gt (len $d.Periods) 1}}
   <form method="get" data-autosubmit>
     <select name="season" aria-label="{{.T "board.season"}}">{{range $d.Periods}}<option value="{{.ID}}" {{if eq .ID $d.Period.ID}}selected{{end}}>{{.Name}}</option>{{end}}</select>
@@ -12,6 +12,15 @@
   </form>
   {{else if $d.Period}}<p class="muted">{{$d.Period.Name}}</p>{{end}}
 </header>
+
+{{if and (not $d.Admin) (eq $d.MeID $d.Player.ID)}}
+<details class="melink">
+  <summary class="muted small">{{.T "player.me_help"}}</summary>
+  <form method="post" action="/links/{{$d.Player.ID}}/unlink" data-confirm="{{.T "player.unlink_confirm" $t.Name}}">
+    <button type="submit" class="btn small ghost">{{.T "link.unlink"}}</button>
+  </form>
+</details>
+{{end}}
 
 {{if not $d.Rank}}
 <section class="card empty"><p>{{.T "player.no_points"}}</p></section>

@@ -473,6 +473,33 @@ still in the security backlog.
   admin on a private tally, 404 for others, four views logged, no tally form
   actions on any page.
 
+## RFC-002 notes: linking players to accounts (2026-10-30)
+
+Built from [RFC-002](docs/rfc/RFC-002-player-links.md) with the §8 decisions.
+
+- **Data:** `player_invites` (username as typed, normalized; never resolved on submit) and
+  `tally_mutes`; a partial unique index on `participants (tally_id, user_id)`. Expiry is
+  computed (`expires_at > now()`), so there's no `expired` status and no cleanup job.
+- **Same answer for every username:** `CreateInvite` never reads `users`. A **declined** invite
+  keeps showing as *Diundang* to admins until it expires, exactly like one sent to a username
+  nobody has; otherwise a quick decline would reveal that the account exists. "Abaikan tally
+  ini" is a decline plus a `tally_mutes` row; the tally's audit log shows only the decline.
+- **Re-inviting** cancels the player's open invite (pending or declined) in the same
+  transaction. The daily cap counts every invite created in the last 24 hours, cancelled ones
+  too, under a `FOR UPDATE` lock on the tally row.
+- **Pages:** Pemain tab gets *Hubungkan ke akun* (collapsed; player picker without linked
+  players, username field with no autocomplete) and the link state per row, with *Batalkan
+  undangan* / *Putuskan akun* under *Ubah*. The home page shows invites (Terima / Tolak /
+  Abaikan tally ini), **Mabar saya** (rank and points in the current season) and, at the
+  bottom, ignored tallies with *Tampilkan lagi*. The player page shows *kamu* and an unlink
+  for the linked user. The header shows the full username on phones, on its own row.
+- **Private tallies:** `loadTally` also lets in the viewer's linked player (`tallyCtx.MeID`);
+  admin pages still go through `adminTally`, so linked players are read-only.
+- **Settings:** `INVITE_TTL_DAYS` (14) and `INVITES_PER_TALLY_DAY` (30), site-wide.
+- **Metric:** `tally.player_invites{action=sent|accepted|declined|ignored|unlinked}`.
+- **Guide:** §7 "Menghubungkan pemain ke akun", §8 "Dengan akun: Mabar saya", one FAQ entry;
+  screenshots `link-invite`, `invite`, `mine`.
+
 ## Open questions
 
 - App name and domain (working name "Tally"; e.g. `tally.opan.dev`).
