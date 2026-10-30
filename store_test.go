@@ -137,15 +137,15 @@ func TestAddScore(t *testing.T) {
 	}
 
 	// A new player is added with their first score and counts as present.
-	if err := s.AddScore(ctx, tl.ID, u.ID, r, "", "Setepanus", 41, 7); err != nil {
+	if err := s.AddScore(ctx, tl.ID, u.ID, r, "", "Eko", 41, 7); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.AddScore(ctx, tl.ID, u.ID, r, "", "setepanus", 41, 7); !errors.Is(err, ErrNameTaken) {
+	if err := s.AddScore(ctx, tl.ID, u.ID, r, "", "eko", 41, 7); !errors.Is(err, ErrNameTaken) {
 		t.Fatalf("same new name twice: got %v, want ErrNameTaken", err)
 	}
 	present, _ := s.Attendance(ctx, r.ID)
 	if len(present) != 2 {
-		t.Errorf("present after scores = %d, want 2 (Aaron, Setepanus)", len(present))
+		t.Errorf("present after scores = %d, want 2 (Aaron, Eko)", len(present))
 	}
 
 	// An extra is not a play; scores are.
@@ -163,8 +163,8 @@ func TestAddScore(t *testing.T) {
 	if a := got["Aaron"]; a.Points != 42+196+5 || a.Played != 7 || a.Entries != 8 {
 		t.Errorf("Aaron = %d points, %d played, %d entries; want 243, 7, 8", a.Points, a.Played, a.Entries)
 	}
-	if sp := got["Setepanus"]; sp.Points != 41 || sp.Played != 1 {
-		t.Errorf("Setepanus = %d points, %d played; want 41, 1", sp.Points, sp.Played)
+	if sp := got["Eko"]; sp.Points != 41 || sp.Played != 1 {
+		t.Errorf("Eko = %d points, %d played; want 41, 1", sp.Points, sp.Played)
 	}
 
 	scores, _ := s.ScoreAwards(ctx, r.ID)
