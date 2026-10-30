@@ -114,6 +114,7 @@ given round. Movement arrow = rank after round N vs rank after round N‑1.
 | P8 | Read-only site admin pages, admin decided by aio (RFC-002 in all-in-one) | ✅ built 2026-10-18, PR #2 |
 | P9 | Forgot / change password and email links to aio (RFC-003 in all-in-one) | ✅ built 2026-10-27, waits for all-in-one#36 |
 | UX | Simpler play night + engagement (early feedback: UX too complex). First slice: points per player like the club's sheet, sheet view, XLSX import | ✅ built 2026-10-30 (PRs #9–#13) except the sheet view; [RFC-001](docs/rfc/RFC-001-simpler-play-night.md) §11 has what shipped |
+| LINK | Link players to accounts (optional): admin invites by username without revealing whether it exists; "Mabar saya" on the home page | RFC draft: [docs/rfc/RFC-002-player-links.md](docs/rfc/RFC-002-player-links.md), 2026-10-30 |
 | — | k8s deploy in `homelab/k8s/tally` | manifests in homelab 2026-10-14; opan deploys |
 
 ## P1 notes (2026-10-13)
