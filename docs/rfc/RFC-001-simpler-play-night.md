@@ -2,7 +2,7 @@
 
 - **Status:** Draft; first slice decided (§6), design proposed (§7)
 - **Author:** opan
-- **Created:** 2026-10-29 · **Updated:** 2026-10-29
+- **Created:** 2026-10-29 · **Updated:** 2026-10-30
 - **Scope:** badminton first; other tally types keep working but are not designed for here
 - **Related:** NOTES.md (P2 play-day notes), the in-app guide `/panduan#hari-main`
 
@@ -209,7 +209,8 @@ Ideas from §1.1 and §4.1, **ranked below the first slice** (§6, §7). They st
    which is which and how to move between them (§7.2).
 9. **Several play days per week**, up to 7 (one per date), like `W4A` and `W4B`.
 10. **A score is at most 42** (the season's target; the club plays no points past it). The
-    sheet's `-1` was a deuce correction and is ignored.
+    sheet's `-1` was a deuce correction and is ignored. The deuce match imports as
+    **42–41**: the winners' 43 is capped at 42, and the losers keep 41 (opan, 2026-10-30).
 11. **Backlog:** linking a player in the list to a real tally user (§9).
 
 ## 7. First slice: points sheet (proposed design)
