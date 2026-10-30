@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"html"
+	"os"
 	"sort"
 	"strconv"
 	"testing"
@@ -275,5 +276,22 @@ func TestImportScores(t *testing.T) {
 	}
 	if total != 42+40+41+30+42+42+5 {
 		t.Errorf("season total %d after replace, want 242 (scores once + the bonus)", total)
+	}
+}
+
+// The guide's import screenshot uploads scripts/guide-sheet.xlsx; it must stay
+// importable and show a capped deuce, a skipped -1 and a new player.
+func TestGuideSheet(t *testing.T) {
+	data, err := os.ReadFile("scripts/guide-sheet.xlsx")
+	if err != nil {
+		t.Fatal(err)
+	}
+	g, err := readFirstSheet(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := parsePointsSheet(g, 42, 2026)
+	if len(p.Errors) > 0 || len(p.Days) != 2 || len(p.Capped) != 1 || len(p.Ignored) != 1 {
+		t.Errorf("guide sheet: %d days, %d capped, %d ignored, errors %+v", len(p.Days), len(p.Capped), len(p.Ignored), p.Errors)
 	}
 }
