@@ -83,6 +83,61 @@ document.querySelectorAll('[data-season-hint]').forEach(function (box) {
   apply();
 });
 
+// Guide: the side rail lists each section's subsections and marks the one
+// being read (the last section whose top has scrolled past the top of the view).
+(function () {
+  var rail = document.querySelector('.guiderail');
+  if (!rail) return;
+  var items = [];
+  rail.querySelectorAll('ol > li > a[href^="#"]').forEach(function (a) {
+    var sec = document.getElementById(a.getAttribute('href').slice(1));
+    if (!sec) return;
+    var subs = [];
+    var heads = sec.querySelectorAll('h3');
+    if (heads.length) {
+      var ul = document.createElement('ul');
+      heads.forEach(function (h, i) {
+        if (!h.id) h.id = sec.id + '-' + (i + 1);
+        h.style.scrollMarginTop = '12px';
+        var link = document.createElement('a');
+        link.href = '#' + h.id;
+        link.textContent = h.textContent;
+        var li = document.createElement('li');
+        li.appendChild(link);
+        ul.appendChild(li);
+        subs.push({ el: h, a: link });
+      });
+      a.parentNode.appendChild(ul);
+    }
+    items.push({ el: sec, a: a, subs: subs });
+  });
+  function pick(list) {
+    var cur = null;
+    list.forEach(function (it) { if (it.el.getBoundingClientRect().top <= 80) cur = it; });
+    return cur;
+  }
+  // At the very bottom the last sections can't reach the top; take the last.
+  function atBottom() {
+    return window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4;
+  }
+  var queued = false;
+  function update() {
+    queued = false;
+    var cur = (atBottom() && items[items.length - 1]) || pick(items) || items[0];
+    items.forEach(function (it) {
+      var on = it === cur;
+      it.a.classList.toggle('on', on && !pick(it.subs));
+      it.a.parentNode.classList.toggle('open', on);
+      var sub = on ? (atBottom() && it.subs.length ? null : pick(it.subs)) : null;
+      it.subs.forEach(function (s) { s.a.classList.toggle('on', s === sub); });
+    });
+  }
+  window.addEventListener('scroll', function () {
+    if (!queued) { queued = true; window.requestAnimationFrame(update); }
+  }, { passive: true });
+  update();
+})();
+
 // Leaderboard pickers apply on change (the form also has a <noscript> button).
 document.querySelectorAll('form[data-autosubmit]').forEach(function (f) {
   f.addEventListener('change', function () { f.submit(); });

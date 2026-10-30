@@ -70,3 +70,13 @@ func TestGuidePageRenders(t *testing.T) {
 		}
 	}
 }
+
+// Every screenshot has a size, so the guide reserves its space before it loads.
+func TestGuideImageSizes(t *testing.T) {
+	sizes := guideImageSizes()
+	for _, name := range []string{"id/courts", "en/import", "id/today"} {
+		if s := sizes[name]; s.W < 100 || s.H < 100 {
+			t.Errorf("%s: size %+v", name, s)
+		}
+	}
+}
