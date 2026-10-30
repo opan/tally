@@ -363,13 +363,7 @@ func (a *App) loadRound(w http.ResponseWriter, r *http.Request, tc tallyCtx, rou
 // scoreMax is the most points one play can earn when points are entered per
 // player, and false when the season's format doesn't support that: only a
 // race to a target (badminton to 42) does for now.
-func (d *roundData) scoreMax() (int, bool) {
-	c := d.period.Scoring
-	if d.tc.Tally.Preset().IsCounter() || c.Format != FormatContinuous {
-		return 0, false
-	}
-	return c.Target + c.WinBonus, true
-}
+func (d *roundData) scoreMax() (int, bool) { return scoreLimit(d.tc.Tally, d.period) }
 
 // scoreRows lists everyone who played today, by name: their scores in the
 // order entered, then their matches.

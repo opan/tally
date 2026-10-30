@@ -459,6 +459,8 @@ a.chip.match:hover { color: var(--ink); border-color: var(--muted); }
 .todaycard .eyebrow { margin: 0 0 2px; }
 .actions-inline { display: inline-flex; gap: 6px; flex-wrap: wrap; }
 .weeks { list-style: none; margin: 0; padding: 0; }
+.importrules, .importnotes { padding-left: 1.2em; margin: 8px 0 14px; }
+.importnotes li { margin: 3px 0; }
 .week { padding: 10px 0; border-top: 1px solid var(--line); }
 .week:first-child { border-top: 0; }
 .week.empty .week-head strong { color: var(--muted); }

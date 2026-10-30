@@ -429,6 +429,30 @@ still in the security backlog.
 - Board: a points-only play day shows "entered without match details" where
   the match results would be. Metric `tally.scores.recorded`.
 
+## RFC-001 S3 notes: sheet import (2026-10-30)
+
+- Season page → "Impor dari spreadsheet" (race-to-target seasons only):
+  upload .xlsx (2 MB, first sheet) → preview → confirm. The preview carries
+  the parsed sheet in a hidden field; confirm re-validates it, so nothing is
+  stored between the steps.
+- Parser (`xlsx.go`, `sheetimport.go`, stdlib only): finds each play day by
+  its SubTot header, slots 1..n (≤ 7) before it, date in the row above
+  ("Sun, 4 Oct", ISO, Excel serial; year from a cell above, else the season;
+  Dec → Jan rolls over). `-`, blanks, -1 skipped; above the target capped.
+  Notes: capped, -1 ignored, SubTot ≠ imported, sheet Total ≠ previous Total
+  + SubTot, empty blocks, names that never played (not created). Errors
+  (non-score cell, duplicate name/date, unreadable date) block the import.
+  Zip parts are read with an 8 MB cap; 2000 × 400 cells max.
+- Write (`ImportScores`): one transaction, creates players and play days,
+  scores in slot order (created_at a millisecond apart), attendance, one
+  `import`/`sheet` audit row. Days with points are skipped unless Replace
+  (deletes that day's `score` entries only). Dates outside the season need
+  the "extend season" tick.
+- Checked with the club's October sheet: 5 play days, 392 scores, 14,778
+  points; the board matches the sheet, except one running total the sheet got
+  10 short and the -1 rows (now counted by the rule); re-upload
+  skips all five days.
+
 ## Open questions
 
 - App name and domain (working name "Tally"; e.g. `tally.opan.dev`).

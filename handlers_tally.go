@@ -116,7 +116,7 @@ var okNotices = map[string]bool{
 	"tally_created": true, "settings_saved": true, "admin_added": true, "admin_removed": true,
 	"branding_saved": true, "player_renamed": true, "player_activated": true, "player_deactivated": true, "player_deleted": true,
 	"period_created": true, "period_saved": true,
-	"round_saved": true, "awards_saved": true, "award_deleted": true, "score_saved": true, "score_deleted": true, "match_saved": true, "match_deleted": true, "match_cancelled": true,
+	"round_saved": true, "awards_saved": true, "award_deleted": true, "score_saved": true, "score_deleted": true, "import_done": true, "match_saved": true, "match_deleted": true, "match_cancelled": true,
 }
 
 func okNotice(r *http.Request) string {
@@ -604,12 +604,13 @@ type seasonMonth struct {
 
 type periodVM struct {
 	tallyCtx
-	Period   *Period
-	Months   []seasonMonth
-	PlayDays int
-	Players  int
-	Plays    int
-	Points   int
+	Period    *Period
+	Months    []seasonMonth
+	PlayDays  int
+	Players   int
+	Plays     int
+	Points    int
+	CanImport bool // points can be imported from a sheet into this season
 }
 
 // seasonMonths lays out every week of the month that overlaps the season,
@@ -656,6 +657,7 @@ func (a *App) handlePeriodDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	vm := periodVM{tallyCtx: tc, Period: p, Months: seasonMonths(p, rounds, stats), PlayDays: len(rounds), Players: players}
+	_, vm.CanImport = scoreLimit(tc.Tally, p)
 	for _, s := range stats {
 		vm.Plays += s.Plays
 		vm.Points += s.Points

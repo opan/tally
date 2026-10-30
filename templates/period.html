@@ -17,7 +17,10 @@
     <div class="stat"><span class="lbl">{{.T "season.plays"}}</span><span class="val">{{$d.Plays}}</span></div>
     <div class="stat"><span class="lbl">{{.T "board.points"}}</span><span class="val">{{$d.Points}}</span></div>
   </div>
-  <p class="small"><a href="/t/{{$t.Slug}}?season={{$p.ID}}">{{.T "season.board"}}</a></p>
+  <div class="actions">
+    <a class="btn small" href="/t/{{$t.Slug}}?season={{$p.ID}}">{{.T "season.board"}}</a>
+    {{if $d.CanImport}}<a class="btn small ghost" href="/t/{{$t.Slug}}/periods/{{$p.ID}}/import">{{.T "import.title"}}</a>{{end}}
+  </div>
 </section>
 
 {{range $d.Months}}
