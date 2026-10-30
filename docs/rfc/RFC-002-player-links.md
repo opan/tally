@@ -1,6 +1,6 @@
 # RFC-002: Linking players to accounts
 
-- **Status:** Draft; discussion recorded, decisions open (§8)
+- **Status:** Draft; decisions made (§8, opan, 2026-10-30); building is a separate step
 - **Author:** opan
 - **Created:** 2026-10-30 · **Updated:** 2026-10-30
 - **Scope:** every tally type; both login modes (`AUTH_PROVIDER=local` and `aio`)
@@ -12,7 +12,7 @@
 One table for invites and use of the existing `participants.user_id`; an invite form on the
 Pemain tab; a box for pending invites and a "my tallies as a player" list on the home page;
 accept, decline and unlink; read access to private tallies for linked players; the guide.
-No new dependencies. Email notifications (§8.3) would add to it.
+No new dependencies, and no email (§8.3).
 
 ## 1. Problem
 
@@ -37,7 +37,7 @@ What it adds, for players who do sign up:
 
 - **"My mabar" on the home page:** every tally they play in, with their rank, recent play days
   and points, without hunting for links.
-- **Private tallies:** a linked player can see the tally they play in (§8.1).
+- **Private tallies:** a linked player can see the tally they play in, read-only (§8.1).
 - **A base for later:** a player's own history across seasons, notifications ("you're now
   #3"), maybe checking in or entering their own points.
 
@@ -112,8 +112,9 @@ page is needed (opan, 2026-10-30).
 
 ### 5.2 Abuse and mistakes
 
-- **Spam:** a cap on invites per tally per day (e.g. 30) and per player pending at once (one,
-  §8.5). Invites **expire** after 14 days.
+- **Spam:** a cap on invites per tally per day (30 by default) and one pending invite per
+  player (§8.5). Invites **expire** after 14 days by default. Both numbers are configurable
+  (§7.3, §8.6).
 - **Unwanted invites:** besides Tolak, the user can choose **Abaikan tally ini** (ignore this
   tally): later invites from that tally aren't shown to them. The admin can't tell.
 - **Wrong person:** the invite names the tally, the player and the inviting admin, so the user
@@ -175,6 +176,8 @@ CREATE TABLE tally_mutes (
 
 Accepting sets `participants.user_id` and the invite's status in one transaction, and fails
 cleanly if the player was linked or the account already has a player in that tally meanwhile.
+A new invite for a player who has a pending one marks the old one `cancelled` in the same
+transaction (§8.5).
 
 ### 7.2 Pages
 
@@ -191,33 +194,47 @@ cleanly if the player was linked or the account already has a player in that tal
 - **Private tallies:** `loadTally` also lets in a user linked to a player in that tally,
   read-only (§8.1).
 
-### 7.3 Unchanged
+### 7.3 Configuration
+
+Two settings, read at startup like the others (§8.6):
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `INVITE_TTL_DAYS` | `14` | Days before a pending invite expires |
+| `INVITES_PER_TALLY_DAY` | `30` | Invites one tally can send per day (counted over the last 24 hours) |
+
+They're site settings, not tally settings: the cap protects users from a tally's admins, so
+those admins mustn't be able to raise it.
+
+### 7.4 Unchanged
 
 Admins keep full control of names, scores and attendance; linking changes nothing on the
 board, poster or totals. Tally admins and linked players are separate: an admin can also be a
 linked player in the same tally.
 
-## 8. Open questions
+## 8. Decisions
 
-1. **Private tallies:** can a linked player see the board and player pages of a private tally
-   they play in? Proposed: yes, read-only; linking makes them a member.
-2. **Showing the account:** does a linked player's username appear anywhere public, or only to
-   that tally's admins? Proposed: only to admins.
-3. **Notifications:** only on the home page, or also by email? aio knows users' email
-   addresses, but tally would need aio to send it, or its own mail setup.
-4. **"Mabar" in the UI:** use the word (*Mabar saya*), or keep "tally" everywhere?
-5. **Re-inviting:** when a player has a pending invite and the admin sends another to a
-   different username, does the new one replace the old one? Proposed: yes, one pending
-   invite per player.
-6. **Limits:** 14 days to expire and 30 invites per tally per day, or other numbers?
+Answered by opan on 2026-10-30.
+
+1. **Private tallies:** yes. A linked player can see the board and player pages of a private
+   tally they play in, read-only; linking makes them a member.
+2. **Showing the account:** only to that tally's admins. A linked player's username appears
+   nowhere public: not on the board, the player page or the poster.
+3. **Notifications:** only on the home page. No email for now (§9).
+4. **"Mabar" in the UI:** use it (*Mabar saya*) for now; revisit if it doesn't fit other
+   kinds of tallies.
+5. **Re-inviting:** yes, a new invite replaces the player's pending one; one pending invite
+   per player.
+6. **Limits:** configurable, with the proposed values as defaults: 14 days to expire and 30
+   invites per tally per day (§7.3).
 
 ## 9. Backlog (after this)
 
 - Alternative 2 (*Ini saya* with admin approval) for link and public tallies.
 - A player's own page across all their tallies and seasons.
-- Notifications beyond the home page (§8.3).
+- Email notifications, or others beyond the home page (§8.3).
 
 ## 10. Next steps
 
-- [ ] opan answers §8.
+- [x] opan answers §8 (2026-10-30).
 - [ ] Build §7: invites and linking, the home page, private access, the guide.
