@@ -404,6 +404,14 @@ still in the security backlog.
 - Unknown name: the form asks before adding the player (`confirm_new=1`).
 - Changes from RFC §7.1: no `seq` column (entries are ordered by time; the
   import will write them in slot order); kind has three values, not two.
+- Play days are named by week of the month like the sheet ("Minggu 4",
+  "Minggu 4A"/"4B" when a season has several play days that week; days 1–7 =
+  1 … 29–31 = 5), no month. `Round.Number` (sequence) is still used for order.
+- Mulai hari main asks only for the date and shows which season it falls in
+  (or a warning, with a link to Musim). Attendance and courts left the form:
+  scores tick players present, courts carry over from the season's last play
+  day, and both stay editable on the Pertandingan tab. The old start-day
+  guide screenshots were removed.
 - Board: a points-only play day shows "entered without match details" where
   the match results would be. Metric `tally.scores.recorded`.
 

@@ -450,6 +450,9 @@ a.chip.match:hover { color: var(--ink); border-color: var(--muted); }
 .chip.add { background: transparent; color: var(--gold-2); border: 1px dashed var(--gold); font-size: 1.2rem; }
 .chip.add:hover { background: var(--card-2); }
 .extraform { grid-template-columns: 1fr 7em 1.2fr auto; }
+.startday { max-width: 420px; }
+.seasonhint p { margin: 0; font-size: .92rem; }
+.seasonhint .warn { color: var(--danger); }
 @media (max-width: 520px) {
   .scoreform { grid-template-columns: 1fr auto; }
   .extraform { grid-template-columns: 7em 1fr; }

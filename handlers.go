@@ -43,6 +43,7 @@ var templateFuncs = template.FuncMap{
 	// formToken is a fresh one-time token for forms guarded by submitGuard.
 	"formToken": newToken,
 	"add1":      func(i int) int { return i + 1 },
+	"iso":       func(t time.Time) string { return t.Format(dateLayout) },
 	// dict builds the argument map for a sub-template: dict "k1" v1 "k2" v2.
 	"dict": func(kv ...any) (map[string]any, error) {
 		if len(kv)%2 != 0 {

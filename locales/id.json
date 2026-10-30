@@ -172,7 +172,7 @@
   "board.avg": "Rata²",
   "play.no_period": "Buat musim dulu sebelum mencatat pertandingan.",
   "play.start_title": "Mulai hari main",
-  "play.start_help": "Pilih tanggal, jumlah lapangan, dan siapa yang hadir. Semuanya bisa diubah nanti.",
+  "play.start_help": "Pilih tanggal hari mainnya. Kehadiran tercatat dari poin yang diisi; lapangan dan kehadiran untuk acak pasangan bisa diatur di hari main.",
   "play.date": "Tanggal",
   "play.courts": "Jumlah lapangan",
   "play.present": "Yang hadir",
@@ -181,7 +181,7 @@
   "play.start_submit": "Mulai",
   "play.rounds": "Hari main",
   "play.matches_n": "%d pertandingan",
-  "round.label": "Minggu #%d",
+  "round.label": "Minggu %s",
   "round.other_day": "Hari lain",
   "round.on_court": "Di lapangan",
   "round.courts_free": "%d dari %d lapangan kosong",
@@ -403,5 +403,9 @@
   "board.points_only": "Poin hari main ini dicatat tanpa data pertandingan.",
   "player.scores_only": "%d main tanpa data pertandingan",
   "awards.extra_help": "Satu pemain per entri: angka positif untuk bonus, negatif untuk penalti. Keterangan boleh kosong. Tidak dihitung sebagai main.",
-  "err.extra_unknown": "\"%s\" belum ada di daftar pemain. Pilih nama dari daftar."
+  "err.extra_unknown": "\"%s\" belum ada di daftar pemain. Pilih nama dari daftar.",
+  "play.season_is": "Masuk musim",
+  "play.season_none": "Tanggal ini di luar semua musim.",
+  "play.season_manage": "Atur musim",
+  "play.scores_n": "%d catatan poin"
 }

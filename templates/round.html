@@ -1,10 +1,10 @@
-{{define "title"}}{{.T "round.label" .Data.Round.Number}} &middot; {{.Data.Tally.Name}} &mdash; {{.T "app.name"}}{{end}}
+{{define "title"}}{{.T "round.label" .Data.Round.WeekLabel}} &middot; {{.Data.Tally.Name}} &mdash; {{.T "app.name"}}{{end}}
 {{define "content"}}
 {{template "tallyhead" .}}
 {{$t := .Data.Tally}}{{$d := .Data}}
 <div class="roundhead">
   <div>
-    <h2>{{.T "round.label" $d.Round.Number}} &middot; {{.Date $d.Round.PlayedOn}}</h2>
+    <h2>{{.T "round.label" $d.Round.WeekLabel}} &middot; {{.Date $d.Round.PlayedOn}}</h2>
     <p class="muted small">{{$d.Period.Name}} &middot; {{.Rule $d.Period.Scoring}}</p>
   </div>
   <a class="btn small ghost" href="/t/{{$t.Slug}}/play?new=1">{{.T "round.other_day"}}</a>

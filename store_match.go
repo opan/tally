@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"strconv"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -35,6 +36,23 @@ type Round struct {
 	Courts   int
 	Done     int // scored matches, filled by RoundsForPeriod
 	Awards   int // point awards of any kind, filled by RoundsForPeriod
+	Scores   int // points entered without match details, filled by RoundsForPeriod
+	WeekPart int // 1-based position among the season's play days in the same Week
+	WeekDays int // how many play days the season has in that Week
+}
+
+// Week is the week of the month by date, like the club's sheet: days 1–7 are
+// week 1, 8–14 week 2, 15–21 week 3, 22–28 week 4, 29–31 week 5.
+func (r Round) Week() int { return (r.PlayedOn.Day()-1)/7 + 1 }
+
+// WeekLabel names the play day, e.g. "4", or "4A" and "4B" when the week has
+// two play days.
+func (r Round) WeekLabel() string {
+	label := strconv.Itoa(r.Week())
+	if r.WeekDays > 1 && r.WeekPart >= 1 && r.WeekPart <= 26 {
+		label += string(rune('A' + r.WeekPart - 1))
+	}
+	return label
 }
 
 type MatchSide struct {
@@ -87,14 +105,23 @@ func (s Standing) Avg() float64 {
 
 // --- Rounds ---
 
-// roundSelect computes the round's number from its date order in the period.
+// sameWeek matches r2 to the play days of r's season in r's Week (same
+// month, same 7-day block of the month).
+const sameWeek = `r2.period_id = r.period_id
+	AND date_trunc('month', r2.played_on) = date_trunc('month', r.played_on)
+	AND (extract(day FROM r2.played_on)::int - 1) / 7 = (extract(day FROM r.played_on)::int - 1) / 7`
+
+// roundSelect computes the round's number from its date order in the period,
+// and its place in its week.
 const roundSelect = `SELECT r.id, r.period_id, r.played_on, r.courts,
-	(SELECT count(*) FROM rounds r2 WHERE r2.period_id = r.period_id AND r2.played_on <= r.played_on)
+	(SELECT count(*) FROM rounds r2 WHERE r2.period_id = r.period_id AND r2.played_on <= r.played_on),
+	(SELECT count(*) FROM rounds r2 WHERE ` + sameWeek + ` AND r2.played_on <= r.played_on),
+	(SELECT count(*) FROM rounds r2 WHERE ` + sameWeek + `)
 	FROM rounds r JOIN periods p ON p.id = r.period_id `
 
 func scanRound(row pgx.Row) (*Round, error) {
 	r := &Round{}
-	if err := row.Scan(&r.ID, &r.PeriodID, &r.PlayedOn, &r.Courts, &r.Number); err != nil {
+	if err := row.Scan(&r.ID, &r.PeriodID, &r.PlayedOn, &r.Courts, &r.Number, &r.WeekPart, &r.WeekDays); err != nil {
 		return nil, err
 	}
 	return r, nil
@@ -114,14 +141,17 @@ func (s *Store) RoundsForPeriod(ctx context.Context, periodID string) ([]Round, 
 		`SELECT r.id, r.period_id, r.played_on, r.courts,
 		        row_number() OVER (ORDER BY r.played_on),
 		        (SELECT count(*) FROM matches m WHERE m.round_id = r.id AND m.status = 'done'),
-		        (SELECT count(*) FROM point_awards pa WHERE pa.round_id = r.id)
+		        (SELECT count(*) FROM point_awards pa WHERE pa.round_id = r.id),
+		        (SELECT count(*) FROM point_awards pa WHERE pa.round_id = r.id AND pa.kind = 'score'),
+		        (SELECT count(*) FROM rounds r2 WHERE `+sameWeek+` AND r2.played_on <= r.played_on),
+		        (SELECT count(*) FROM rounds r2 WHERE `+sameWeek+`)
 		 FROM rounds r WHERE r.period_id = $1 ORDER BY r.played_on DESC`, periodID)
 	if err != nil {
 		return nil, err
 	}
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (Round, error) {
 		var r Round
-		err := row.Scan(&r.ID, &r.PeriodID, &r.PlayedOn, &r.Courts, &r.Number, &r.Done, &r.Awards)
+		err := row.Scan(&r.ID, &r.PeriodID, &r.PlayedOn, &r.Courts, &r.Number, &r.Done, &r.Awards, &r.Scores, &r.WeekPart, &r.WeekDays)
 		return r, err
 	})
 }

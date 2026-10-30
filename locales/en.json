@@ -172,7 +172,7 @@
   "board.avg": "Avg",
   "play.no_period": "Create a season before recording matches.",
   "play.start_title": "Start a play day",
-  "play.start_help": "Pick the date, how many courts, and who showed up. You can change all of it later.",
+  "play.start_help": "Pick the play day's date. Who's here follows from the points entered; courts and attendance for shuffling can be set on the play day.",
   "play.date": "Date",
   "play.courts": "Courts",
   "play.present": "Who's here",
@@ -181,7 +181,7 @@
   "play.start_submit": "Start",
   "play.rounds": "Play days",
   "play.matches_n": "%d matches",
-  "round.label": "Week #%d",
+  "round.label": "Week %s",
   "round.other_day": "Another day",
   "round.on_court": "On court",
   "round.courts_free": "%d of %d courts free",
@@ -403,5 +403,9 @@
   "board.points_only": "This play day's points were entered without match details.",
   "player.scores_only": "%d plays without match details",
   "awards.extra_help": "One player per entry: a positive number for a bonus, negative for a penalty. The note is optional. It doesn't count as a play.",
-  "err.extra_unknown": "\"%s\" isn't a player. Pick a name from the list."
+  "err.extra_unknown": "\"%s\" isn't a player. Pick a name from the list.",
+  "play.season_is": "In season",
+  "play.season_none": "This date isn't in any season.",
+  "play.season_manage": "Manage seasons",
+  "play.scores_n": "%d point entries"
 }

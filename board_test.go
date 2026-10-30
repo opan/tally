@@ -1,6 +1,9 @@
 package main
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 func st(id string, pts, played int) Standing {
 	return Standing{ParticipantID: id, Name: id, Points: pts, Played: played}
@@ -50,6 +53,25 @@ func TestSortStandingsTieBreaks(t *testing.T) {
 	for i := range want {
 		if got[i] != want[i] {
 			t.Fatalf("got %v, want %v", got, want)
+		}
+	}
+}
+
+func TestWeekLabel(t *testing.T) {
+	day := func(d int) time.Time { return time.Date(2026, 10, d, 0, 0, 0, 0, time.UTC) }
+	for _, c := range []struct {
+		r    Round
+		want string
+	}{
+		{Round{PlayedOn: day(1), WeekPart: 1, WeekDays: 1}, "1"},
+		{Round{PlayedOn: day(7), WeekPart: 1, WeekDays: 1}, "1"},
+		{Round{PlayedOn: day(8), WeekPart: 1, WeekDays: 1}, "2"},
+		{Round{PlayedOn: day(22), WeekPart: 1, WeekDays: 2}, "4A"},
+		{Round{PlayedOn: day(25), WeekPart: 2, WeekDays: 2}, "4B"},
+		{Round{PlayedOn: day(30), WeekPart: 1, WeekDays: 1}, "5"},
+	} {
+		if got := c.r.WeekLabel(); got != c.want {
+			t.Errorf("%s part %d of %d: got %q, want %q", c.r.PlayedOn.Format("2 Jan"), c.r.WeekPart, c.r.WeekDays, got, c.want)
 		}
 	}
 }

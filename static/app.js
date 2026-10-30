@@ -63,6 +63,26 @@ document.addEventListener('click', function (e) {
   btn.closest('form').querySelectorAll('input[type=checkbox][name="' + name + '"]').forEach(function (cb) { cb.checked = on; });
 });
 
+// Start a play day: show which season the picked date falls in (the
+// latest-starting one, as the server picks; the list is newest first).
+document.querySelectorAll('[data-season-hint]').forEach(function (box) {
+  var input = document.getElementById(box.getAttribute('data-season-hint'));
+  if (!input) return;
+  var none = box.querySelector('[data-none]');
+  function apply() {
+    var v = input.value, found = false;
+    box.querySelectorAll('[data-from]').forEach(function (el) {
+      var on = !found && v !== '' && v >= el.getAttribute('data-from') && v <= el.getAttribute('data-to');
+      el.hidden = !on;
+      if (on) found = true;
+    });
+    if (none) none.hidden = found || v === '';
+  }
+  input.addEventListener('input', apply);
+  input.addEventListener('change', apply);
+  apply();
+});
+
 // Leaderboard pickers apply on change (the form also has a <noscript> button).
 document.querySelectorAll('form[data-autosubmit]').forEach(function (f) {
   f.addEventListener('change', function () { f.submit(); });

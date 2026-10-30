@@ -25,7 +25,7 @@
   <header class="boardhead">
     <p class="eyebrow">{{.Name}} <span class="muted">({{$.Date .StartsOn}} – {{$.Date .EndsOn}})</span></p>
     <div class="boardhead-row">
-      {{if $d.Round}}<h2 class="ribbon">{{$.T "round.label" $d.Round.Number}} – {{$.Date $d.Round.PlayedOn}}</h2>{{end}}
+      {{if $d.Round}}<h2 class="ribbon">{{$.T "round.label" $d.Round.WeekLabel}} – {{$.Date $d.Round.PlayedOn}}</h2>{{end}}
       {{if $d.Board}}<a class="btn small" href="/t/{{$t.Slug}}/poster?season={{$d.Period.ID}}&day={{$d.Round.ID}}">{{$.T "poster.make"}}</a>{{end}}
     </div>
   </header>
@@ -39,7 +39,7 @@
     {{end}}
     {{if gt (len $d.Rounds) 1}}
     <label><span class="muted small">{{$.T "board.as_of"}}</span>
-      <select name="day">{{range $d.Rounds}}<option value="{{.ID}}" {{if eq .ID $d.Round.ID}}selected{{end}}>{{$.T "round.label" .Number}} · {{$.Date .PlayedOn}}</option>{{end}}</select>
+      <select name="day">{{range $d.Rounds}}<option value="{{.ID}}" {{if eq .ID $d.Round.ID}}selected{{end}}>{{$.T "round.label" .WeekLabel}} · {{$.Date .PlayedOn}}</option>{{end}}</select>
     </label>
     {{end}}
     <noscript><button type="submit" class="btn small">{{$.T "board.show"}}</button></noscript>
@@ -81,14 +81,14 @@
 <section class="card">
   <div class="cardhead">
     <h2>{{$.T "board.results"}}</h2>
-    <span class="muted small">{{$.T "round.label" $d.Round.Number}} · {{$.T "play.matches_n" (len $d.Results)}}</span>
+    <span class="muted small">{{$.T "round.label" $d.Round.WeekLabel}} · {{$.T "play.matches_n" (len $d.Results)}}</span>
   </div>
   {{range $d.Results}}{{template "matchrow" (dict "P" $ "M" . "Slug" $t.Slug "Actions" false)}}{{end}}
   {{if $d.IsAdmin}}<p class="small"><a href="/t/{{$t.Slug}}/rounds/{{$d.Round.ID}}">{{$.T "board.manage_day"}}</a></p>{{end}}
 </section>
 {{else if and $d.Round (not $t.Preset.IsCounter)}}
 <section class="card">
-  <div class="cardhead"><h2>{{$.T "board.results"}}</h2><span class="muted small">{{$.T "round.label" $d.Round.Number}}</span></div>
+  <div class="cardhead"><h2>{{$.T "board.results"}}</h2><span class="muted small">{{$.T "round.label" $d.Round.WeekLabel}}</span></div>
   <p class="muted">{{$.T "board.points_only"}}</p>
   {{if $d.IsAdmin}}<p class="small"><a href="/t/{{$t.Slug}}/rounds/{{$d.Round.ID}}">{{$.T "board.manage_day"}}</a></p>{{end}}
 </section>

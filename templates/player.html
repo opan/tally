@@ -34,7 +34,7 @@
     <tbody>
       {{range $d.Days}}
       <tr>
-        <td class="day"><a href="/t/{{$t.Slug}}?season={{$d.Period.ID}}&day={{.Round.ID}}">{{$.T "round.label" .Round.Number}}</a><span class="muted small">{{$.Date .Round.PlayedOn}}</span></td>
+        <td class="day"><a href="/t/{{$t.Slug}}?season={{$d.Period.ID}}&day={{.Round.ID}}">{{$.T "round.label" .Round.WeekLabel}}</a><span class="muted small">{{$.Date .Round.PlayedOn}}</span></td>
         <td class="num pts">{{.Points}}</td>
         <td class="bar"><svg viewBox="0 0 100 8" preserveAspectRatio="none" aria-hidden="true"><rect width="{{.BarPct}}" height="8" rx="2"/></svg></td>
         <td class="num">{{if .Rank}}#{{.Rank}}{{end}}</td>

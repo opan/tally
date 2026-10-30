@@ -93,12 +93,11 @@ func (f *matchForm) parse(r *http.Request, cfg ScoringConfig, valid map[string]b
 
 type playVM struct {
 	tallyCtx
-	Current  *Period
-	Rounds   []Round
-	Players  []Participant
-	FDate    string
-	FCourts  int
-	FPresent map[string]bool
+	Current *Period
+	Periods []Period // newest first, for the "which season" line
+	Season  string   // id of the season FDate falls in, "" if none
+	Rounds  []Round
+	FDate   string
 }
 
 func (a *App) renderPlay(w http.ResponseWriter, r *http.Request, vm playVM, status int) {
@@ -115,23 +114,20 @@ func (a *App) renderPlay(w http.ResponseWriter, r *http.Request, vm playVM, stat
 			return
 		}
 	}
-	all, err := a.store.ListParticipants(ctx, vm.Tally.ID)
-	if err != nil {
-		internalError(w, "list players", err)
+	if vm.Periods, err = a.store.ListPeriods(ctx, vm.Tally.ID); err != nil {
+		internalError(w, "list periods", err)
 		return
-	}
-	for _, p := range all {
-		if p.Active {
-			vm.Players = append(vm.Players, p)
-		}
 	}
 	if vm.FDate == "" {
 		vm.FDate = today().Format(dateLayout)
 	}
-	if vm.FCourts == 0 {
-		vm.FCourts = 1
-		if len(vm.Rounds) > 0 {
-			vm.FCourts = vm.Rounds[0].Courts
+	// Same pick as PeriodForDate: the latest-starting season covering the date.
+	if d, ok := parseDate(vm.FDate); ok {
+		for _, p := range vm.Periods {
+			if !d.Before(p.StartsOn) && !d.After(p.EndsOn) {
+				vm.Season = p.ID
+				break
+			}
 		}
 	}
 	a.renderStatus(w, r, "play", vm, status)
@@ -176,20 +172,14 @@ func (a *App) handleCreateRound(w http.ResponseWriter, r *http.Request) {
 	}
 	limitBody(w, r, maxFormBytes)
 	_ = r.ParseForm()
-	present := r.Form["present"]
-	courts, okC := readCourts(r)
-	vm := playVM{tallyCtx: tc, FDate: r.FormValue("played_on"), FCourts: courts, FPresent: presentSet(present)}
+	vm := playVM{tallyCtx: tc, FDate: r.FormValue("played_on")}
 	fail := func(key string) {
 		vm.Err = tr(r, key)
 		a.renderPlay(w, r, vm, http.StatusUnprocessableEntity)
 	}
 	d, okD := parseDate(vm.FDate)
-	switch {
-	case !okD:
+	if !okD {
 		fail("err.date")
-		return
-	case !okC:
-		fail("err.courts")
 		return
 	}
 	ctx := r.Context()
@@ -202,7 +192,18 @@ func (a *App) handleCreateRound(w http.ResponseWriter, r *http.Request) {
 		internalError(w, "period for date", err)
 		return
 	}
-	id, err := a.store.CreateRound(ctx, tc.Tally.ID, u.ID, period.ID, d, courts, present)
+	// Who's here and the courts are set on the play day itself (or follow from
+	// the points entered); courts carry over from the season's last play day.
+	courts := 1
+	prev, err := a.store.RoundsForPeriod(ctx, period.ID)
+	if err != nil {
+		internalError(w, "list rounds", err)
+		return
+	}
+	if len(prev) > 0 {
+		courts = prev[0].Courts
+	}
+	id, err := a.store.CreateRound(ctx, tc.Tally.ID, u.ID, period.ID, d, courts, nil)
 	if errors.Is(err, ErrRoundExists) {
 		existing, err := a.store.RoundByDate(ctx, tc.Tally.ID, d)
 		if err != nil {

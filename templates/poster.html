@@ -31,7 +31,7 @@
     <div class="pz-season"><span class="pz-sname">{{.Name}}</span><span class="pz-bar"></span><span class="pz-range">({{$.MonthRange .StartsOn .EndsOn}})</span></div>
     {{end}}
     <div class="pz-ribbon-row">
-      {{if $d.Round}}<div class="pz-ribbon">{{.T "round.label" $d.Round.Number}} – {{.Date $d.Round.PlayedOn}}</div>{{end}}
+      {{if $d.Round}}<div class="pz-ribbon">{{.T "round.label" $d.Round.WeekLabel}} – {{.Date $d.Round.PlayedOn}}</div>{{end}}
       <span class="pz-rule"></span>
     </div>
 

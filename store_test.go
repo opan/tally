@@ -179,3 +179,44 @@ func TestAddScore(t *testing.T) {
 		t.Errorf("after deleting one, Aaron can play again: %v", err)
 	}
 }
+
+func TestRoundWeekLabels(t *testing.T) {
+	s := testStore(t)
+	ctx := context.Background()
+	u, _ := s.CreateUser(ctx, "owner", "x")
+	tl, err := s.CreateTally(ctx, u.ID, Tally{Slug: "club", Name: "Club", Template: "badminton_doubles", Visibility: VisibilityLink})
+	if err != nil {
+		t.Fatal(err)
+	}
+	day := func(m time.Month, d int) time.Time { return time.Date(2026, m, d, 0, 0, 0, 0, time.UTC) }
+	period, err := s.CreatePeriod(ctx, u.ID, Period{TallyID: tl.ID, Name: "S1", StartsOn: day(10, 1), EndsOn: day(12, 31), Scoring: DefaultContinuous})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// 30 Oct and 1 Nov share a calendar week but not a week of the month.
+	want := map[string]string{"2026-10-11": "2", "2026-10-22": "4A", "2026-10-25": "4B", "2026-10-30": "5", "2026-11-01": "1"}
+	ids := map[string]string{}
+	for d := range want {
+		on, _ := parseDate(d)
+		if ids[d], err = s.CreateRound(ctx, tl.ID, u.ID, period.ID, on, 1, nil); err != nil {
+			t.Fatal(err)
+		}
+	}
+	rounds, err := s.RoundsForPeriod(ctx, period.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, r := range rounds {
+		d := r.PlayedOn.Format(dateLayout)
+		if got := r.WeekLabel(); got != want[d] {
+			t.Errorf("RoundsForPeriod %s: got %q, want %q", d, got, want[d])
+		}
+		one, err := s.RoundByID(ctx, tl.ID, ids[d])
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := one.WeekLabel(); got != want[d] {
+			t.Errorf("RoundByID %s: got %q, want %q", d, got, want[d])
+		}
+	}
+}

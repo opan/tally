@@ -85,7 +85,7 @@ func (a *App) handlePoster(w http.ResponseWriter, r *http.Request) {
 	vm.Density = posterDensity(len(vm.Rows))
 	vm.Filename = tc.Tally.Slug
 	if board.Round != nil {
-		vm.Filename += "-" + strconv.Itoa(board.Round.Number) + "-" + board.Round.PlayedOn.Format(dateLayout)
+		vm.Filename += "-" + strings.ToLower(board.Round.WeekLabel()) + "-" + board.Round.PlayedOn.Format(dateLayout)
 	}
 	vm.Filename += ".png"
 	a.render(w, r, "poster", vm)
