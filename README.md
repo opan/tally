@@ -1,8 +1,9 @@
 # Tally
 
 A points leaderboard for clubs and groups — start with a badminton season
-ranking, extend to other sports or any tally. Admins enter players, shuffle
-pairs, and record match scores; points add up per player and the ranking can be
+ranking, extend to other sports or any tally. Admins enter each player's points
+per play (like a club's points spreadsheet, which can be imported), or shuffle
+pairs and record match scores; points add up per player and the ranking can be
 shared as a link or a poster.
 
 UI: Bahasa Indonesia (default) and English.
@@ -108,10 +109,14 @@ here rather than in Docker Compose.
 
 ### Site admin pages
 
-`GET /admin` (every account, how many tallies they run, last activity) and
+`GET /admin` (every account, how many tallies they run, last activity),
 `GET /admin/users/{id}` (one account's tallies: role, visibility, players, play
-days, matches, last played). Read-only, and only with `AUTH_PROVIDER=aio`. This
-is the site admin, unrelated to a tally's own admins.
+days, plays, last played) and, for any tally, private ones included:
+`GET /admin/tallies/{id}` (its admins, seasons and players),
+`.../seasons/{pid}` (the season's week-by-week page), `.../players/{pid}` (a
+player's page) and `.../days/{rid}` (a play day's scores, matches, extras and
+attendance). All read-only, and only with `AUTH_PROVIDER=aio`. This is the site
+admin, unrelated to a tally's own admins.
 
 All-in-one decides who is a site admin (its `admin` group), on **every** admin
 request (RFC-002 in all-in-one): tally calls `GET /api/v1/oidc/users/{sub}/status`
@@ -119,8 +124,9 @@ with `AIO_CLIENT_ID` and `AIO_CLIENT_SECRET`, with no cache, so someone removed
 or blocked in aio loses access on their next request. Everyone else gets 404;
 if aio can't be reached the pages answer 503 (fails closed) while the rest of
 tally keeps working. The **Site admin** link in the menu uses the status at
-login and is display-only. Private tallies are listed but not linked. Every
-view is recorded in `admin_views` (admin, page, whose data).
+login and is display-only. Every view is recorded in `admin_views` (admin,
+page, whose data, and for tally pages the tally and the season, player or play
+day).
 
 ## Metrics
 
@@ -149,6 +155,7 @@ Names as they appear in VictoriaMetrics / Grafana (label `job="tally"`):
 | `tally_play_days_started_total` | counter | | Play days started |
 | `tally_match_events_total` | counter | `action` = scheduled, scored, added, edited, deleted, cancelled | Match activity |
 | `tally_players_added_total`, `tally_awards_recorded_total` | counter | | Players added, extra-point entries |
+| `tally_scores_recorded_total` | counter | | Points entered per player without match details (one per play; the Poin tab and sheet imports) |
 | `tally_admin_checks_total` | counter | `result` = admin, not_admin, local_account, error | Site admin page requests by aio's answer (`error`: aio unreachable or unexpected reply) |
 
 A ready-made Grafana dashboard for these metrics is kept as a Kubernetes
@@ -172,8 +179,13 @@ node scripts/guide-shots.cjs /path/to/node_modules/playwright-core
 ```
 
 The script signs up a demo admin, seeds a fictional club (Badminton Sampai
-Pingsan: Jacque Oui, Prabski, Bahlul…) with two play days, and captures each
-screen at phone width in both languages.
+Pingsan: Jacque Oui, Prabski, Bahlul…) with four play days (two recorded as
+matches, two as points per player, one with an extra), previews an import of
+`scripts/guide-sheet.xlsx` (same fictional names; regenerate it with
+`python3 scripts/guide-sheet.py`), and captures each screen at phone width in
+both languages, each in a browser set to that language so date fields read
+right. Restart tally after resetting the database: the schema is applied at
+startup.
 
 ## CI
 

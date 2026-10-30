@@ -7,6 +7,7 @@ import (
 	"embed"
 	"encoding/hex"
 	"fmt"
+	"image/jpeg"
 	"io/fs"
 	"log"
 	"net/http"
@@ -69,7 +70,7 @@ func main() {
 		log.Print("login: local username/password (set AUTH_PROVIDER=aio to log in through all-in-one)")
 	}
 
-	app := &App{store: &Store{pool: pool}, aio: aio, tmpl: buildTemplates(), guideVer: guideVersion(), guard: newSubmitGuard(24 * time.Hour), assetVer: assetVersion("static/style.css", "static/app.js", "static/poster.js", "static/vendor/html-to-image.js")}
+	app := &App{store: &Store{pool: pool}, aio: aio, tmpl: buildTemplates(), guideVer: guideVersion(), guideSizes: guideImageSizes(), guard: newSubmitGuard(24 * time.Hour), assetVer: assetVersion("static/style.css", "static/app.js", "static/poster.js", "static/vendor/html-to-image.js")}
 
 	staticFS, err := fs.Sub(staticEmbed, "static")
 	if err != nil {
@@ -90,6 +91,10 @@ func main() {
 	// Read-only site admin pages; aio decides who is an admin on every request.
 	mux.HandleFunc("GET /admin", app.handleAdminUsers)
 	mux.HandleFunc("GET /admin/users/{id}", app.handleAdminUser)
+	mux.HandleFunc("GET /admin/tallies/{id}", app.handleAdminTally)
+	mux.HandleFunc("GET /admin/tallies/{id}/seasons/{pid}", app.handleAdminSeason)
+	mux.HandleFunc("GET /admin/tallies/{id}/players/{pid}", app.handleAdminPlayer)
+	mux.HandleFunc("GET /admin/tallies/{id}/days/{rid}", app.handleAdminDay)
 	mux.HandleFunc("GET /panduan", app.handleGuide)
 	mux.HandleFunc("GET /guide", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/panduan", http.StatusMovedPermanently)
@@ -103,6 +108,9 @@ func main() {
 	mux.HandleFunc("POST /t/{slug}/periods", app.handleCreatePeriod)
 	mux.HandleFunc("GET /t/{slug}/periods/{id}", app.handlePeriodDetail)
 	mux.HandleFunc("GET /t/{slug}/periods/{id}/edit", app.handleEditPeriodForm)
+	mux.HandleFunc("GET /t/{slug}/periods/{id}/import", app.handleImportForm)
+	mux.HandleFunc("POST /t/{slug}/periods/{id}/import", app.handleImportPreview)
+	mux.HandleFunc("POST /t/{slug}/periods/{id}/import/confirm", app.handleImportConfirm)
 	mux.HandleFunc("POST /t/{slug}/periods/{id}", app.handleEditPeriod)
 	mux.HandleFunc("GET /t/{slug}/play", app.handlePlay)
 	mux.HandleFunc("POST /t/{slug}/rounds", app.handleCreateRound)
@@ -237,6 +245,30 @@ func guideVersion() string {
 		return err
 	})
 	return assetVersion(paths...)
+}
+
+type imgSize struct{ W, H int }
+
+// guideImageSizes reads each guide screenshot's size from its JPEG header, so
+// the guide can reserve the space: lazy images that load while a jump link
+// scrolls would otherwise push the target down.
+func guideImageSizes() map[string]imgSize {
+	sizes := map[string]imgSize{}
+	_ = fs.WalkDir(staticEmbed, "static/guide", func(p string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() || !strings.HasSuffix(p, ".jpg") {
+			return err
+		}
+		f, err := staticEmbed.Open(p)
+		if err != nil {
+			return nil
+		}
+		defer f.Close()
+		if c, err := jpeg.DecodeConfig(f); err == nil {
+			sizes[strings.TrimSuffix(strings.TrimPrefix(p, "static/guide/"), ".jpg")] = imgSize{c.Width, c.Height}
+		}
+		return nil
+	})
+	return sizes
 }
 
 // cacheStatic marks versioned asset responses (requested with ?v=) as immutable.

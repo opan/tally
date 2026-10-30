@@ -108,7 +108,7 @@ given round. Movement arrow = rank after round N vs rank after round N‑1.
 | P3 | Leaderboard: season + play-day switcher, movement arrows, play-day results, public view | ✅ done 2026-10-14 |
 | P4 | Share poster + PNG export, optional logo & texts | ✅ done 2026-10-14 |
 | P5 | More tally types (1v1, 2v2, team, counter), win/draw/loss scoring, manual points, player pages | ✅ done 2026-10-14 |
-| DOC | User guide: getting started + how to use each feature, in the app (`/panduan`), ID + EN | first version 2026-10-14; opan to review on a phone and revise |
+| DOC | User guide: getting started + how to use each feature, in the app (`/panduan`), ID + EN | first version 2026-10-14; updated with screenshots for RFC-001 (Poin tab, season page, import) 2026-10-30; opan to review on a phone and revise |
 | P6 | Best‑of‑3 / rubber game where winning matters | later |
 | P7 | Login through aio (`AUTH_PROVIDER=aio`) | ✅ done 2026-10-14 (linking players to accounts: later) |
 | P8 | Read-only site admin pages, admin decided by aio (RFC-002 in all-in-one) | ✅ built 2026-10-18, PR #2 |
@@ -429,6 +429,49 @@ still in the security backlog.
   says the last one ended (with "Buat musim baru") or when the next starts.
 - Board: a points-only play day shows "entered without match details" where
   the match results would be. Metric `tally.scores.recorded`.
+
+## RFC-001 S3 notes: sheet import (2026-10-30)
+
+- Season page → "Impor dari spreadsheet" (race-to-target seasons only):
+  upload .xlsx (2 MB, first sheet) → preview → confirm. The preview carries
+  the parsed sheet in a hidden field; confirm re-validates it, so nothing is
+  stored between the steps.
+- Parser (`xlsx.go`, `sheetimport.go`, stdlib only): finds each play day by
+  its SubTot header, slots 1..n (≤ 7) before it, date in the row above
+  ("Sun, 4 Oct", ISO, Excel serial; year from a cell above, else the season;
+  Dec → Jan rolls over). `-`, blanks, -1 skipped; above the target capped.
+  Notes: capped, -1 ignored, SubTot ≠ imported, sheet Total ≠ previous Total
+  + SubTot, empty blocks, names that never played (not created). Errors
+  (non-score cell, duplicate name/date, unreadable date) block the import.
+  Zip parts are read with an 8 MB cap; 2000 × 400 cells max.
+- Write (`ImportScores`): one transaction, creates players and play days,
+  scores in slot order (created_at a millisecond apart), attendance, one
+  `import`/`sheet` audit row. Days with points are skipped unless Replace
+  (deletes that day's `score` entries only). Dates outside the season need
+  the "extend season" tick.
+- Checked with the club's October sheet: 5 play days, 392 scores, 14,778
+  points; the board matches the sheet, except one running total the sheet got
+  10 short and the -1 rows (now counted by the rule); re-upload
+  skips all five days.
+
+## Site admin: read-only tally pages (2026-10-30)
+
+- opan: site admins (aio admins) may open every tally read-only, private ones
+  included, because every view is logged. This widens P8 / RFC-002, which
+  listed private tallies without a link.
+- `/admin/users/{id}` links each tally to `/admin/tallies/{id}`: tally admins,
+  seasons (status, play days, players, plays, points), players (plays,
+  points over all seasons, last play day). From there:
+  `/seasons/{pid}` (the Musim page with `Admin` set: no edit/import/board,
+  play days link to the admin day page), `/players/{pid}` (the player page
+  with admin links), `/days/{rid}` (scores per player, matches, extras,
+  who was there; no forms).
+- `admin_views` gained `tally_id` and `detail`; tally pages log the owner as
+  `subject_user_id`. The admin tallies table counts plays instead of
+  matches, so points-only tallies don't read 0.
+- Tested with a fake aio status endpoint (`admin_test.go`): 200 for the
+  admin on a private tally, 404 for others, four views logged, no tally form
+  actions on any page.
 
 ## Open questions
 

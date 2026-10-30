@@ -1,0 +1,44 @@
+{{define "title"}}{{.T "round.label" .Data.Round.WeekLabel}} &middot; {{.Data.Tally.Name}} &mdash; {{.T "nav.admin"}} &mdash; {{.T "app.name"}}{{end}}
+{{define "content"}}
+{{$t := .Data.Tally}}{{$d := .Data}}
+<p class="small"><a href="/admin/tallies/{{$t.ID}}/seasons/{{$d.Period.ID}}">&larr; {{$t.Name}} &middot; {{$d.Period.Name}}</a></p>
+<h1>{{.T "round.label" $d.Round.WeekLabel}} &middot; {{.Weekday $d.Round.PlayedOn}} {{.Date $d.Round.PlayedOn}}</h1>
+<p class="muted">{{$d.Period.Name}} &middot; {{.Rule $d.Period.Scoring}}</p>
+<p class="alert info">{{.T "admin.readonly"}}</p>
+
+<section class="card">
+  <div class="cardhead"><h2>{{.T "score.today"}}</h2><span class="muted small">{{.T "score.today_n" (len $d.ScoreRows) $d.Plays}}</span></div>
+  {{range $row := $d.ScoreRows}}
+  <div class="scorerow">
+    <a class="sr-name" href="{{$d.PlayerHref $row.Player.ID}}">{{$row.Player.Name}}</a>
+    <ul class="sr-chips">{{range $row.Chips}}<li><span class="chip{{if not .AwardID}} match{{end}}">{{if .OnCourt}}…{{else}}{{.Points}}{{end}}</span></li>{{end}}</ul>
+    <span class="sr-total">{{$row.Total}}</span>
+  </div>
+  {{else}}<p class="muted">{{.T "score.none"}}</p>{{end}}
+  {{if $d.ScoreRows}}<p class="muted small">{{.T "admin.chips_note"}}</p>{{end}}
+</section>
+
+{{if or $d.Done $d.OnCourt}}
+<section class="card">
+  <div class="cardhead"><h2>{{.T "round.tab_matches"}}</h2><span class="muted small">{{len $d.Done}}</span></div>
+  {{range $d.OnCourt}}{{template "matchrow" (dict "P" $ "M" . "Slug" $t.Slug "Actions" false)}}{{end}}
+  {{range $d.Done}}{{template "matchrow" (dict "P" $ "M" . "Slug" $t.Slug "Actions" false)}}{{end}}
+</section>
+{{end}}
+
+{{if $d.Awards}}
+<section class="card">
+  <h2>{{.T "awards.title"}}</h2>
+  <ul class="rows">
+    {{range $d.Awards}}<li class="prow"><span><strong>{{.Name}}</strong> <span class="{{if lt .Points 0}}neg{{else}}pos{{end}}">{{if gt .Points 0}}+{{end}}{{.Points}}</span>{{if .Reason}} <span class="muted small">· {{.Reason}}</span>{{end}}</span></li>{{end}}
+  </ul>
+</section>
+{{end}}
+
+{{if $d.Present}}
+<section class="card">
+  <div class="cardhead"><h2>{{.T "play.present"}}</h2><span class="muted small">{{len $d.Present}}</span></div>
+  <ul class="chips">{{range $d.Present}}<li>{{.Name}}</li>{{end}}</ul>
+</section>
+{{end}}
+{{end}}

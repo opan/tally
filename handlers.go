@@ -23,6 +23,8 @@ type App struct {
 	assetVer string       // content hash appended to static asset URLs for cache-busting
 	guideVer string       // content hash of the guide's screenshots
 	guard    *submitGuard // one-time form tokens against double submits; nil-safe
+
+	guideSizes map[string]imgSize // the guide's screenshot sizes, read once at startup
 }
 
 const maxFormBytes = 256 << 10 // 256 KiB cap for ordinary form posts
@@ -32,7 +34,7 @@ func limitBody(w http.ResponseWriter, r *http.Request, max int64) {
 	r.Body = http.MaxBytesReader(w, r.Body, max)
 }
 
-var pageNames = []string{"landing", "login", "register", "autherror", "panduan", "dashboard", "notfound", "tally", "players", "periods", "period", "period_edit", "settings", "play", "round", "match_edit", "poster", "player", "admin", "adminuser", "adminerror", "akun"}
+var pageNames = []string{"landing", "login", "register", "autherror", "panduan", "dashboard", "notfound", "tally", "players", "periods", "period", "period_edit", "period_import", "settings", "play", "round", "match_edit", "poster", "player", "admin", "adminuser", "admintally", "adminday", "adminerror", "akun"}
 
 // pageExtras are additional template files a page needs.
 var pageExtras = map[string][]string{
@@ -176,11 +178,12 @@ func (a *App) handleHome(w http.ResponseWriter, r *http.Request) {
 
 // The guide also reads pageData.Aio: login goes through All-in-one.
 type guideVM struct {
-	ImgVer string // cache-buster for the screenshots
+	ImgVer string             // cache-buster for the screenshots
+	Sizes  map[string]imgSize // "id/courts" → pixel size, so the page doesn't jump as they load
 }
 
 func (a *App) handleGuide(w http.ResponseWriter, r *http.Request) {
-	a.render(w, r, "panduan", guideVM{ImgVer: a.guideVer})
+	a.render(w, r, "panduan", guideVM{ImgVer: a.guideVer, Sizes: a.guideSizes})
 }
 
 // handleAccount explains that the account lives in all-in-one and links to

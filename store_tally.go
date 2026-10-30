@@ -196,6 +196,40 @@ func (s *Store) CreateTally(ctx context.Context, ownerID string, t Tally) (*Tall
 	return out, err
 }
 
+func (s *Store) TallyByID(ctx context.Context, id string) (*Tally, error) {
+	return scanTally(s.pool.QueryRow(ctx, `SELECT `+tallyCols+` FROM tallies t WHERE t.id = $1`, id))
+}
+
+// TallyPlayerRow is one player on the site admin's tally page.
+type TallyPlayerRow struct {
+	Participant
+	Plays      int // all seasons
+	Points     int // all seasons
+	LastPlayed *time.Time
+}
+
+// TallyPlayers lists a tally's players with their plays and points over all
+// seasons, active first, by name.
+func (s *Store) TallyPlayers(ctx context.Context, tallyID string) ([]TallyPlayerRow, error) {
+	rows, err := s.pool.Query(ctx,
+		`SELECT p.id, p.display_name, p.active,
+		        COUNT(pa.id) FILTER (WHERE pa.kind <> 'extra'), COALESCE(SUM(pa.points), 0), MAX(r.played_on)
+		 FROM participants p
+		 LEFT JOIN point_awards pa ON pa.participant_id = p.id
+		 LEFT JOIN rounds r ON r.id = pa.round_id
+		 WHERE p.tally_id = $1
+		 GROUP BY p.id
+		 ORDER BY p.active DESC, lower(p.display_name)`, tallyID)
+	if err != nil {
+		return nil, err
+	}
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (TallyPlayerRow, error) {
+		var t TallyPlayerRow
+		err := row.Scan(&t.ID, &t.Name, &t.Active, &t.Plays, &t.Points, &t.LastPlayed)
+		return t, err
+	})
+}
+
 func (s *Store) TallyBySlug(ctx context.Context, slug string) (*Tally, error) {
 	return scanTally(s.pool.QueryRow(ctx, `SELECT `+tallyCols+` FROM tallies t WHERE t.slug = $1`, slug))
 }

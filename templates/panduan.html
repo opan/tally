@@ -1,28 +1,40 @@
 {{define "title"}}{{.T "guide.title"}} &mdash; {{.T "app.name"}}{{end}}
 {{define "content"}}
+<div class="guidelayout">
 <article class="guide">
   <header class="guidehead">
     <h1>{{.T "guide.title"}}</h1>
     <p class="lead">{{.T "guide.lead"}}</p>
   </header>
-  <nav class="card guidetoc" aria-label="{{.T "guide.toc"}}">
+  <nav class="card guidetoc" id="isi" aria-label="{{.T "guide.toc"}}">
     <h2>{{.T "guide.toc"}}</h2>
-    <ol>
-      <li><a href="#mulai">{{.T "guide.s.mulai"}}</a></li>
-      <li><a href="#jenis">{{.T "guide.s.jenis"}}</a></li>
-      <li><a href="#aturan-poin">{{.T "guide.s.aturan"}}</a></li>
-      <li><a href="#hari-main">{{.T "guide.s.main"}}</a></li>
-      <li><a href="#peringkat">{{.T "guide.s.peringkat"}}</a></li>
-      <li><a href="#poster">{{.T "guide.s.poster"}}</a></li>
-      <li><a href="#kelola">{{.T "guide.s.kelola"}}</a></li>
-      <li><a href="#pemain">{{.T "guide.s.pemain"}}</a></li>
-      <li><a href="#faq">{{.T "guide.s.faq"}}</a></li>
-    </ol>
+    {{template "guidelinks" .}}
   </nav>
   {{if eq .Lang "en"}}{{template "guide_en" .}}{{else}}{{template "guide_id" .}}{{end}}
   <p class="muted small guideback"><a href="#">{{.T "guide.back_top"}}</a> &middot; <a href="/">{{.T "notfound.back"}}</a></p>
 </article>
+{{/* On wide screens the same list stays in view on the right; app.js adds
+     each section's subsections and marks the one being read. */}}
+<aside class="guiderail" aria-label="{{.T "guide.toc"}}">
+  <p class="eyebrow">{{.T "guide.toc"}}</p>
+  {{template "guidelinks" .}}
+  <p class="small"><a href="#">↑ {{.T "guide.back_top"}}</a></p>
+</aside>
+</div>
+<a class="guidefab" href="#isi">☰ {{.T "guide.toc"}}</a>
 {{end}}
 
+{{define "guidelinks"}}<ol>
+  <li><a href="#mulai">{{.T "guide.s.mulai"}}</a></li>
+  <li><a href="#jenis">{{.T "guide.s.jenis"}}</a></li>
+  <li><a href="#aturan-poin">{{.T "guide.s.aturan"}}</a></li>
+  <li><a href="#hari-main">{{.T "guide.s.main"}}</a></li>
+  <li><a href="#peringkat">{{.T "guide.s.peringkat"}}</a></li>
+  <li><a href="#poster">{{.T "guide.s.poster"}}</a></li>
+  <li><a href="#kelola">{{.T "guide.s.kelola"}}</a></li>
+  <li><a href="#pemain">{{.T "guide.s.pemain"}}</a></li>
+  <li><a href="#faq">{{.T "guide.s.faq"}}</a></li>
+</ol>{{end}}
+
 {{/* gimg is one screenshot: dict "P" $ "N" "courts" "Alt" "…" */}}
-{{define "gimg"}}<figure class="gshot"><img src="/static/guide/{{.P.Lang}}/{{.N}}.jpg?v={{.P.Data.ImgVer}}" alt="{{.Alt}}" loading="lazy" decoding="async"></figure>{{end}}
+{{define "gimg"}}{{$sz := index .P.Data.Sizes (print .P.Lang "/" .N)}}<figure class="gshot"><img src="/static/guide/{{.P.Lang}}/{{.N}}.jpg?v={{.P.Data.ImgVer}}" alt="{{.Alt}}"{{if $sz.W}} width="{{$sz.W}}" height="{{$sz.H}}"{{end}} loading="lazy" decoding="async"></figure>{{end}}

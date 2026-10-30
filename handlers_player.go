@@ -42,6 +42,37 @@ type playerVM struct {
 	Awards    []Award // extras
 	Scores    int     // plays entered as points only (no match details)
 	Counter   bool
+	Admin     bool // the site admin's read-only view
+}
+
+// PlayerHref, DayHref and BackHref keep links inside the site admin's view
+// when vm.Admin is set.
+func (v playerVM) PlayerHref(id string) string {
+	q := ""
+	if v.Period != nil {
+		q = "?season=" + v.Period.ID
+	}
+	if v.Admin {
+		return "/admin/tallies/" + v.Tally.ID + "/players/" + id + q
+	}
+	return tallyPath(v.Tally, "/players/"+id) + q
+}
+
+func (v playerVM) DayHref(roundID string) string {
+	if v.Admin {
+		return "/admin/tallies/" + v.Tally.ID + "/days/" + roundID
+	}
+	return tallyPath(v.Tally, "?season="+v.Period.ID+"&day="+roundID)
+}
+
+func (v playerVM) BackHref() string {
+	if v.Admin {
+		return "/admin/tallies/" + v.Tally.ID
+	}
+	if v.Period != nil {
+		return tallyPath(v.Tally, "?season="+v.Period.ID)
+	}
+	return tallyPath(v.Tally, "")
 }
 
 func sortPairs(m map[string]*pairStat) []pairStat {
@@ -76,7 +107,15 @@ func (a *App) handlePlayer(w http.ResponseWriter, r *http.Request) {
 		internalError(w, "load player", err)
 		return
 	}
-	vm := playerVM{tallyCtx: tc, Player: player, Counter: tc.Tally.Preset().IsCounter()}
+	a.playerPage(w, r, playerVM{tallyCtx: tc, Player: player})
+}
+
+// playerPage fills in a player's season (?season=, else the current one) and
+// renders it; shared with the site admin's read-only view (vm.Admin).
+func (a *App) playerPage(w http.ResponseWriter, r *http.Request, vm playerVM) {
+	ctx, tc, player := r.Context(), vm.tallyCtx, vm.Player
+	vm.Counter = tc.Tally.Preset().IsCounter()
+	var err error
 	if vm.Periods, err = a.store.ListPeriods(ctx, tc.Tally.ID); err != nil {
 		internalError(w, "list periods", err)
 		return

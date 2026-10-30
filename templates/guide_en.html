@@ -1,7 +1,7 @@
 {{define "guide_en"}}{{$P := .}}
 <section class="card gsec" id="mulai">
   <h2>1. Quick start</h2>
-  <p>Five steps from nothing to your first recorded match.</p>
+  <p>Five steps from nothing to your first recorded points.</p>
   <ol class="gsteps">
     <li><strong>Sign up or log in.</strong>
       {{if .Aio}}Tap <em>Sign up</em> or <em>Log in</em>. You go to All-in-one's page at
@@ -17,8 +17,8 @@
       group: numbers and bullets are removed, and names that already exist are skipped.</li>
     <li><strong>Create a season.</strong> On the <em>Seasons</em> tab, set the start and end dates and choose
       the <a href="#aturan-poin">points rule</a>.</li>
-    <li><strong>Start playing.</strong> Open the <em>Play</em> tab and pick the date, number of courts, and who's
-      here. Continue in <a href="#hari-main">Play day</a>.</li>
+    <li><strong>Start playing.</strong> Open the <em>Play</em> tab, pick the date, and press <em>Start</em>.
+      Enter the points on the <em>Points</em> tab. Continue in <a href="#hari-main">Play day</a>.</li>
   </ol>
   {{template "gimg" (dict "P" $P "N" "create" "Alt" "The Create a new tally form: name, link, type, description")}}
   {{template "gimg" (dict "P" $P "N" "players" "Alt" "The Add players form with one name per line")}}
@@ -78,6 +78,7 @@
     you can see which season it goes into; the date must fall inside a season. A date has only one play day;
     picking a date that already has one opens it. There's no need to tick who's here: players with points
     count as present.</p>
+  {{template "gimg" (dict "P" $P "N" "start-day" "Alt" "The Start a play day form: the date and its season")}}
   <p>Play days are named by the week of the month, like on the spreadsheet: days 1–7 are <em>Week 1</em>,
     8–14 <em>Week 2</em>, 15–21 <em>Week 3</em>, 22–28 <em>Week 4</em>, 29–31 <em>Week 5</em>. When a week
     has two or more play days, they get letters: <em>Week 4A</em>, <em>Week 4B</em>.</p>
@@ -94,8 +95,13 @@
       courts, as described below.</li>
   </ul>
   <p>Points from both tabs go to the same leaderboard, and the tab you used last opens next time.</p>
+  {{template "gimg" (dict "P" $P "N" "day-tabs" "Alt" "The play day's two tabs: Points and Matches")}}
+  {{template "gimg" (dict "P" $P "N" "points" "Alt" "The Enter points form: player name and points")}}
+  {{template "gimg" (dict "P" $P "N" "today" "Alt" "Today's points: each player's plays, the add button, and the total")}}
   <h3>Shuffle pairs</h3>
-  <p>Tap <strong>Shuffle pairs</strong> to fill every free court. So everyone gets a turn:</p>
+  <p>On the <em>Matches</em> tab, open <strong>Attendance &amp; courts</strong> first: tick who's here, pick
+    the number of courts (1–3), and save. Then tap <strong>Shuffle pairs</strong> to fill every free court.
+    So everyone gets a turn:</p>
   <ol>
     <li>whoever has <strong>played the least</strong> today goes first,</li>
     <li>then whoever has <strong>waited the longest</strong>,</li>
@@ -112,7 +118,7 @@
   <p>Enter the score and tap <strong>Save score</strong>. Points are counted right away, the match moves to
     <em>Finished</em>, and the court is free again. Tap <em>Shuffle pairs</em> for the next turn.</p>
   <h3>Arriving late, leaving early</h3>
-  <p>Open <strong>Attendance &amp; courts</strong> at the bottom, tick or untick people, and save. You can
+  <p>Open <strong>Attendance &amp; courts</strong> at the bottom of the <em>Matches</em> tab, tick or untick people, and save. You can
     change the number of courts there too. Late arrivals go first automatically, since they've played less.</p>
   <h3>Fixing mistakes and manual matches</h3>
   <p>In the <em>Finished</em> list, tap <strong>Edit</strong> to fix the players or score, or
@@ -177,6 +183,16 @@
   <h3>New season</h3>
   <p>On the <em>Seasons</em> tab. Old seasons are kept and can be viewed from the <em>Season</em> picker on the leaderboard.
     Tap a season's name to see all its weeks: each week's play days, players, plays, points, and who's on top.</p>
+  {{template "gimg" (dict "P" $P "N" "season-weeks" "Alt" "A season's page: totals, and each week with its play days")}}
+  <h3 id="impor">Import from a spreadsheet</h3>
+  <p>If this season's points are already on a spreadsheet, open the season and press <strong>Import from a
+    spreadsheet</strong>. From Google Sheets: <em>File → Download → Microsoft Excel (.xlsx)</em>, then upload
+    the file. The layout is like the club's sheet: names in column A, each play day columns 1–7 then SubTot,
+    and its date above column 1. Before saving, Tally shows a preview: the play days, new players, and notes
+    such as a deuce score recorded as 42, a -1 skipped, or a sheet total that doesn't add up. Play days that
+    already have points are skipped, so importing again is safe; tick <em>Replace</em> to overwrite them.
+    After that, keep recording in Tally.</p>
+  {{template "gimg" (dict "P" $P "N" "import" "Alt" "The import preview: play days, new players, and notes about the sheet")}}
   <h3>Other admins</h3>
   <p>In <em>Settings → Admins</em>, type their username. They have to {{if .Aio}}log in to Tally{{else}}sign up{{end}}
     once first. Admins can manage players, seasons, and matches; only the owner can add or remove admins.</p>

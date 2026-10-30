@@ -1,0 +1,99 @@
+{{define "title"}}{{.T "import.title"}} &middot; {{.Data.Period.Name}} &mdash; {{.T "app.name"}}{{end}}
+{{define "content"}}
+{{template "tallyhead" .}}
+{{$t := .Data.Tally}}{{$d := .Data}}{{$p := $d.Period}}
+<p class="small"><a href="/t/{{$t.Slug}}/periods/{{$p.ID}}">&larr; {{$p.Name}}</a></p>
+
+{{if not $d.Preview}}
+<section class="card">
+  <h2>{{.T "import.title"}}</h2>
+  <p class="muted">{{.T "import.intro" $p.Name}}</p>
+  <ul class="small importrules">
+    <li>{{.T "import.rule_names"}}</li>
+    <li>{{.T "import.rule_blocks"}}</li>
+    <li>{{.T "import.rule_values" $d.Target}}</li>
+    <li>{{.T "import.rule_existing"}}</li>
+  </ul>
+  <form method="post" action="/t/{{$t.Slug}}/periods/{{$p.ID}}/import" enctype="multipart/form-data" class="stack">
+    <label>{{.T "import.file"}}
+      <input type="file" name="sheet" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required>
+    </label>
+    <p class="muted small">{{.T "import.file_help"}}</p>
+    <label class="choice"><input type="checkbox" name="replace" value="1"><span>{{.T "import.replace"}}<span class="muted small">{{.T "import.replace_help"}}</span></span></label>
+    <button type="submit" class="btn primary">{{.T "import.preview"}}</button>
+  </form>
+</section>
+{{else}}
+<section class="card">
+  <div class="cardhead"><h2>{{.T "import.preview_title"}}</h2><span class="muted small">{{$d.File}}</span></div>
+  {{if $d.Errors}}
+  <div class="alert error" role="alert">
+    <p><strong>{{.T "import.errors_title"}}</strong></p>
+    <ul>{{range $d.Errors}}<li>{{.}}</li>{{end}}</ul>
+  </div>
+  <p><a class="btn" href="/t/{{$t.Slug}}/periods/{{$p.ID}}/import">{{.T "import.again"}}</a></p>
+  {{else}}
+  <div class="stats">
+    <div class="stat"><span class="lbl">{{.T "season.play_days"}}</span><span class="val">{{$d.Writes}}</span></div>
+    <div class="stat"><span class="lbl">{{.T "season.players"}}</span><span class="val">{{$d.Players}}</span></div>
+    <div class="stat"><span class="lbl">{{.T "season.plays"}}</span><span class="val">{{$d.Plays}}</span></div>
+    <div class="stat"><span class="lbl">{{.T "board.points"}}</span><span class="val">{{$d.Points}}</span></div>
+  </div>
+  <ul class="rows">
+    {{range $d.Days}}
+    <li class="prow">
+      <span><strong>{{$.T "round.label" .Round.WeekLabel}}</strong> &middot; {{$.Weekday .Round.PlayedOn}} {{$.Date .Round.PlayedOn}}
+        <span class="muted small">· {{$.T "season.day_stats" .Players .Plays .Points}}</span></span>
+      <span class="badge{{if eq .Status "skip"}} ended{{else}} gold{{end}}">{{if or (eq .Status "skip") (eq .Status "replace")}}{{$.T (print "import.status_" .Status) .Existing}}{{else}}{{$.T (print "import.status_" .Status)}}{{end}}</span>
+    </li>
+    {{end}}
+  </ul>
+  {{end}}
+</section>
+
+{{if not $d.Errors}}
+{{if $d.NewPlayers}}
+<section class="card">
+  <div class="cardhead"><h2>{{.T "import.new_players"}}</h2><span class="muted small">{{len $d.NewPlayers}}</span></div>
+  <p class="muted small">{{.T "import.new_players_help"}}</p>
+  <ul class="chips">{{range $d.NewPlayers}}<li>{{.}}</li>{{end}}</ul>
+</section>
+{{end}}
+
+{{$s := $d.Sheet}}
+{{if or $s.Capped $s.Ignored $s.SubTotal $s.Total $s.EmptyDays $s.NeverPlayed}}
+<section class="card">
+  <h2>{{.T "import.notes"}}</h2>
+  <ul class="importnotes">
+    {{range $s.Capped}}<li>{{$.T "import.note_capped" .Cell .Player ($.DayMonth .Date) .A .B}}</li>{{end}}
+    {{range $s.Ignored}}<li>{{$.T "import.note_ignored" .Cell .Player ($.DayMonth .Date)}}</li>{{end}}
+    {{range $s.SubTotal}}<li>{{$.T "import.note_subtotal" .Cell .Player ($.DayMonth .Date) .A .B}}</li>{{end}}
+    {{range $s.Total}}<li>{{$.T "import.note_total" .Cell .Player ($.DayMonth .Date) .A .B}}</li>{{end}}
+    {{range $s.EmptyDays}}<li>{{$.T "import.note_empty_day" .}}</li>{{end}}
+    {{if $s.NeverPlayed}}<li>{{$.T "import.note_never" $s.NeverPlayed}}</li>{{end}}
+  </ul>
+</section>
+{{end}}
+
+<section class="card">
+  {{if $d.Writes}}
+  <form method="post" action="/t/{{$t.Slug}}/periods/{{$p.ID}}/import/confirm" class="stack">
+    <input type="hidden" name="form_token" value="{{formToken}}">
+    <input type="hidden" name="payload" value="{{$d.Payload}}">
+    {{if $d.Replace}}<input type="hidden" name="replace" value="1">{{end}}
+    {{if $d.Outside}}
+    <label class="choice"><input type="checkbox" name="extend" value="1" required{{if $d.Extend}} checked{{end}}><span>{{.T "import.extend" $p.Name (.Date $d.From) (.Date $d.To)}}<span class="muted small">{{.T "import.extend_help" (.Date $p.StartsOn) (.Date $p.EndsOn)}}</span></span></label>
+    {{end}}
+    <div class="actions">
+      <button type="submit" class="btn primary">{{.T "import.confirm" $d.Plays}}</button>
+      <a class="btn ghost" href="/t/{{$t.Slug}}/periods/{{$p.ID}}/import">{{.T "common.cancel"}}</a>
+    </div>
+  </form>
+  {{else}}
+  <p class="muted">{{.T "import.nothing"}}</p>
+  <a class="btn" href="/t/{{$t.Slug}}/periods/{{$p.ID}}/import">{{.T "import.again"}}</a>
+  {{end}}
+</section>
+{{end}}
+{{end}}
+{{end}}

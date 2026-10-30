@@ -8,17 +8,17 @@
   <div class="tablewrap">
     <table class="board">
       <thead>
-        <tr><th>{{.T "admin.col.tally"}}</th><th>{{.T "admin.col.role"}}</th><th>{{.T "admin.col.visibility"}}</th><th class="num">{{.T "admin.col.players"}}</th><th class="num">{{.T "admin.col.play_days"}}</th><th class="num">{{.T "admin.col.matches"}}</th><th>{{.T "admin.col.last_played"}}</th></tr>
+        <tr><th>{{.T "admin.col.tally"}}</th><th>{{.T "admin.col.role"}}</th><th>{{.T "admin.col.visibility"}}</th><th class="num">{{.T "admin.col.players"}}</th><th class="num">{{.T "admin.col.play_days"}}</th><th class="num">{{.T "admin.col.plays"}}</th><th>{{.T "admin.col.last_played"}}</th></tr>
       </thead>
       <tbody>
         {{range .Data.Tallies}}
         <tr>
-          <td>{{if eq .Tally.Visibility "private"}}{{.Tally.Name}}{{else}}<a href="/t/{{.Tally.Slug}}">{{.Tally.Name}}</a>{{end}}<br><span class="muted small">/t/{{.Tally.Slug}}</span></td>
+          <td><a href="/admin/tallies/{{.Tally.ID}}">{{.Tally.Name}}</a><br><span class="muted small">/t/{{.Tally.Slug}}</span></td>
           <td>{{if eq .Role "owner"}}{{$.T "role.owner"}}{{else}}{{$.T "role.admin"}}{{end}}</td>
           <td>{{if eq .Tally.Visibility "private"}}{{$.T "visibility.private"}}{{else}}{{$.T "visibility.link"}}{{end}}</td>
           <td class="num">{{.Players}}</td>
           <td class="num">{{.PlayDays}}</td>
-          <td class="num">{{.Matches}}</td>
+          <td class="num">{{.Plays}}</td>
           <td>{{if .LastPlayed}}{{$.Date .LastPlayed}}{{else}}<span class="muted">&mdash;</span>{{end}}</td>
         </tr>
         {{end}}

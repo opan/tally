@@ -1,7 +1,7 @@
 {{define "guide_id"}}{{$P := .}}
 <section class="card gsec" id="mulai">
   <h2>1. Mulai cepat</h2>
-  <p>Lima langkah dari nol sampai pertandingan pertama tercatat.</p>
+  <p>Lima langkah dari nol sampai poin pertama tercatat.</p>
   <ol class="gsteps">
     <li><strong>Daftar atau masuk.</strong>
       {{if .Aio}}Tekan <em>Daftar</em> atau <em>Masuk</em>. Anda dibawa ke halaman All-in-one di
@@ -17,8 +17,8 @@
       ditempel: nomor dan tanda daftar dibuang otomatis, nama yang sudah ada dilewati.</li>
     <li><strong>Buat musim.</strong> Di tab <em>Musim</em>, isi tanggal mulai dan selesai, lalu pilih
       <a href="#aturan-poin">aturan poin</a>.</li>
-    <li><strong>Mulai main.</strong> Buka tab <em>Main</em>, pilih tanggal, jumlah lapangan, dan siapa yang
-      hadir. Lanjutkan di <a href="#hari-main">Hari main</a>.</li>
+    <li><strong>Mulai main.</strong> Buka tab <em>Main</em>, pilih tanggal, lalu tekan <em>Mulai</em>. Catat
+      poinnya di tab <em>Poin</em>. Lanjutkan di <a href="#hari-main">Hari main</a>.</li>
   </ol>
   {{template "gimg" (dict "P" $P "N" "create" "Alt" "Formulir Buat tally baru: nama, tautan, jenis, deskripsi")}}
   {{template "gimg" (dict "P" $P "N" "players" "Alt" "Formulir Tambah pemain dengan satu nama per baris")}}
@@ -76,6 +76,7 @@
     terlihat musim mana yang dipakai; tanggalnya harus masuk dalam salah satu musim. Satu tanggal hanya punya
     satu hari main; memilih tanggal yang sudah ada akan membuka hari main itu. Kehadiran tidak perlu dicentang:
     pemain yang punya poin dianggap hadir.</p>
+  {{template "gimg" (dict "P" $P "N" "start-day" "Alt" "Formulir Mulai hari main: tanggal dan musimnya")}}
   <p>Hari main diberi nama menurut minggu dalam bulan, seperti di spreadsheet: tanggal 1–7 <em>Minggu 1</em>,
     8–14 <em>Minggu 2</em>, 15–21 <em>Minggu 3</em>, 22–28 <em>Minggu 4</em>, 29–31 <em>Minggu 5</em>. Kalau
     seminggu ada dua hari main atau lebih, diberi huruf: <em>Minggu 4A</em>, <em>Minggu 4B</em>.</p>
@@ -93,8 +94,13 @@
   </ul>
   <p>Poin dari kedua tab masuk ke papan peringkat yang sama, dan tab yang terakhir dipakai dibuka lagi
     lain kali.</p>
+  {{template "gimg" (dict "P" $P "N" "day-tabs" "Alt" "Dua tab hari main: Poin dan Pertandingan")}}
+  {{template "gimg" (dict "P" $P "N" "points" "Alt" "Formulir Input poin: nama pemain dan poinnya")}}
+  {{template "gimg" (dict "P" $P "N" "today" "Alt" "Poin hari ini: angka poin tiap pemain, tombol tambah, dan totalnya")}}
   <h3>Acak pasangan</h3>
-  <p>Tekan <strong>Acak pasangan</strong> untuk mengisi semua lapangan yang kosong. Supaya semua kebagian main:</p>
+  <p>Di tab <em>Pertandingan</em>, buka <strong>Kehadiran &amp; lapangan</strong> dulu: centang yang hadir,
+    pilih jumlah lapangan (1–3), dan simpan. Lalu tekan <strong>Acak pasangan</strong> untuk mengisi semua
+    lapangan yang kosong. Supaya semua kebagian main:</p>
   <ol>
     <li>yang <strong>paling sedikit main</strong> hari itu dipilih duluan,</li>
     <li>kalau sama, yang <strong>paling lama menunggu</strong>,</li>
@@ -111,7 +117,7 @@
   <p>Isi skor lalu tekan <strong>Simpan skor</strong>. Poin langsung dihitung, pertandingan pindah ke
     <em>Selesai</em>, dan lapangan kosong lagi. Tekan <em>Acak pasangan</em> untuk giliran berikutnya.</p>
   <h3>Datang telat, pulang duluan</h3>
-  <p>Buka <strong>Kehadiran &amp; lapangan</strong> di bagian bawah, centang atau hapus centang, dan simpan.
+  <p>Buka <strong>Kehadiran &amp; lapangan</strong> di bagian bawah tab <em>Pertandingan</em>, centang atau hapus centang, dan simpan.
     Di sini jumlah lapangan juga bisa diubah. Yang datang telat otomatis didahulukan karena mainnya masih sedikit.</p>
   <h3>Salah input dan pertandingan manual</h3>
   <p>Di daftar <em>Selesai</em>, tekan <strong>Ubah</strong> untuk memperbaiki pemain atau skor, atau
@@ -176,6 +182,16 @@
   <h3>Musim baru</h3>
   <p>Di tab <em>Musim</em>. Musim lama tetap tersimpan dan bisa dilihat dari pilihan <em>Musim</em> di papan peringkat.
     Tekan nama musim untuk melihat semua minggunya: hari main tiap minggu, jumlah pemain, main, poin, dan yang teratas.</p>
+  {{template "gimg" (dict "P" $P "N" "season-weeks" "Alt" "Halaman musim: total, dan tiap minggu dengan hari mainnya")}}
+  <h3 id="impor">Impor dari spreadsheet</h3>
+  <p>Kalau poin musim ini sudah dicatat di spreadsheet, buka musimnya lalu tekan <strong>Impor dari
+    spreadsheet</strong>. Dari Google Sheets: <em>File → Download → Microsoft Excel (.xlsx)</em>, lalu unggah
+    filenya. Formatnya seperti spreadsheet klub: nama di kolom A, tiap hari main kolom 1–7 lalu SubTot, dan
+    tanggalnya di atas kolom 1. Sebelum disimpan, Tally menampilkan pratinjau: hari main, pemain baru, dan
+    catatan seperti skor deuce yang dicatat sebagai 42, -1 yang dilewati, atau total di sheet yang salah
+    hitung. Hari main yang sudah punya poin dilewati, jadi impor aman diulang; centang <em>Ganti</em> untuk
+    menimpanya. Setelah itu, lanjutkan mencatat langsung di Tally.</p>
+  {{template "gimg" (dict "P" $P "N" "import" "Alt" "Pratinjau impor: hari main, pemain baru, dan catatan dari spreadsheet")}}
   <h3>Admin lain</h3>
   <p>Di <em>Setelan → Admin</em>, tulis nama penggunanya. Orang itu harus {{if .Aio}}masuk ke Tally{{else}}daftar{{end}}
     sekali dulu. Admin bisa mengelola pemain, musim, dan pertandingan; hanya pemilik yang bisa menambah atau menghapus admin.</p>

@@ -2,14 +2,15 @@
 {{define "content"}}
 {{template "tallyhead" .}}
 {{$t := .Data.Tally}}{{$d := .Data}}{{$p := $d.Period}}
-<p class="small"><a href="/t/{{$t.Slug}}/periods">&larr; {{.T "tab.periods"}}</a></p>
+<p class="small"><a href="{{$d.BackHref}}">&larr; {{if $d.Admin}}{{$t.Name}}{{else}}{{.T "tab.periods"}}{{end}}</a></p>
+{{if $d.Admin}}<p class="alert info">{{.T "admin.readonly"}}</p>{{end}}
 <section class="card">
   <div class="cardhead">
     <div>
       <h2>{{$p.Name}} {{template "seasonbadge" (dict "P" $ "S" $p)}}</h2>
       <p class="muted small">{{.Date $p.StartsOn}} – {{.Date $p.EndsOn}} &middot; {{.Rule $p.Scoring}}</p>
     </div>
-    <a class="btn small ghost" href="/t/{{$t.Slug}}/periods/{{$p.ID}}/edit">{{.T "common.edit"}}</a>
+    {{if not $d.Admin}}<a class="btn small ghost" href="/t/{{$t.Slug}}/periods/{{$p.ID}}/edit">{{.T "common.edit"}}</a>{{end}}
   </div>
   <div class="stats">
     <div class="stat"><span class="lbl">{{.T "season.play_days"}}</span><span class="val">{{$d.PlayDays}}</span></div>
@@ -17,7 +18,10 @@
     <div class="stat"><span class="lbl">{{.T "season.plays"}}</span><span class="val">{{$d.Plays}}</span></div>
     <div class="stat"><span class="lbl">{{.T "board.points"}}</span><span class="val">{{$d.Points}}</span></div>
   </div>
-  <p class="small"><a href="/t/{{$t.Slug}}?season={{$p.ID}}">{{.T "season.board"}}</a></p>
+  {{if not $d.Admin}}<div class="actions">
+    <a class="btn small" href="/t/{{$t.Slug}}?season={{$p.ID}}">{{.T "season.board"}}</a>
+    {{if $d.CanImport}}<a class="btn small ghost" href="/t/{{$t.Slug}}/periods/{{$p.ID}}/import">{{.T "import.title"}}</a>{{end}}
+  </div>{{end}}
 </section>
 
 {{range $d.Months}}
@@ -30,7 +34,7 @@
       {{range .Days}}
       <div class="weekday">
         <div class="wd-main">
-          <a href="/t/{{$t.Slug}}/rounds/{{.Round.ID}}"><strong>{{$.T "round.label" .Round.WeekLabel}}</strong> &middot; {{$.Weekday .Round.PlayedOn}} {{$.DayMonth .Round.PlayedOn}}</a>
+          <a href="{{$d.RoundHref .Round.ID}}"><strong>{{$.T "round.label" .Round.WeekLabel}}</strong> &middot; {{$.Weekday .Round.PlayedOn}} {{$.DayMonth .Round.PlayedOn}}</a>
           {{if .Stats.Players}}
           <span class="muted small">{{$.T "season.day_stats" .Stats.Players .Stats.Plays .Stats.Points}}</span>
           <span class="small">{{$.T "season.top" .Stats.TopName .Stats.TopPoints}}</span>
@@ -38,7 +42,7 @@
           <span class="muted small">{{$.T "season.day_empty"}}</span>
           {{end}}
         </div>
-        {{if .Stats.Players}}<a class="btn small ghost" href="/t/{{$t.Slug}}?season={{$p.ID}}&day={{.Round.ID}}">{{$.T "season.day_board"}}</a>{{end}}
+        {{if and .Stats.Players (not $d.Admin)}}<a class="btn small ghost" href="/t/{{$t.Slug}}?season={{$p.ID}}&day={{.Round.ID}}">{{$.T "season.day_board"}}</a>{{end}}
       </div>
       {{else}}
       <div class="muted small">{{$.T "season.no_play_day"}}</div>

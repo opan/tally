@@ -122,9 +122,18 @@ func TestAdminTemplatesRender(t *testing.T) {
 	}}
 	user := adminUserVM{User: &User{ID: "u1", Username: "budi", CreatedAt: joined, AioUserID: "a1"},
 		Tallies: []AdminTallyRow{
-			{Tally: Tally{Slug: "bala-bulu", Name: "Bala Bulu", Visibility: "link"}, Role: "owner", Players: 12, PlayDays: 3, Matches: 20, LastPlayed: &last},
-			{Tally: Tally{Slug: "rahasia", Name: "Rahasia", Visibility: "private"}, Role: "admin"},
+			{Tally: Tally{ID: "t1", Slug: "bala-bulu", Name: "Bala Bulu", Visibility: "link"}, Role: "owner", Players: 12, PlayDays: 3, Plays: 80, LastPlayed: &last},
+			{Tally: Tally{ID: "t2", Slug: "rahasia", Name: "Rahasia", Visibility: "private"}, Role: "admin"},
 		}}
+	priv := &Tally{ID: "t2", Slug: "rahasia", Name: "Rahasia", Visibility: "private", Template: "badminton_doubles", CreatedAt: joined}
+	season := Period{ID: "p1", Name: "Season #1", StartsOn: joined, EndsOn: joined.AddDate(0, 3, 0), Scoring: DefaultContinuous}
+	tallyPage := adminTallyVM{tallyCtx: tallyCtx{Tally: priv},
+		Admins:  []Admin{{UserID: "u1", Username: "budi", Role: "owner"}},
+		Seasons: []adminSeasonRow{{Period: season, PlayDays: 2, Players: 3, Plays: 7, Points: 279}},
+		Players: []TallyPlayerRow{{Participant: Participant{ID: "x1", Name: "Ana", Active: true}, Plays: 4, Points: 160, LastPlayed: &last}}}
+	day := &Round{ID: "r1", PlayedOn: joined, WeekPart: 1, WeekDays: 2}
+	dayPage := adminDayVM{tallyCtx: tallyCtx{Tally: priv}, Round: day, Period: &season, Plays: 2,
+		ScoreRows: []scoreRow{{Player: Participant{ID: "x1", Name: "Ana"}, Chips: []playChip{{Points: 42, AwardID: "a1"}, {Points: 40, MatchID: "m1"}}, Total: 82}}}
 	cases := []struct {
 		page, lang string
 		data       any
@@ -133,7 +142,9 @@ func TestAdminTemplatesRender(t *testing.T) {
 	}{
 		{"admin", "en", users, []string{"Site admin", "budi", "/admin/users/u1", "local account"}, nil},
 		{"admin", "id", users, []string{"Admin situs", "akun lokal"}, nil},
-		{"adminuser", "en", user, []string{`href="/t/bala-bulu"`, "Bala Bulu", "Rahasia", "owner"}, []string{`href="/t/rahasia"`}},
+		{"adminuser", "en", user, []string{`href="/admin/tallies/t1"`, `href="/admin/tallies/t2"`, "Bala Bulu", "Rahasia", "owner", "read-only"}, []string{`href="/t/rahasia"`}},
+		{"admintally", "en", tallyPage, []string{"Rahasia", "read-only", `href="/admin/tallies/t2/seasons/p1"`, `href="/admin/tallies/t2/players/x1"`, `href="/admin/users/u1"`, "279"}, []string{`href="/t/rahasia"`, `action="/t/`}},
+		{"adminday", "id", dayPage, []string{"Minggu 1A", "Ana", `href="/admin/tallies/t2/players/x1?season=p1"`, ">82<"}, []string{`action="/t/`, "/delete"}},
 		{"adminerror", "id", nil, []string{"all-in-one sedang tidak terjangkau"}, nil},
 	}
 	for _, c := range cases {
