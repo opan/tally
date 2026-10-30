@@ -1,10 +1,13 @@
 # RFC-001: A simpler play night
 
-- **Status:** Draft; first slice decided (§6), design proposed (§7)
+- **Status:** First slice built and merged, except the sheet view (§7.3). §11 records what
+  shipped, where it differs from §7, and what was added on the way.
 - **Author:** opan
 - **Created:** 2026-10-29 · **Updated:** 2026-10-30
 - **Scope:** badminton first; other tally types keep working but are not designed for here
-- **Related:** NOTES.md (P2 play-day notes), the in-app guide `/panduan#hari-main`
+- **Related:** NOTES.md (P2 play-day notes; RFC-001 S1/S3 notes), the in-app guide
+  `/panduan#hari-main`; PRs #9 (Poin tab and follow-ups), #10 (sheet import), #11 (site admin
+  pages), #12 (guide), #13 (brings #10–#12 into `main`)
 
 ## Complexity score: **5 / 10** (first slice, §7)
 
@@ -213,7 +216,10 @@ Ideas from §1.1 and §4.1, **ranked below the first slice** (§6, §7). They st
     **42–41**: the winners' 43 is capped at 42, and the losers keep 41 (opan, 2026-10-30).
 11. **Backlog:** linking a player in the list to a real tally user (§9).
 
-## 7. First slice: points sheet (proposed design)
+## 7. First slice: points sheet (design)
+
+The design as agreed on 2026-10-29, kept as written. What was built, and where it differs,
+is in §11.
 
 ### 7.1 Data
 
@@ -326,11 +332,104 @@ who sees the sheet view, how season dates are set, and whether points and matche
   entry accepts deuce scores (e.g. 43–41, or 22–20 in 21-point games) for other clubs.
 - Recording matches (pairs, winner) as the main way of entering points, for clubs that want it.
 - The §5 directions, re-ranked after the first slice ships.
+- A **left sidebar menu** instead of the tally tabs, as more features arrive (opan,
+  2026-10-30).
+- The Poin tab for other formats (e.g. two games to 21), and the one-player form for counter
+  tallies, which still use a box per player.
 
 ## 10. Next steps
 
 - [x] Analyse the club's sheet (§4.2) and record decisions (§6).
 - [x] opan answers the first-slice questions (§6.3, 6.5, 6.7–6.10).
-- [ ] Build §7.1–7.2 (data + play-day page), then 7.3 (sheet view), then 7.4 (import).
-- [ ] Import the October sheet into a test tally and compare totals with the sheet.
-- [ ] Collect concrete feedback from the users who found tally complex, once points-only ships.
+- [x] Build §7.1–7.2 (data + play-day page) and 7.4 (import), 2026-10-30 (§11).
+- [ ] §7.3 sheet view: not built; opan to decide whether it's still wanted (§11.5).
+- [x] Import the October sheet into a test tally and compare totals with the sheet (§11.4).
+- [ ] Deploy, then import the October sheet in production.
+- [ ] Collect concrete feedback from the users who found tally complex, now that points-only
+  entry exists.
+
+## 11. As built (2026-10-30)
+
+### 11.1 What shipped
+
+| PR | What |
+|---|---|
+| #9 | `point_awards.kind`; the play day's **Poin** and **Pertandingan** tabs; Input poin, Poin hari ini, extras as a one-player form; week labels; date-only *Mulai hari main*; the season page; season status; the leaderboard's week filter; tab order |
+| #10 | Importing the club's sheet (§7.4) from a season's page |
+| #11 | Read-only tally pages for site admins (§11.3) |
+| #12 | The guide (ID + EN) and README for all of the above, new screenshots, and the guide's side navigation |
+| #13 | Brings #10–#12 into `main`: they were stacked and had merged into their base branches |
+
+### 11.2 Where it differs from §7
+
+- **Entry kinds.** `kind` has three values, not two: `match` (from a recorded match; a CHECK
+  ties it to `match_id`), `score` (§7.1's points-only entry, counts as played) and `extra`.
+  Existing match points are backfilled as `match` at startup.
+- **No `seq` column.** Scores are listed in the order they were entered (`created_at`); the
+  import writes a player's slots a millisecond apart to keep the sheet's order. Deleting a
+  score needs no renumbering.
+- **The 7-play cap** counts scores and matches, matches still on court included, but only
+  **refuses Poin entries**. Recording a match past 7 still works as before.
+- **Highest score** is the season's target plus its win bonus: 42 for the club.
+- **Where the tabs appear.** Only for seasons that race to a target (badminton to 42; table
+  tennis too) and not for counter tallies. Other formats keep the single play-day page.
+- **Chips.** Tapping a white chip (a score) deletes it after a confirm; to change a score,
+  delete it and add it again. Grey chips are plays from matches: they can't be removed from
+  one player's row (a match gives points to all four), so they link to the match on the
+  Pertandingan tab.
+- **Remembering the tab** is a cookie for the browser, not a setting per tally.
+- **Extras** ("Poin tambahan") moved to the Poin tab, collapsed, as the same one-player form
+  as scores (player, ± points, optional note) instead of a box per player. Unknown names are
+  refused there; new players come only through Input poin, which asks first.
+- **Week labels** ("Minggu 4A") are used **everywhere** (play day, leaderboard, poster, player
+  page, season page), not only in the sheet view, and replace "Minggu #3", which was only the
+  play day's position in the season. No month in the label (opan); the date always sits next
+  to it.
+- **Import (§7.4)** lives on a season's page. It also:
+  - checks the sheet's running Total against its own previous Total + SubTot;
+  - lists blocks with no scores, and names that never played, which are not created;
+  - stops on a non-score cell, a duplicate name or date, or an unreadable date;
+  - reads dates as `Sun, 4 Oct`, ISO or an Excel date, takes the year from a cell above the
+    table (else the season), and rolls December → January over;
+  - with *replace*, deletes only that day's Poin entries, never matches or extras;
+  - widens the season only when the admin ticks it.
+
+  The preview carries the parsed sheet in a hidden field and confirm checks it again, so
+  nothing is stored between the two steps.
+
+### 11.3 Added on the way (opan, 2026-10-30)
+
+12. **Starting a play day asks only for the date**, and shows which season it falls in (or
+    warns when it's in none). No attendance ticks: a player with points is present. Courts
+    carry over from the season's last play day; both stay editable on the Pertandingan tab.
+13. **The Main tab always opens on *Mulai hari main***; today's play day, if started, is a
+    card on top. On a play day, "Hari lain" became **"+ Hari main baru"**.
+14. **The leaderboard shows the whole season**; a *Minggu* picker filters it to one play day's
+    points (no movement column then). The poster follows the filter.
+15. **A season page** (Musim → a season): totals, then every week of the month in the season,
+    empty ones too, each play day with players, plays, points and the top player.
+16. **Seasons end by their dates**, with no close button: ending early means editing the end
+    date. A badge shows *Akan datang*, *Berjalan* or *Selesai*, and the Main tab says when the
+    last season has ended, with *Buat musim baru*.
+17. **Tab order:** Ringkasan, Main, Musim, Pemain, Setelan.
+18. **Site admins** (aio admins) can open any tally read-only, private ones included, because
+    every view is logged: the tally's admins, seasons and players, a season's weeks, a
+    player's page, a play day's entries. This widens RFC-002 in all-in-one, which listed
+    private tallies without a link.
+
+### 11.4 Checked against the club's sheet
+
+The October sheet imported into a test tally as 5 play days (4, 11, 18, 23 and 25 Oct; the
+empty 2 Nov block skipped), 392 scores and 14,778 points, with the two deuce 43s capped, the
+four `-1` skipped, and the 22 names that never played left out. The leaderboard matches the
+sheet's totals except where the sheet itself is off: the running total that is 10 short, and
+the players whose subtotal included the `-1`. Uploading the same file again skipped every
+play day.
+
+### 11.5 Still open
+
+- **The sheet view (§7.3)** isn't built. The season page and the leaderboard's week filter
+  cover part of it; whether a players × play days grid is still wanted is opan's call.
+- Deploying, and importing the October sheet in production.
+- Feedback from the users who found tally complex (§10).
+- Not taken for now: an "end the season now" shortcut (§11.3 item 16).
