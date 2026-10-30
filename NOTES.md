@@ -108,7 +108,7 @@ given round. Movement arrow = rank after round N vs rank after round N‑1.
 | P3 | Leaderboard: season + play-day switcher, movement arrows, play-day results, public view | ✅ done 2026-10-14 |
 | P4 | Share poster + PNG export, optional logo & texts | ✅ done 2026-10-14 |
 | P5 | More tally types (1v1, 2v2, team, counter), win/draw/loss scoring, manual points, player pages | ✅ done 2026-10-14 |
-| DOC | User guide: getting started + how to use each feature, in the app (`/panduan`), ID + EN | first version 2026-10-14; opan to review on a phone and revise |
+| DOC | User guide: getting started + how to use each feature, in the app (`/panduan`), ID + EN | first version 2026-10-14; updated with screenshots for RFC-001 (Poin tab, season page, import) 2026-10-30; opan to review on a phone and revise |
 | P6 | Best‑of‑3 / rubber game where winning matters | later |
 | P7 | Login through aio (`AUTH_PROVIDER=aio`) | ✅ done 2026-10-14 (linking players to accounts: later) |
 | P8 | Read-only site admin pages, admin decided by aio (RFC-002 in all-in-one) | ✅ built 2026-10-18, PR #2 |

@@ -7,6 +7,7 @@ import (
 	"embed"
 	"encoding/hex"
 	"fmt"
+	"image/jpeg"
 	"io/fs"
 	"log"
 	"net/http"
@@ -69,7 +70,7 @@ func main() {
 		log.Print("login: local username/password (set AUTH_PROVIDER=aio to log in through all-in-one)")
 	}
 
-	app := &App{store: &Store{pool: pool}, aio: aio, tmpl: buildTemplates(), guideVer: guideVersion(), guard: newSubmitGuard(24 * time.Hour), assetVer: assetVersion("static/style.css", "static/app.js", "static/poster.js", "static/vendor/html-to-image.js")}
+	app := &App{store: &Store{pool: pool}, aio: aio, tmpl: buildTemplates(), guideVer: guideVersion(), guideSizes: guideImageSizes(), guard: newSubmitGuard(24 * time.Hour), assetVer: assetVersion("static/style.css", "static/app.js", "static/poster.js", "static/vendor/html-to-image.js")}
 
 	staticFS, err := fs.Sub(staticEmbed, "static")
 	if err != nil {
@@ -244,6 +245,30 @@ func guideVersion() string {
 		return err
 	})
 	return assetVersion(paths...)
+}
+
+type imgSize struct{ W, H int }
+
+// guideImageSizes reads each guide screenshot's size from its JPEG header, so
+// the guide can reserve the space: lazy images that load while a jump link
+// scrolls would otherwise push the target down.
+func guideImageSizes() map[string]imgSize {
+	sizes := map[string]imgSize{}
+	_ = fs.WalkDir(staticEmbed, "static/guide", func(p string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() || !strings.HasSuffix(p, ".jpg") {
+			return err
+		}
+		f, err := staticEmbed.Open(p)
+		if err != nil {
+			return nil
+		}
+		defer f.Close()
+		if c, err := jpeg.DecodeConfig(f); err == nil {
+			sizes[strings.TrimSuffix(strings.TrimPrefix(p, "static/guide/"), ".jpg")] = imgSize{c.Width, c.Height}
+		}
+		return nil
+	})
+	return sizes
 }
 
 // cacheStatic marks versioned asset responses (requested with ?v=) as immutable.
