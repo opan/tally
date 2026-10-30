@@ -89,9 +89,14 @@ reveals nothing either.
 
 The admin has to type the player's **tally** username. With aio login, the tally username is
 made from the aio account name (`localUsername`: lowercased, other characters turned into
-`_`, sometimes with a suffix when the name was taken), so players may not know it. The home
-page and the Akun page should show it plainly: "Nama pengguna kamu: **@x**". The player can
-then send it to the admin.
+`_`, sometimes with a suffix when the name was taken), so players may not know it.
+
+The header already shows the username at the top right, but not well enough for this:
+on phones (640px and narrower) it's hidden to make room, and on wider screens it's cut off
+after about 14 characters. So the header should **show the full username on phones too**
+(small, on its own row or in a compact menu, never truncated without a way to see all of it).
+That's enough for a player to read it and send it to the admin; no separate line on the home
+page is needed (opan, 2026-10-30).
 
 ## 5. Safety
 
@@ -179,8 +184,8 @@ cleanly if the player was linked or the account already has a player in that tal
   - a box of pending invites with Terima, Tolak and Abaikan tally ini;
   - **Mabar saya**: tallies where the user is a linked player, each with their rank and
     points in the current season and a link to their player page;
-  - *Tally saya* (tallies they run) stays as it is;
-  - "Nama pengguna kamu: @x".
+  - *Tally saya* (tallies they run) stays as it is.
+- **Header:** the full username, on phones too (§4.3).
 - **Player page:** when the viewer is that linked player, a small "Ini kamu" and *Putuskan*
   (unlink).
 - **Private tallies:** `loadTally` also lets in a user linked to a player in that tally,
