@@ -389,8 +389,11 @@ still in the security backlog.
   remembered in a `round_tab` cookie; `?tab=` switches.
 - Poin tab: "Input poin" (player `<input list>` + points 0..target+win bonus,
   one entry = one play), "Poin hari ini" (a row per player: score chips in
-  entry order, then grey chips from matches, `+`, day total), and the extras
-  ("Poin tambahan") moved here. Attendance & courts stay on Pertandingan.
+  entry order, then grey chips from matches that link to the match, `+`, day
+  total), and the extras ("Poin tambahan", collapsed) moved here with the same
+  one-player form (name, ±points, optional note; unknown names refused) instead
+  of a box per player. Counter tallies and other formats keep the grid.
+  Attendance & courts stay on Pertandingan.
 - `point_awards.kind`: `match` (has `match_id`, enforced by a CHECK), `score`
   (Poin tab, counts as a match played on the board, player page and tie-break),
   `extra` (bonus/penalty/counter). Upgrade backfills `match` for rows with a

@@ -111,6 +111,7 @@ func main() {
 	mux.HandleFunc("POST /t/{slug}/rounds/{rid}/matches", app.handleAddMatch)
 	mux.HandleFunc("POST /t/{slug}/rounds/{rid}/awards", app.handleAddAwards)
 	mux.HandleFunc("POST /t/{slug}/rounds/{rid}/scores", app.handleAddScore)
+	mux.HandleFunc("POST /t/{slug}/rounds/{rid}/extras", app.handleAddExtra)
 	mux.HandleFunc("POST /t/{slug}/awards/{aid}/delete", app.handleDeleteAward)
 	mux.HandleFunc("GET /t/{slug}/players/{pid}", app.handlePlayer)
 	mux.HandleFunc("GET /t/{slug}/matches/{mid}/edit", app.handleEditMatchForm)

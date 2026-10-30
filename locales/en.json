@@ -401,5 +401,7 @@
   "err.score_cap": "%s has already played %d times today.",
   "err.score_retry": "A player with that name was just added. Press Add again.",
   "board.points_only": "This play day's points were entered without match details.",
-  "player.scores_only": "%d plays without match details"
+  "player.scores_only": "%d plays without match details",
+  "awards.extra_help": "One player per entry: a positive number for a bonus, negative for a penalty. The note is optional. It doesn't count as a play.",
+  "err.extra_unknown": "\"%s\" isn't a player. Pick a name from the list."
 }

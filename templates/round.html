@@ -76,7 +76,21 @@
 <section class="card" id="awards">
   <details {{if eq $d.AutoOpen "awards"}}open{{end}}>
     <summary class="cardhead summaryhead"><h2>{{.T "awards.title"}}</h2><span class="muted small">{{.T "awards.help"}}{{if $d.Awards}} &middot; {{.T "play.entries_n" (len $d.Awards)}}{{end}}</span></summary>
-    {{template "awardsform" (dict "P" $ "D" $d)}}
+    <form method="post" action="/t/{{$t.Slug}}/rounds/{{$d.Round.ID}}/extras" class="scoreform extraform">
+      <input type="hidden" name="form_token" value="{{formToken}}">
+      <label class="sf-player">{{.T "score.player"}}
+        <input type="text" name="player" value="{{$d.FXPlayer}}" list="pick-players" maxlength="40" required autocomplete="off" autocapitalize="words" placeholder="{{.T "score.player_placeholder"}}"{{if eq $d.Focus "xplayer"}} autofocus{{end}}>
+      </label>
+      <label class="sf-points">{{.T "score.points"}}
+        <input type="number" name="points" value="{{$d.FXPoints}}" min="-9999" max="9999" step="1" required placeholder="+5 / -5"{{if eq $d.Focus "xpoints"}} autofocus{{end}}>
+      </label>
+      <label class="sf-reason">{{.T "awards.reason"}}
+        <input type="text" name="reason" value="{{$d.FReason}}" maxlength="120" placeholder="{{.T "awards.reason_placeholder"}}">
+      </label>
+      <button type="submit" class="btn primary sf-add">{{.T "score.add"}}</button>
+    </form>
+    <p class="muted small">{{.T "awards.extra_help"}}</p>
+    {{template "awardslist" (dict "P" $ "D" $d)}}
   </details>
 </section>
 {{else}}

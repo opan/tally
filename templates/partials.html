@@ -171,6 +171,10 @@
     {{if not $d.Counter}}<button type="button" class="btn ghost" data-close-details>{{$P.T "common.cancel"}}</button>{{end}}
   </div>
 </form>
+{{template "awardslist" (dict "P" $P "D" $d)}}
+{{end}}
+
+{{define "awardslist"}}{{$P := .P}}{{$d := .D}}
 {{if $d.Awards}}
 <ul class="rows awards-list">
   {{range $d.Awards}}

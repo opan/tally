@@ -257,7 +257,9 @@ type roundVM struct {
 	FPlayer    string
 	FScore     string
 	ConfirmNew string // typed name that isn't a player yet; asks before adding
-	Focus      string // "player" or "points": where the cursor goes
+	Focus      string // "player", "points", "xplayer" or "xpoints": where the cursor goes
+	FXPlayer   string // the extras form, as typed
+	FXPoints   string
 }
 
 // maxPlaysPerDay caps how often one player plays on a play day, like the
@@ -477,8 +479,14 @@ func (a *App) renderRoundVM(w http.ResponseWriter, r *http.Request, d *roundData
 		if r.Method == http.MethodGet && vm.Tab == tabPoints {
 			if name := q.Get("player"); name != "" && !tooLong(name, maxPlayerNameLen) {
 				vm.FPlayer, vm.Focus = name, "points"
-			} else if q.Get("ok") == "score_saved" {
+			}
+			switch q.Get("ok") {
+			case "score_saved":
 				vm.Focus = "player"
+			case "awards_saved":
+				vm.AutoOpen, vm.Focus = "awards", "xplayer"
+			case "award_deleted":
+				vm.AutoOpen = "awards"
 			}
 		}
 	}
@@ -847,6 +855,71 @@ func (a *App) handleDeleteAward(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, roundPath(tc.Tally, roundID)+"?ok=award_deleted&tab=poin#awards", http.StatusSeeOther)
+}
+
+// handleAddExtra records a bonus or penalty for one player picked by name,
+// on the Poin tab. Unlike a score, an unknown name is refused.
+func (a *App) handleAddExtra(w http.ResponseWriter, r *http.Request) {
+	tc, u, ok := a.adminTally(w, r, "play")
+	if !ok {
+		return
+	}
+	limitBody(w, r, maxFormBytes)
+	d, ok := a.loadRound(w, r, tc, r.PathValue("rid"))
+	if !ok {
+		return
+	}
+	if _, ok := d.scoreMax(); !ok {
+		a.notFound(w, r)
+		return
+	}
+	back := roundPath(tc.Tally, d.round.ID) + "?ok=awards_saved&tab=poin" // no #fragment: it would stop autofocus
+	done, ok := a.claimSubmit(w, r, back)
+	if !ok {
+		return
+	}
+	saved := false
+	defer done(&saved)
+
+	name := strings.Join(strings.Fields(r.FormValue("player")), " ")
+	typed := strings.TrimSpace(r.FormValue("points"))
+	reason := strings.Join(strings.Fields(r.FormValue("reason")), " ")
+	fail := func(key, focus string, args ...any) {
+		d.tc.Err = tr(r, key, args...)
+		a.renderRoundVM(w, r, d, nil, func(vm *roundVM) {
+			vm.Tab, vm.AutoOpen, vm.Focus = tabPoints, "awards", focus
+			vm.FXPlayer, vm.FXPoints, vm.FReason = name, typed, reason
+		}, http.StatusUnprocessableEntity)
+	}
+	var playerID string
+	for _, p := range d.players {
+		if strings.EqualFold(p.Name, name) {
+			playerID = p.ID
+		}
+	}
+	points, err := strconv.Atoi(strings.TrimPrefix(typed, "+"))
+	switch {
+	case name == "":
+		fail("err.score_player", "xplayer")
+	case playerID == "":
+		fail("err.extra_unknown", "xplayer", name)
+	case err != nil:
+		fail("err.number", "xpoints")
+	case points == 0:
+		fail("err.award_empty", "xpoints")
+	case points > maxAwardPoints || points < -maxAwardPoints:
+		fail("err.award_range", "xpoints", maxAwardPoints)
+	case tooLong(reason, maxReasonLen):
+		fail("err.reason_long", "xpoints")
+	default:
+		if err := a.store.AddAwards(r.Context(), tc.Tally.ID, u.ID, d.round, []AwardInput{{ParticipantID: playerID, Points: points}}, reason); err != nil {
+			internalError(w, "add extra", err)
+			return
+		}
+		saved = true
+		recordAwards(r.Context(), 1)
+		http.Redirect(w, r, back, http.StatusSeeOther)
+	}
 }
 
 // handleAddScore records one play's points for a player typed or picked by

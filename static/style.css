@@ -449,8 +449,11 @@ a.chip.match:hover { color: var(--ink); border-color: var(--muted); }
 .mrow:target { outline: 2px solid var(--gold); outline-offset: 4px; border-radius: 8px; }
 .chip.add { background: transparent; color: var(--gold-2); border: 1px dashed var(--gold); font-size: 1.2rem; }
 .chip.add:hover { background: var(--card-2); }
+.extraform { grid-template-columns: 1fr 7em 1.2fr auto; }
 @media (max-width: 520px) {
   .scoreform { grid-template-columns: 1fr auto; }
+  .extraform { grid-template-columns: 7em 1fr; }
+  .extraform .sf-add { grid-column: 1 / -1; }
   .scoreform .sf-player { grid-column: 1 / -1; }
   .scorerow { grid-template-columns: 1fr auto; row-gap: 6px; }
   .sr-chips { grid-column: 1 / -1; grid-row: 2; }

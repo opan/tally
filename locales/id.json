@@ -401,5 +401,7 @@
   "err.score_cap": "%s sudah main %d kali hari ini.",
   "err.score_retry": "Pemain dengan nama itu baru saja ditambahkan. Tekan Tambah sekali lagi.",
   "board.points_only": "Poin hari main ini dicatat tanpa data pertandingan.",
-  "player.scores_only": "%d main tanpa data pertandingan"
+  "player.scores_only": "%d main tanpa data pertandingan",
+  "awards.extra_help": "Satu pemain per entri: angka positif untuk bonus, negatif untuk penalti. Keterangan boleh kosong. Tidak dihitung sebagai main.",
+  "err.extra_unknown": "\"%s\" belum ada di daftar pemain. Pilih nama dari daftar."
 }
