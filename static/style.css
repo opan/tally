@@ -444,7 +444,9 @@ form[data-submitting] .btn:disabled, .btn.busy { cursor: progress; }
   font: inherit; font-weight: 700; font-size: .95rem; font-variant-numeric: tabular-nums; text-decoration: none; cursor: pointer;
 }
 button.chip:hover { border-color: var(--danger); color: var(--danger); }
-.chip.match { background: transparent; color: var(--muted); border-style: dashed; cursor: default; }
+.chip.match { background: transparent; color: var(--muted); border-style: dashed; }
+a.chip.match:hover { color: var(--ink); border-color: var(--muted); }
+.mrow:target { outline: 2px solid var(--gold); outline-offset: 4px; border-radius: 8px; }
 .chip.add { background: transparent; color: var(--gold-2); border: 1px dashed var(--gold); font-size: 1.2rem; }
 .chip.add:hover { background: var(--card-2); }
 @media (max-width: 520px) {

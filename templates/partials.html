@@ -102,7 +102,7 @@
 
 {{/* matchrow: dict P (page) M (*Match) Slug Actions (bool) */}}
 {{define "matchrow"}}{{$P := .P}}{{$m := .M}}
-<div class="mrow">
+<div class="mrow" id="m-{{$m.ID}}">
   {{range $i, $side := $m.Sides}}
   <div class="mr-side {{if $side.Won}}won{{end}} {{if eq $i 1}}right{{end}}">
     <span class="mr-names">{{range $j, $p := $side.Players}}{{if $j}} &amp; {{end}}{{$p.Name}}{{end}}</span>

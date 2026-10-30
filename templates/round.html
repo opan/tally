@@ -62,7 +62,7 @@
   <div class="scorerow">
     <span class="sr-name">{{$row.Player.Name}}</span>
     <ul class="sr-chips">
-      {{range $row.Chips}}<li>{{if .AwardID}}<form method="post" action="/t/{{$t.Slug}}/awards/{{.AwardID}}/delete" data-confirm="{{$.T "score.delete_confirm" .Points $row.Player.Name}}"><button type="submit" class="chip" title="{{$.T "score.delete_title"}}">{{.Points}}</button></form>{{else if .OnCourt}}<span class="chip match" title="{{$.T "score.chip_on_court"}}">…</span>{{else}}<span class="chip match" title="{{$.T "score.chip_match"}}">{{.Points}}</span>{{end}}</li>{{end}}
+      {{range $row.Chips}}<li>{{if .AwardID}}<form method="post" action="/t/{{$t.Slug}}/awards/{{.AwardID}}/delete" data-confirm="{{$.T "score.delete_confirm" .Points $row.Player.Name}}"><button type="submit" class="chip" title="{{$.T "score.delete_title"}}">{{.Points}}</button></form>{{else if .OnCourt}}<a class="chip match" href="?tab=match#court" title="{{$.T "score.chip_on_court"}}">…</a>{{else}}<a class="chip match" href="?tab=match#m-{{.MatchID}}" title="{{$.T "score.chip_match"}}">{{.Points}}</a>{{end}}</li>{{end}}
       {{if $row.CanAdd}}<li><a class="chip add" href="?tab=poin&amp;player={{$row.Player.Name}}" aria-label="{{$.T "score.add_for" $row.Player.Name}}">+</a></li>{{end}}
     </ul>
     <span class="sr-total">{{$row.Total}}</span>
@@ -74,8 +74,8 @@
 </section>
 
 <section class="card" id="awards">
-  <details {{if or $d.Awards (eq $d.AutoOpen "awards")}}open{{end}}>
-    <summary class="cardhead summaryhead"><h2>{{.T "awards.title"}}</h2><span class="muted small">{{.T "awards.help"}}</span></summary>
+  <details {{if eq $d.AutoOpen "awards"}}open{{end}}>
+    <summary class="cardhead summaryhead"><h2>{{.T "awards.title"}}</h2><span class="muted small">{{.T "awards.help"}}{{if $d.Awards}} &middot; {{.T "play.entries_n" (len $d.Awards)}}{{end}}</span></summary>
     {{template "awardsform" (dict "P" $ "D" $d)}}
   </details>
 </section>

@@ -275,6 +275,7 @@ const (
 type playChip struct {
 	Points  int
 	AwardID string // set for a score entry, which can be deleted here
+	MatchID string // set for a play from a match, changed on the Pertandingan tab
 	OnCourt bool   // a match that has no score yet
 }
 
@@ -365,7 +366,7 @@ func (d *roundData) scoreRows() (rows []scoreRow, plays int) {
 		for _, side := range m.Sides {
 			for _, p := range side.Players {
 				r := row(p.ID)
-				r.Chips = append(r.Chips, playChip{Points: side.Points, OnCourt: m.Scheduled()})
+				r.Chips = append(r.Chips, playChip{Points: side.Points, MatchID: m.ID, OnCourt: m.Scheduled()})
 			}
 		}
 	}
