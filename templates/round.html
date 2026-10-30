@@ -18,15 +18,15 @@
 {{else}}
 {{if $d.Tabs}}
 <nav class="daytabs" aria-label="{{.T "round.tabs_label"}}">
-  <a href="?tab=poin" class="daytab{{if eq $d.Tab "poin"}} on{{end}}"{{if eq $d.Tab "poin"}} aria-current="page"{{end}}>
+  <a href="?tab=poin" class="daytab{{if eq $d.DayTab "poin"}} on{{end}}"{{if eq $d.DayTab "poin"}} aria-current="page"{{end}}>
     <strong>{{.T "round.tab_points"}}</strong><span>{{.T "round.tab_points_help"}}</span>
   </a>
-  <a href="?tab=match" class="daytab{{if eq $d.Tab "match"}} on{{end}}"{{if eq $d.Tab "match"}} aria-current="page"{{end}}>
+  <a href="?tab=match" class="daytab{{if eq $d.DayTab "match"}} on{{end}}"{{if eq $d.DayTab "match"}} aria-current="page"{{end}}>
     <strong>{{.T "round.tab_matches"}}</strong><span>{{.T "round.tab_matches_help"}}</span>
   </a>
 </nav>
 {{end}}
-{{if and $d.Tabs (eq $d.Tab "poin")}}
+{{if and $d.Tabs (eq $d.DayTab "poin")}}
 <section class="card" id="poin">
   <div class="cardhead"><h2>{{.T "score.title"}}</h2><span class="muted small">{{.T "score.cap_note" $d.MaxPlays}}</span></div>
   {{if $d.ConfirmNew}}
@@ -156,7 +156,7 @@
 {{end}}
 {{end}}
 
-{{if or (not $d.Tabs) (eq $d.Tab "match")}}
+{{if or (not $d.Tabs) (eq $d.DayTab "match")}}
 <section class="card">
   <details {{if not $d.PresentN}}open{{end}}>
     <summary class="cardhead summaryhead"><h2>{{if $d.Counter}}{{.T "play.present"}}{{else}}{{.T "round.setup"}}{{end}}</h2><span class="muted small">{{.T "round.present_n" $d.PresentN}}{{if not $d.Counter}} &middot; {{.T "round.courts_n" $d.Round.Courts}}{{end}}</span></summary>

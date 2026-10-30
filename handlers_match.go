@@ -248,7 +248,7 @@ type roundVM struct {
 
 	// Poin tab (RFC-001): each player's points per play, without match details.
 	Tabs       bool   // show the Poin / Pertandingan tabs
-	Tab        string // tabPoints or tabMatches
+	DayTab     string // tabPoints or tabMatches (Tab is the tally menu's)
 	ScoreMax   int
 	MaxPlays   int
 	ScoreRows  []scoreRow
@@ -465,9 +465,9 @@ func (a *App) renderRoundVM(w http.ResponseWriter, r *http.Request, d *roundData
 		MaxPlays: maxPlaysPerDay,
 	}
 	if vm.ScoreMax, vm.Tabs = d.scoreMax(); vm.Tabs {
-		vm.Tab = roundTab(w, r)
+		vm.DayTab = roundTab(w, r)
 		if len(override) > 0 {
-			vm.Tab = tabMatches // a match form failed
+			vm.DayTab = tabMatches // a match form failed
 		}
 		vm.ScoreRows, vm.ScorePlays = d.scoreRows()
 		for _, p := range d.players {
@@ -476,7 +476,7 @@ func (a *App) renderRoundVM(w http.ResponseWriter, r *http.Request, d *roundData
 			}
 		}
 		q := r.URL.Query()
-		if r.Method == http.MethodGet && vm.Tab == tabPoints {
+		if r.Method == http.MethodGet && vm.DayTab == tabPoints {
 			if name := q.Get("player"); name != "" && !tooLong(name, maxPlayerNameLen) {
 				vm.FPlayer, vm.Focus = name, "points"
 			}
@@ -822,7 +822,7 @@ func (a *App) handleAddAwards(w http.ResponseWriter, r *http.Request) {
 			d.tc.Err = tr(r, errKey)
 		}
 		a.renderRoundVM(w, r, d, nil, func(vm *roundVM) {
-			vm.FPoints, vm.FReason, vm.AutoOpen, vm.Tab = typed, reason, "awards", tabPoints
+			vm.FPoints, vm.FReason, vm.AutoOpen, vm.DayTab = typed, reason, "awards", tabPoints
 		}, http.StatusUnprocessableEntity)
 		return
 	}
@@ -887,7 +887,7 @@ func (a *App) handleAddExtra(w http.ResponseWriter, r *http.Request) {
 	fail := func(key, focus string, args ...any) {
 		d.tc.Err = tr(r, key, args...)
 		a.renderRoundVM(w, r, d, nil, func(vm *roundVM) {
-			vm.Tab, vm.AutoOpen, vm.Focus = tabPoints, "awards", focus
+			vm.DayTab, vm.AutoOpen, vm.Focus = tabPoints, "awards", focus
 			vm.FXPlayer, vm.FXPoints, vm.FReason = name, typed, reason
 		}, http.StatusUnprocessableEntity)
 	}
@@ -952,7 +952,7 @@ func (a *App) handleAddScore(w http.ResponseWriter, r *http.Request) {
 	typed := strings.TrimSpace(r.FormValue("points"))
 	fail := func(status int, tweak func(*roundVM)) {
 		a.renderRoundVM(w, r, d, nil, func(vm *roundVM) {
-			vm.Tab, vm.FPlayer, vm.FScore = tabPoints, name, typed
+			vm.DayTab, vm.FPlayer, vm.FScore = tabPoints, name, typed
 			if tweak != nil {
 				tweak(vm)
 			}
