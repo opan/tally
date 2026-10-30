@@ -189,6 +189,10 @@ CREATE TABLE IF NOT EXISTS admin_views (
     viewed_at       timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS admin_views_admin_idx ON admin_views (admin_id, viewed_at DESC);
+-- Read-only tally pages for site admins: which tally, and the season, player
+-- or play day id within it.
+ALTER TABLE admin_views ADD COLUMN IF NOT EXISTS tally_id uuid REFERENCES tallies(id) ON DELETE SET NULL;
+ALTER TABLE admin_views ADD COLUMN IF NOT EXISTS detail text NOT NULL DEFAULT '';
 
 -- RFC-001: points entered per player without match details ('score', counts
 -- as one match played), next to points from matches ('match') and bonuses or

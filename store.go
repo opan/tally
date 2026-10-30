@@ -214,7 +214,7 @@ type AdminTallyRow struct {
 	Role       string
 	Players    int
 	PlayDays   int
-	Matches    int
+	Plays      int // scores plus match plays
 	LastPlayed *time.Time
 }
 
@@ -224,7 +224,7 @@ func (s *Store) AdminTalliesOf(ctx context.Context, userID string) ([]AdminTally
 		`SELECT t.id, t.slug, t.name, t.visibility, t.created_at, ta.role,
 		        (SELECT COUNT(*) FROM participants p WHERE p.tally_id = t.id),
 		        (SELECT COUNT(*) FROM rounds r JOIN periods pe ON pe.id = r.period_id WHERE pe.tally_id = t.id),
-		        (SELECT COUNT(*) FROM matches m JOIN periods pe ON pe.id = m.period_id WHERE pe.tally_id = t.id),
+		        (SELECT COUNT(*) FROM point_awards pa JOIN periods pe ON pe.id = pa.period_id WHERE pe.tally_id = t.id AND pa.kind <> 'extra'),
 		        (SELECT MAX(r.played_on) FROM rounds r JOIN periods pe ON pe.id = r.period_id WHERE pe.tally_id = t.id)
 		 FROM tally_admins ta JOIN tallies t ON t.id = ta.tally_id
 		 WHERE ta.user_id = $1
@@ -237,7 +237,7 @@ func (s *Store) AdminTalliesOf(ctx context.Context, userID string) ([]AdminTally
 	for rows.Next() {
 		var r AdminTallyRow
 		if err := rows.Scan(&r.Tally.ID, &r.Tally.Slug, &r.Tally.Name, &r.Tally.Visibility, &r.Tally.CreatedAt,
-			&r.Role, &r.Players, &r.PlayDays, &r.Matches, &r.LastPlayed); err != nil {
+			&r.Role, &r.Players, &r.PlayDays, &r.Plays, &r.LastPlayed); err != nil {
 			return nil, err
 		}
 		out = append(out, r)
@@ -259,6 +259,16 @@ func (s *Store) UserByID(ctx context.Context, id string) (*User, error) {
 
 // LogAdminView records that an admin opened an admin page. subjectID is the
 // user whose data was shown, "" for the overview.
+// LogAdminTallyView records a site admin opening a tally's read-only pages;
+// the tally's owner is the subject, detail the season, player or play day id.
+func (s *Store) LogAdminTallyView(ctx context.Context, adminID, page, tallyID, detail string) error {
+	_, err := s.pool.Exec(ctx,
+		`INSERT INTO admin_views (admin_id, page, subject_user_id, tally_id, detail)
+		 SELECT $1, $2, t.owner_id, t.id, $4 FROM tallies t WHERE t.id = $3`,
+		adminID, page, tallyID, detail)
+	return err
+}
+
 func (s *Store) LogAdminView(ctx context.Context, adminID, page, subjectID string) error {
 	_, err := s.pool.Exec(ctx,
 		`INSERT INTO admin_views (admin_id, page, subject_user_id) VALUES ($1, $2, NULLIF($3, '')::uuid)`,

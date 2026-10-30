@@ -1,7 +1,8 @@
 {{define "title"}}{{.Data.Player.Name}} &middot; {{.Data.Tally.Name}} &mdash; {{.T "app.name"}}{{end}}
 {{define "content"}}
 {{$t := .Data.Tally}}{{$d := .Data}}
-<p class="eyebrow"><a href="/t/{{$t.Slug}}{{with $d.Period}}?season={{.ID}}{{end}}">← {{$t.Name}}</a></p>
+<p class="eyebrow"><a href="{{$d.BackHref}}">← {{$t.Name}}</a></p>
+{{if $d.Admin}}<p class="alert info">{{.T "admin.readonly"}}</p>{{end}}
 <header class="playerhead">
   <h1>{{$d.Player.Name}}{{if not $d.Player.Active}} <span class="badge">{{.T "players.inactive"}}</span>{{end}}</h1>
   {{if gt (len $d.Periods) 1}}
@@ -34,7 +35,7 @@
     <tbody>
       {{range $d.Days}}
       <tr>
-        <td class="day"><a href="/t/{{$t.Slug}}?season={{$d.Period.ID}}&day={{.Round.ID}}">{{$.T "round.label" .Round.WeekLabel}}</a><span class="muted small">{{$.Date .Round.PlayedOn}}</span></td>
+        <td class="day"><a href="{{$d.DayHref .Round.ID}}">{{$.T "round.label" .Round.WeekLabel}}</a><span class="muted small">{{$.Date .Round.PlayedOn}}</span></td>
         <td class="num pts">{{.Points}}</td>
         <td class="bar"><svg viewBox="0 0 100 8" preserveAspectRatio="none" aria-hidden="true"><rect width="{{.BarPct}}" height="8" rx="2"/></svg></td>
         <td class="num">{{if .Rank}}#{{.Rank}}{{end}}</td>
@@ -49,13 +50,13 @@
   {{if $d.Partners}}
   <section class="card">
     <h2>{{.T "player.partners"}}</h2>
-    <ul class="rows">{{range $d.Partners}}<li class="prow"><a href="/t/{{$t.Slug}}/players/{{.ID}}?season={{$d.Period.ID}}">{{.Name}}</a><span class="muted small">{{$.T "player.together" .Played .Won}}</span></li>{{end}}</ul>
+    <ul class="rows">{{range $d.Partners}}<li class="prow"><a href="{{$d.PlayerHref .ID}}">{{.Name}}</a><span class="muted small">{{$.T "player.together" .Played .Won}}</span></li>{{end}}</ul>
   </section>
   {{end}}
   {{if $d.Opponents}}
   <section class="card">
     <h2>{{.T "player.opponents"}}</h2>
-    <ul class="rows">{{range $d.Opponents}}<li class="prow"><a href="/t/{{$t.Slug}}/players/{{.ID}}?season={{$d.Period.ID}}">{{.Name}}</a><span class="muted small">{{$.T "player.against" .Played .Won}}</span></li>{{end}}</ul>
+    <ul class="rows">{{range $d.Opponents}}<li class="prow"><a href="{{$d.PlayerHref .ID}}">{{.Name}}</a><span class="muted small">{{$.T "player.against" .Played .Won}}</span></li>{{end}}</ul>
   </section>
   {{end}}
 </div>

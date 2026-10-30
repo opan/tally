@@ -90,6 +90,10 @@ func main() {
 	// Read-only site admin pages; aio decides who is an admin on every request.
 	mux.HandleFunc("GET /admin", app.handleAdminUsers)
 	mux.HandleFunc("GET /admin/users/{id}", app.handleAdminUser)
+	mux.HandleFunc("GET /admin/tallies/{id}", app.handleAdminTally)
+	mux.HandleFunc("GET /admin/tallies/{id}/seasons/{pid}", app.handleAdminSeason)
+	mux.HandleFunc("GET /admin/tallies/{id}/players/{pid}", app.handleAdminPlayer)
+	mux.HandleFunc("GET /admin/tallies/{id}/days/{rid}", app.handleAdminDay)
 	mux.HandleFunc("GET /panduan", app.handleGuide)
 	mux.HandleFunc("GET /guide", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/panduan", http.StatusMovedPermanently)

@@ -611,6 +611,22 @@ type periodVM struct {
 	Plays     int
 	Points    int
 	CanImport bool // points can be imported from a sheet into this season
+	Admin     bool // the site admin's read-only view
+}
+
+// RoundHref links a play day: the admin page in the site admin's view.
+func (v periodVM) RoundHref(id string) string {
+	if v.Admin {
+		return "/admin/tallies/" + v.Tally.ID + "/days/" + id
+	}
+	return tallyPath(v.Tally, "/rounds/"+id)
+}
+
+func (v periodVM) BackHref() string {
+	if v.Admin {
+		return "/admin/tallies/" + v.Tally.ID
+	}
+	return tallyPath(v.Tally, "/periods")
 }
 
 // seasonMonths lays out every week of the month that overlaps the season,
@@ -645,7 +661,13 @@ func (a *App) handlePeriodDetail(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	ctx := r.Context()
+	a.periodPage(w, r, periodVM{tallyCtx: tc, Period: p})
+}
+
+// periodPage fills in and renders a season's page; shared with the site
+// admin's read-only view (vm.Admin).
+func (a *App) periodPage(w http.ResponseWriter, r *http.Request, vm periodVM) {
+	ctx, tc, p := r.Context(), vm.tallyCtx, vm.Period
 	rounds, err := a.store.RoundsForPeriod(ctx, p.ID)
 	if err != nil {
 		internalError(w, "list rounds", err)
@@ -656,8 +678,9 @@ func (a *App) handlePeriodDetail(w http.ResponseWriter, r *http.Request) {
 		internalError(w, "season stats", err)
 		return
 	}
-	vm := periodVM{tallyCtx: tc, Period: p, Months: seasonMonths(p, rounds, stats), PlayDays: len(rounds), Players: players}
+	vm.Months, vm.PlayDays, vm.Players = seasonMonths(p, rounds, stats), len(rounds), players
 	_, vm.CanImport = scoreLimit(tc.Tally, p)
+	vm.CanImport = vm.CanImport && !vm.Admin
 	for _, s := range stats {
 		vm.Plays += s.Plays
 		vm.Points += s.Points

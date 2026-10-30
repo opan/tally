@@ -1,0 +1,54 @@
+{{define "title"}}{{.Data.Tally.Name}} &mdash; {{.T "nav.admin"}} &mdash; {{.T "app.name"}}{{end}}
+{{define "content"}}
+{{$t := .Data.Tally}}{{$d := .Data}}
+<p class="small"><a href="/admin">&larr; {{.T "admin.back"}}</a></p>
+<h1>{{$t.Name}}</h1>
+<p class="muted">{{.T $t.Preset.NameKey}} &middot; /t/{{$t.Slug}} &middot; {{if eq $t.Visibility "private"}}{{.T "visibility.private"}}{{else}}{{.T "visibility.link"}}{{end}} &middot; {{.T "admin.created" (.Date $t.CreatedAt)}}
+  {{if ne $t.Visibility "private"}} &middot; <a href="/t/{{$t.Slug}}">{{.T "admin.open_public"}}</a>{{end}}</p>
+<p class="alert info">{{.T "admin.readonly"}}</p>
+
+<section class="card">
+  <h2>{{.T "admin.tally_admins"}}</h2>
+  <ul class="rows">{{range $d.Admins}}<li class="prow"><a href="/admin/users/{{.UserID}}">{{.Username}}</a><span class="muted small">{{if eq .Role "owner"}}{{$.T "role.owner"}}{{else}}{{$.T "role.admin"}}{{end}}</span></li>{{end}}</ul>
+</section>
+
+<section class="card">
+  <h2>{{.T "tab.periods"}}</h2>
+  {{if $d.Seasons}}
+  <div class="tablewrap">
+    <table class="board">
+      <thead><tr><th>{{.T "admin.col.season"}}</th><th class="num">{{.T "season.play_days"}}</th><th class="num">{{.T "season.players"}}</th><th class="num">{{.T "season.plays"}}</th><th class="num">{{.T "board.points"}}</th></tr></thead>
+      <tbody>
+        {{range $d.Seasons}}
+        <tr>
+          <td><a href="/admin/tallies/{{$t.ID}}/seasons/{{.Period.ID}}">{{.Period.Name}}</a> {{template "seasonbadge" (dict "P" $ "S" .Period)}}<br><span class="muted small">{{$.Date .Period.StartsOn}} – {{$.Date .Period.EndsOn}}</span></td>
+          <td class="num">{{.PlayDays}}</td><td class="num">{{.Players}}</td><td class="num">{{.Plays}}</td><td class="num">{{.Points}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+  {{else}}<p class="muted">{{.T "admin.no_seasons"}}</p>{{end}}
+</section>
+
+<section class="card">
+  <div class="cardhead"><h2>{{.T "tab.players"}}</h2><span class="muted small">{{len $d.Players}}</span></div>
+  {{if $d.Players}}
+  <div class="tablewrap">
+    <table class="board">
+      <thead><tr><th>{{.T "board.player"}}</th><th class="num">{{.T "season.plays"}}</th><th class="num">{{.T "board.points"}}</th><th>{{.T "admin.col.last_played"}}</th></tr></thead>
+      <tbody>
+        {{range $d.Players}}
+        <tr>
+          <td><a href="/admin/tallies/{{$t.ID}}/players/{{.ID}}">{{.Name}}</a>{{if not .Active}} <span class="badge">{{$.T "players.inactive"}}</span>{{end}}</td>
+          <td class="num">{{.Plays}}</td><td class="num">{{.Points}}</td>
+          <td>{{if .LastPlayed}}{{$.Date .LastPlayed}}{{else}}<span class="muted">&mdash;</span>{{end}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+  <p class="muted small">{{.T "admin.players_note"}}</p>
+  {{else}}<p class="muted">{{.T "admin.no_players"}}</p>{{end}}
+</section>
+{{end}}

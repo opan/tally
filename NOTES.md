@@ -453,6 +453,25 @@ still in the security backlog.
   10 short and the -1 rows (now counted by the rule); re-upload
   skips all five days.
 
+## Site admin: read-only tally pages (2026-10-30)
+
+- opan: site admins (aio admins) may open every tally read-only, private ones
+  included, because every view is logged. This widens P8 / RFC-002, which
+  listed private tallies without a link.
+- `/admin/users/{id}` links each tally to `/admin/tallies/{id}`: tally admins,
+  seasons (status, play days, players, plays, points), players (plays,
+  points over all seasons, last play day). From there:
+  `/seasons/{pid}` (the Musim page with `Admin` set: no edit/import/board,
+  play days link to the admin day page), `/players/{pid}` (the player page
+  with admin links), `/days/{rid}` (scores per player, matches, extras,
+  who was there; no forms).
+- `admin_views` gained `tally_id` and `detail`; tally pages log the owner as
+  `subject_user_id`. The admin tallies table counts plays instead of
+  matches, so points-only tallies don't read 0.
+- Tested with a fake aio status endpoint (`admin_test.go`): 200 for the
+  admin on a private tally, 404 for others, four views logged, no tally form
+  actions on any page.
+
 ## Open questions
 
 - App name and domain (working name "Tally"; e.g. `tally.opan.dev`).
