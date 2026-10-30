@@ -484,7 +484,6 @@ func (f periodForm) parse(r *http.Request, preset Preset) (Period, string) {
 type periodsVM struct {
 	tallyCtx
 	Periods   []Period
-	CurrentID string
 	Form      periodForm
 	Editing   *Period // nil on the list page
 	HasScored bool    // Editing has scored matches: format locked, rule changes rescore
@@ -498,12 +497,6 @@ func (a *App) renderPeriods(w http.ResponseWriter, r *http.Request, vm periodsVM
 		return
 	}
 	vm.Periods = periods
-	if cur, err := a.store.CurrentPeriod(ctx, vm.Tally.ID); err == nil {
-		vm.CurrentID = cur.ID
-	} else if !errors.Is(err, pgx.ErrNoRows) {
-		internalError(w, "current period", err)
-		return
-	}
 	if vm.Form == (periodForm{}) {
 		vm.Form = a.newPeriodDefaults(r, vm.Tally, periods)
 	}

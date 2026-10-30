@@ -6,7 +6,7 @@
 <section class="card">
   <div class="cardhead">
     <div>
-      <h2>{{$p.Name}}</h2>
+      <h2>{{$p.Name}} {{template "seasonbadge" (dict "P" $ "S" $p)}}</h2>
       <p class="muted small">{{.Date $p.StartsOn}} – {{.Date $p.EndsOn}} &middot; {{.Rule $p.Scoring}}</p>
     </div>
     <a class="btn small ghost" href="/t/{{$t.Slug}}/periods/{{$p.ID}}/edit">{{.T "common.edit"}}</a>

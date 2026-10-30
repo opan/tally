@@ -108,7 +108,6 @@
   "period.game_target": "Points per game",
   "period.win_bonus": "Win bonus",
   "period.win_bonus_hint": "(0 = no bonus)",
-  "period.current": "current",
   "period.new_title": "New season",
   "period.first_hint": "A season sets the ranking's time range and its points rule.",
   "period.create_submit": "Create season",
@@ -427,5 +426,13 @@
   "season.day_board": "Board",
   "season.no_play_day": "No play day",
   "month.long": "January,February,March,April,May,June,July,August,September,October,November,December",
-  "weekday.short": "Sun,Mon,Tue,Wed,Thu,Fri,Sat"
+  "weekday.short": "Sun,Mon,Tue,Wed,Thu,Fri,Sat",
+  "season.status_upcoming": "Upcoming",
+  "season.status_running": "Running",
+  "season.status_ended": "Ended",
+  "play.season_ended": "%s ended on %s",
+  "play.season_ended_help": "Create a new season for the next play days. Past play days can still be corrected.",
+  "play.new_season": "Create a new season",
+  "play.see_season": "View %s",
+  "play.season_next": "No season is running. %s starts on %s."
 }

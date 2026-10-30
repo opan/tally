@@ -103,3 +103,19 @@ func TestSeasonMonths(t *testing.T) {
 		t.Errorf("November has %d weeks up to the 10th, want 2", n)
 	}
 }
+
+func TestSeasonStatus(t *testing.T) {
+	d := today()
+	for _, c := range []struct {
+		p    Period
+		want string
+	}{
+		{Period{StartsOn: d.AddDate(0, 0, 1), EndsOn: d.AddDate(0, 1, 0)}, SeasonUpcoming},
+		{Period{StartsOn: d, EndsOn: d}, SeasonRunning},
+		{Period{StartsOn: d.AddDate(0, -1, 0), EndsOn: d.AddDate(0, 0, -1)}, SeasonEnded},
+	} {
+		if got := c.p.Status(); got != c.want {
+			t.Errorf("%s – %s: got %s, want %s", c.p.StartsOn.Format(dateLayout), c.p.EndsOn.Format(dateLayout), got, c.want)
+		}
+	}
+}

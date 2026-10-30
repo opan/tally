@@ -189,4 +189,6 @@
 {{end}}
 {{end}}
 
+{{define "seasonbadge"}}{{$s := .S.Status}}<span class="badge{{if eq $s "running"}} gold{{else if eq $s "ended"}} ended{{end}}">{{.P.T (print "season.status_" $s)}}</span>{{end}}
+
 {{define "aioleaving"}}<p class="muted small">{{.T "account.leaving" .Aio.Host}}</p>{{end}}

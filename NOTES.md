@@ -422,6 +422,10 @@ still in the security backlog.
   the month in the season (Minggu 1–5 per month, empty ones too), each play
   day with players, plays, points, top player, and a link to its board.
   Editing moved to `/periods/{id}/edit`.
+- Seasons end by their dates only (no close button; end early by editing
+  the end date). Status badge Akan datang / Berjalan / Selesai on the Musim
+  list, the season page and the board. When no season runs, the Main tab
+  says the last one ended (with "Buat musim baru") or when the next starts.
 - Board: a points-only play day shows "entered without match details" where
   the match results would be. Metric `tally.scores.recorded`.
 

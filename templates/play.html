@@ -8,6 +8,19 @@
   <a class="btn primary" href="/t/{{$t.Slug}}/periods">{{.T "setup.period"}}</a>
 </section>
 {{else}}
+{{with .Data.Ended}}
+<section class="card endedcard">
+  <h2>{{$.T "play.season_ended" .Name ($.Date .EndsOn)}}</h2>
+  <p class="muted small">{{$.T "play.season_ended_help"}}</p>
+  <div class="actions">
+    <a class="btn primary" href="/t/{{$t.Slug}}/periods#baru">{{$.T "play.new_season"}}</a>
+    <a class="btn ghost" href="/t/{{$t.Slug}}/periods/{{.ID}}">{{$.T "play.see_season" .Name}}</a>
+  </div>
+</section>
+{{end}}
+{{with .Data.Next}}
+<p class="alert info">{{$.T "play.season_next" .Name ($.Date .StartsOn)}}</p>
+{{end}}
 {{with .Data.Today}}
 <section class="card todaycard">
   <div>

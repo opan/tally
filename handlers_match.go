@@ -93,7 +93,9 @@ func (f *matchForm) parse(r *http.Request, cfg ScoringConfig, valid map[string]b
 
 type playVM struct {
 	tallyCtx
-	Today   *Round // today's play day, if it was started
+	Today   *Round  // today's play day, if it was started
+	Ended   *Period // no season runs or is coming: the one that ended last
+	Next    *Period // no season runs: the next one to start
 	Current *Period
 	Periods []Period // newest first, for the "which season" line
 	Season  string   // id of the season FDate falls in, "" if none
@@ -121,6 +123,27 @@ func (a *App) renderPlay(w http.ResponseWriter, r *http.Request, vm playVM, stat
 	}
 	if vm.FDate == "" {
 		vm.FDate = today().Format(dateLayout)
+	}
+	running := false
+	for i := range vm.Periods {
+		p := &vm.Periods[i]
+		switch p.Status() {
+		case SeasonRunning:
+			running = true
+		case SeasonUpcoming:
+			if vm.Next == nil || p.StartsOn.Before(vm.Next.StartsOn) {
+				vm.Next = p
+			}
+		case SeasonEnded:
+			if vm.Ended == nil || p.EndsOn.After(vm.Ended.EndsOn) {
+				vm.Ended = p
+			}
+		}
+	}
+	if running {
+		vm.Next, vm.Ended = nil, nil
+	} else if vm.Next != nil {
+		vm.Ended = nil
 	}
 	// Same pick as PeriodForDate: the latest-starting season covering the date.
 	if d, ok := parseDate(vm.FDate); ok {

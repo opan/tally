@@ -23,7 +23,7 @@
 {{with $d.Period}}
 <section class="card boardcard">
   <header class="boardhead">
-    <p class="eyebrow">{{.Name}} <span class="muted">({{$.Date .StartsOn}} – {{$.Date .EndsOn}})</span></p>
+    <p class="eyebrow">{{.Name}} {{template "seasonbadge" (dict "P" $ "S" .)}} <span class="muted">({{$.Date .StartsOn}} – {{$.Date .EndsOn}})</span></p>
     <div class="boardhead-row">
       {{if $d.Day}}<h2 class="ribbon">{{$.T "round.label" $d.Day.WeekLabel}} – {{$.Date $d.Day.PlayedOn}}</h2>
       {{else if $d.Round}}<h2 class="ribbon">{{$.T "board.all_weeks"}} – {{$.T "board.until" ($.Date $d.Round.PlayedOn)}}</h2>{{end}}

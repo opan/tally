@@ -108,7 +108,6 @@
   "period.game_target": "Poin per gim",
   "period.win_bonus": "Bonus menang",
   "period.win_bonus_hint": "(0 = tanpa bonus)",
-  "period.current": "berjalan",
   "period.new_title": "Musim baru",
   "period.first_hint": "Musim menentukan rentang waktu peringkat dan aturan poinnya.",
   "period.create_submit": "Buat musim",
@@ -427,5 +426,13 @@
   "season.day_board": "Papan",
   "season.no_play_day": "Tidak ada hari main",
   "month.long": "Januari,Februari,Maret,April,Mei,Juni,Juli,Agustus,September,Oktober,November,Desember",
-  "weekday.short": "Min,Sen,Sel,Rab,Kam,Jum,Sab"
+  "weekday.short": "Min,Sen,Sel,Rab,Kam,Jum,Sab",
+  "season.status_upcoming": "Akan datang",
+  "season.status_running": "Berjalan",
+  "season.status_ended": "Selesai",
+  "play.season_ended": "%s selesai %s",
+  "play.season_ended_help": "Buat musim baru untuk hari main berikutnya. Hari main yang sudah lewat tetap bisa diperbaiki.",
+  "play.new_season": "Buat musim baru",
+  "play.see_season": "Lihat %s",
+  "play.season_next": "Belum ada musim yang berjalan. %s mulai %s."
 }
