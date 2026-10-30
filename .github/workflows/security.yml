@@ -72,16 +72,10 @@ jobs:
           go-version: '1.27.x'
           check-latest: true
           cache: true
-      # gosec v2.29.0 ships x/tools v0.49.0, which can't read Go 1.27 export
-      # data and fails on type errors; build it against a newer x/tools until
-      # a gosec release does.
-      - name: Build gosec
-        working-directory: ${{ runner.temp }}
-        run: |
-          mkdir gosec-build && cd gosec-build
-          go mod init gosec-build
-          go get github.com/securego/gosec/v2/cmd/gosec@v2.29.0 golang.org/x/tools@v0.52.0
-          go build -o "$RUNNER_TEMP/gosec" github.com/securego/gosec/v2/cmd/gosec
+      # v2.30.0 or later: older releases ship an x/tools that can't read Go
+      # 1.27 export data.
+      - name: Install gosec
+        run: GOBIN="$RUNNER_TEMP" go install github.com/securego/gosec/v2/cmd/gosec@v2.30.0
       - name: Run gosec
         id: scan
         continue-on-error: true
