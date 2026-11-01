@@ -69,7 +69,7 @@ func scoreLimit(t *Tally, p *Period) (int, bool) {
 }
 
 func (a *App) importPeriod(w http.ResponseWriter, r *http.Request) (tallyCtx, *User, *Period, int, bool) {
-	tc, u, p, ok := a.editablePeriod(w, r)
+	tc, u, p, ok := a.openPeriod(w, r)
 	if !ok {
 		return tc, nil, nil, 0, false
 	}

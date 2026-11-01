@@ -112,6 +112,7 @@ func main() {
 	mux.HandleFunc("POST /t/{slug}/periods/{id}/import", app.handleImportPreview)
 	mux.HandleFunc("POST /t/{slug}/periods/{id}/import/confirm", app.handleImportConfirm)
 	mux.HandleFunc("POST /t/{slug}/periods/{id}", app.handleEditPeriod)
+	mux.HandleFunc("POST /t/{slug}/periods/{id}/archive", app.handleArchivePeriod)
 	mux.HandleFunc("GET /t/{slug}/play", app.handlePlay)
 	mux.HandleFunc("POST /t/{slug}/rounds", app.handleCreateRound)
 	mux.HandleFunc("GET /t/{slug}/rounds/{rid}", app.handleRound)

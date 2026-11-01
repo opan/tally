@@ -61,6 +61,8 @@ CREATE TABLE IF NOT EXISTS periods (
     CHECK (ends_on >= starts_on)
 );
 CREATE INDEX IF NOT EXISTS periods_tally_idx ON periods (tally_id, starts_on DESC);
+-- An archived season is read-only and out of the pickers; NULL = active.
+ALTER TABLE periods ADD COLUMN IF NOT EXISTS archived_at timestamptz;
 
 -- A round is one play day ("Week #2 - 11 Oct"); its number is its position by
 -- date within the period, computed on read. Rank movement arrows compare

@@ -3,14 +3,14 @@
 {{template "tallyhead" .}}
 {{$t := .Data.Tally}}{{$d := .Data}}{{$p := $d.Period}}
 <p class="small"><a href="{{$d.BackHref}}">&larr; {{if $d.Admin}}{{$t.Name}}{{else}}{{.T "tab.periods"}}{{end}}</a></p>
-{{if $d.Admin}}<p class="alert info">{{.T "admin.readonly"}}</p>{{end}}
+{{if $d.Admin}}<p class="alert info">{{.T "admin.readonly"}}</p>{{else if $p.Archived}}<p class="alert info">{{.T "season.archived_note"}}</p>{{end}}
 <section class="card">
   <div class="cardhead">
     <div>
       <h2>{{$p.Name}} {{template "seasonbadge" (dict "P" $ "S" $p)}}</h2>
       <p class="muted small">{{.Date $p.StartsOn}} – {{.Date $p.EndsOn}} &middot; {{.Rule $p.Scoring}}</p>
     </div>
-    {{if not $d.Admin}}<a class="btn small ghost" href="/t/{{$t.Slug}}/periods/{{$p.ID}}/edit">{{.T "common.edit"}}</a>{{end}}
+    {{if and (not $d.Admin) (not $p.Archived)}}<a class="btn small ghost" href="/t/{{$t.Slug}}/periods/{{$p.ID}}/edit">{{.T "common.edit"}}</a>{{end}}
   </div>
   <div class="stats">
     <div class="stat"><span class="lbl">{{.T "season.play_days"}}</span><span class="val">{{$d.PlayDays}}</span></div>
@@ -20,7 +20,11 @@
   </div>
   {{if not $d.Admin}}<div class="actions">
     <a class="btn small" href="/t/{{$t.Slug}}?season={{$p.ID}}">{{.T "season.board"}}</a>
-    {{if $d.CanImport}}<a class="btn small ghost" href="/t/{{$t.Slug}}/periods/{{$p.ID}}/import">{{.T "import.title"}}</a>{{end}}
+    {{if and $d.CanImport (not $p.Archived)}}<a class="btn small ghost" href="/t/{{$t.Slug}}/periods/{{$p.ID}}/import">{{.T "import.title"}}</a>{{end}}
+    <form method="post" action="/t/{{$t.Slug}}/periods/{{$p.ID}}/archive" data-confirm="{{if $p.Archived}}{{.T "season.unarchive_confirm" $p.Name}}{{else}}{{.T "season.archive_confirm" $p.Name}}{{end}}">
+      <input type="hidden" name="archived" value="{{if $p.Archived}}0{{else}}1{{end}}">
+      <button type="submit" class="btn small ghost">{{if $p.Archived}}{{.T "season.unarchive"}}{{else}}{{.T "season.archive"}}{{end}}</button>
+    </form>
   </div>{{end}}
 </section>
 

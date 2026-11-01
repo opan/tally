@@ -17,6 +17,7 @@ var (
 	ErrUserNotFound  = errors.New("user not found")
 	ErrAlreadyAdmin  = errors.New("already admin")
 	ErrRoundsOutside = errors.New("play days fall outside the new dates")
+	ErrArchived      = errors.New("season is archived")
 )
 
 const (
@@ -87,20 +88,28 @@ type Period struct {
 	StartsOn time.Time
 	EndsOn   time.Time
 	Scoring  ScoringConfig
+	// ArchivedAt is set while the season is archived: read-only, left out
+	// of the season pickers and never the current season.
+	ArchivedAt *time.Time `json:",omitempty"`
 }
+
+func (p Period) Archived() bool { return p.ArchivedAt != nil }
 
 // Season status by date, against today in Jakarta.
 const (
 	SeasonUpcoming = "upcoming"
 	SeasonRunning  = "running"
 	SeasonEnded    = "ended"
+	SeasonArchived = "archived"
 )
 
-// Status is SeasonUpcoming, SeasonRunning or SeasonEnded. A season ends by
-// its dates only; there is no separate "close".
+// Status is SeasonUpcoming, SeasonRunning or SeasonEnded by date, or
+// SeasonArchived once the owner archived it.
 func (p Period) Status() string {
 	t := today()
 	switch {
+	case p.ArchivedAt != nil:
+		return SeasonArchived
 	case t.Before(p.StartsOn):
 		return SeasonUpcoming
 	case t.After(p.EndsOn):
@@ -496,12 +505,12 @@ func (s *Store) DeleteParticipant(ctx context.Context, tallyID, actorID, id stri
 
 // --- Periods ---
 
-const periodCols = `id, tally_id, name, starts_on, ends_on, scoring`
+const periodCols = `id, tally_id, name, starts_on, ends_on, scoring, archived_at`
 
 func scanPeriod(row pgx.Row) (*Period, error) {
 	p := &Period{}
 	var raw []byte
-	if err := row.Scan(&p.ID, &p.TallyID, &p.Name, &p.StartsOn, &p.EndsOn, &raw); err != nil {
+	if err := row.Scan(&p.ID, &p.TallyID, &p.Name, &p.StartsOn, &p.EndsOn, &raw, &p.ArchivedAt); err != nil {
 		return nil, err
 	}
 	if err := json.Unmarshal(raw, &p.Scoring); err != nil {
@@ -535,11 +544,12 @@ func (s *Store) PeriodByID(ctx context.Context, tallyID, id string) (*Period, er
 		`SELECT `+periodCols+` FROM periods WHERE tally_id = $1 AND id = $2`, tallyID, id))
 }
 
-// CurrentPeriod is the period containing today, else the most recently started
-// one. pgx.ErrNoRows when the tally has no periods.
+// CurrentPeriod is the active period containing today, else the most recently
+// started active one. pgx.ErrNoRows when the tally has none (archived seasons
+// never count).
 func (s *Store) CurrentPeriod(ctx context.Context, tallyID string) (*Period, error) {
 	return scanPeriod(s.pool.QueryRow(ctx,
-		`SELECT `+periodCols+` FROM periods WHERE tally_id = $1
+		`SELECT `+periodCols+` FROM periods WHERE tally_id = $1 AND archived_at IS NULL
 		 ORDER BY ($2 BETWEEN starts_on AND ends_on) DESC, starts_on DESC, created_at DESC
 		 LIMIT 1`, tallyID, today()))
 }
@@ -563,6 +573,26 @@ func (s *Store) CreatePeriod(ctx context.Context, actorID string, p Period) (*Pe
 // UpdatePeriod saves a season. Once it has scored matches its format is
 // locked (stored game scores wouldn't fit), other rule changes such as the win
 // bonus rescore every match, and its dates must still cover all play days.
+// SetPeriodArchived archives or unarchives a season. Returns pgx.ErrNoRows if
+// the tally has no such season or it is already in that state.
+func (s *Store) SetPeriodArchived(ctx context.Context, tallyID, actorID, periodID string, archived bool) error {
+	return pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
+		var name string
+		err := tx.QueryRow(ctx,
+			`UPDATE periods SET archived_at = CASE WHEN $3 THEN now() END
+			 WHERE tally_id = $1 AND id = $2 AND (archived_at IS NOT NULL) <> $3
+			 RETURNING name`, tallyID, periodID, archived).Scan(&name)
+		if err != nil {
+			return err
+		}
+		action := "archive"
+		if !archived {
+			action = "unarchive"
+		}
+		return audit(ctx, tx, tallyID, actorID, action, "period", periodID, nil, map[string]string{"name": name})
+	})
+}
+
 func (s *Store) UpdatePeriod(ctx context.Context, actorID string, before *Period, p Period) error {
 	return pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
 		var scored, outside int

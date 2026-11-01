@@ -23,6 +23,24 @@
 </section>
 {{end}}
 
+{{if .Data.Archived}}
+<details class="card" id="arsip">
+  <summary class="cardhead summaryhead"><h2>{{.T "season.archive_list"}}</h2><span class="muted small">{{len .Data.Archived}}</span></summary>
+  <p class="muted small">{{.T "season.archive_help"}}</p>
+  <ul class="rows">
+    {{range .Data.Archived}}
+    <li class="periodrow">
+      <div>
+        <a href="/t/{{$t.Slug}}/periods/{{.ID}}"><strong>{{.Name}}</strong></a>
+        <div class="muted small">{{$.Date .StartsOn}} – {{$.Date .EndsOn}} &middot; {{$.Rule .Scoring}}</div>
+      </div>
+      <a class="btn small" href="/t/{{$t.Slug}}/periods/{{.ID}}">{{$.T "period.details"}}</a>
+    </li>
+    {{end}}
+  </ul>
+</details>
+{{end}}
+
 <section class="card" id="baru">
   <h2>{{.T "period.new_title"}}</h2>
   <p class="muted small">{{if not .Data.Periods}}{{.T "period.first_hint"}} {{end}}<a href="/panduan#aturan-poin">{{.T "guide.rules_link"}}</a></p>

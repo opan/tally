@@ -1,10 +1,11 @@
-{{define "title"}}{{.T "round.label" .Data.Round.WeekLabel}} &middot; {{.Data.Tally.Name}} &mdash; {{.T "nav.admin"}} &mdash; {{.T "app.name"}}{{end}}
+{{define "title"}}{{.T "round.label" .Data.Round.WeekLabel}} &middot; {{.Data.Tally.Name}}{{if .Data.SiteAdmin}} &mdash; {{.T "nav.admin"}}{{end}} &mdash; {{.T "app.name"}}{{end}}
 {{define "content"}}
+{{if not .Data.SiteAdmin}}{{template "tallyhead" .}}{{end}}
 {{$t := .Data.Tally}}{{$d := .Data}}
-<p class="small"><a href="/admin/tallies/{{$t.ID}}/seasons/{{$d.Period.ID}}">&larr; {{$t.Name}} &middot; {{$d.Period.Name}}</a></p>
+<p class="small"><a href="{{$d.SeasonHref}}">&larr; {{if $d.SiteAdmin}}{{$t.Name}} &middot; {{end}}{{$d.Period.Name}}</a></p>
 <h1>{{.T "round.label" $d.Round.WeekLabel}} &middot; {{.Weekday $d.Round.PlayedOn}} {{.Date $d.Round.PlayedOn}}</h1>
 <p class="muted">{{$d.Period.Name}} &middot; {{.Rule $d.Period.Scoring}}</p>
-<p class="alert info">{{.T "admin.readonly"}}</p>
+{{if $d.SiteAdmin}}<p class="alert info">{{.T "admin.readonly"}}</p>{{else}}<p class="alert info">{{.T "season.archived_day"}}</p>{{end}}
 
 <section class="card">
   <div class="cardhead"><h2>{{.T "score.today"}}</h2><span class="muted small">{{.T "score.today_n" (len $d.ScoreRows) $d.Plays}}</span></div>

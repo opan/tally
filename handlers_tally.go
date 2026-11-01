@@ -115,7 +115,7 @@ func (a *App) adminTally(w http.ResponseWriter, r *http.Request, tab string) (ta
 var okNotices = map[string]bool{
 	"tally_created": true, "settings_saved": true, "admin_added": true, "admin_removed": true,
 	"branding_saved": true, "player_renamed": true, "player_activated": true, "player_deactivated": true, "player_deleted": true,
-	"period_created": true, "period_saved": true,
+	"period_created": true, "period_saved": true, "season_archived": true, "season_unarchived": true,
 	"round_saved": true, "awards_saved": true, "award_deleted": true, "score_saved": true, "score_deleted": true, "import_done": true, "match_saved": true, "match_deleted": true, "match_cancelled": true,
 }
 
@@ -483,7 +483,8 @@ func (f periodForm) parse(r *http.Request, preset Preset) (Period, string) {
 
 type periodsVM struct {
 	tallyCtx
-	Periods   []Period
+	Periods   []Period // active seasons
+	Archived  []Period
 	Form      periodForm
 	Editing   *Period // nil on the list page
 	HasScored bool    // Editing has scored matches: format locked, rule changes rescore
@@ -496,7 +497,13 @@ func (a *App) renderPeriods(w http.ResponseWriter, r *http.Request, vm periodsVM
 		internalError(w, "list periods", err)
 		return
 	}
-	vm.Periods = periods
+	for _, p := range periods {
+		if p.Archived() {
+			vm.Archived = append(vm.Archived, p)
+		} else {
+			vm.Periods = append(vm.Periods, p)
+		}
+	}
 	if vm.Form == (periodForm{}) {
 		vm.Form = a.newPeriodDefaults(r, vm.Tally, periods)
 	}
@@ -688,8 +695,47 @@ func (a *App) periodPage(w http.ResponseWriter, r *http.Request, vm periodVM) {
 	a.render(w, r, "period", vm)
 }
 
+// openPeriod is editablePeriod for changes: an archived season is read-only,
+// so it sends the admin to the season's page instead.
+func (a *App) openPeriod(w http.ResponseWriter, r *http.Request) (tallyCtx, *User, *Period, bool) {
+	tc, u, p, ok := a.editablePeriod(w, r)
+	if ok && p.Archived() {
+		http.Redirect(w, r, tallyPath(tc.Tally, "/periods/"+p.ID), http.StatusSeeOther)
+		return tc, nil, nil, false
+	}
+	return tc, u, p, ok
+}
+
+// handleArchivePeriod archives (archived=1) or unarchives a season.
+func (a *App) handleArchivePeriod(w http.ResponseWriter, r *http.Request) {
+	tc, u, ok := a.adminTally(w, r, "periods")
+	if !ok {
+		return
+	}
+	limitBody(w, r, maxFormBytes)
+	archive := r.FormValue("archived") == "1"
+	id := r.PathValue("id")
+	err := a.store.SetPeriodArchived(r.Context(), tc.Tally.ID, u.ID, id, archive)
+	if err != nil && !isNotFound(err) {
+		internalError(w, "archive period", err)
+		return
+	}
+	if isNotFound(err) {
+		// No such season, or a second tap on the same button.
+		if _, err := a.store.PeriodByID(r.Context(), tc.Tally.ID, id); err != nil {
+			a.notFound(w, r)
+			return
+		}
+	}
+	key := "season_archived"
+	if !archive {
+		key = "season_unarchived"
+	}
+	redirectOK(w, r, tallyPath(tc.Tally, "/periods/"+id), key)
+}
+
 func (a *App) handleEditPeriodForm(w http.ResponseWriter, r *http.Request) {
-	tc, _, p, ok := a.editablePeriod(w, r)
+	tc, _, p, ok := a.openPeriod(w, r)
 	if !ok {
 		return
 	}
@@ -697,7 +743,7 @@ func (a *App) handleEditPeriodForm(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) handleEditPeriod(w http.ResponseWriter, r *http.Request) {
-	tc, u, before, ok := a.editablePeriod(w, r)
+	tc, u, before, ok := a.openPeriod(w, r)
 	if !ok {
 		return
 	}

@@ -161,7 +161,7 @@ func (s *Store) RoundsForPeriod(ctx context.Context, periodID string) ([]Round, 
 func (s *Store) PeriodForDate(ctx context.Context, tallyID string, d time.Time) (*Period, error) {
 	return scanPeriod(s.pool.QueryRow(ctx,
 		`SELECT `+periodCols+` FROM periods WHERE tally_id = $1 AND $2 BETWEEN starts_on AND ends_on
-		 ORDER BY starts_on DESC, created_at DESC LIMIT 1`, tallyID, d))
+		 ORDER BY archived_at IS NULL DESC, starts_on DESC, created_at DESC LIMIT 1`, tallyID, d))
 }
 
 func setAttendance(ctx context.Context, tx pgx.Tx, tallyID, roundID string, ids []string) error {
@@ -711,10 +711,21 @@ func (s *Store) AddScore(ctx context.Context, tallyID, actorID string, r *Round,
 }
 
 // DeleteAward removes a score or extra of this tally; pgx.ErrNoRows if none.
+// ErrArchived (with roundID set) if its season is archived.
 func (s *Store) DeleteAward(ctx context.Context, tallyID, actorID, id string) (roundID, kind string, err error) {
 	err = pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
 		var name, reason string
 		var points int
+		var archived bool
+		if err := tx.QueryRow(ctx,
+			`SELECT pa.round_id, per.archived_at IS NOT NULL
+			 FROM point_awards pa JOIN participants p ON p.id = pa.participant_id JOIN periods per ON per.id = pa.period_id
+			 WHERE pa.id = $2 AND p.tally_id = $1`, tallyID, id).Scan(&roundID, &archived); err != nil {
+			return err
+		}
+		if archived {
+			return ErrArchived
+		}
 		if err := tx.QueryRow(ctx,
 			`DELETE FROM point_awards pa USING participants p
 			 WHERE pa.id = $2 AND pa.match_id IS NULL AND p.id = pa.participant_id AND p.tally_id = $1

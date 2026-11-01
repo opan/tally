@@ -121,6 +121,7 @@ func (a *App) renderPlay(w http.ResponseWriter, r *http.Request, vm playVM, stat
 		internalError(w, "list periods", err)
 		return
 	}
+	vm.Periods = pickerPeriods(vm.Periods, nil)
 	if vm.FDate == "" {
 		vm.FDate = today().Format(dateLayout)
 	}
@@ -210,6 +211,10 @@ func (a *App) handleCreateRound(w http.ResponseWriter, r *http.Request) {
 	}
 	if err != nil {
 		internalError(w, "period for date", err)
+		return
+	}
+	if period.Archived() {
+		fail("err.season_archived")
 		return
 	}
 	// Who's here and the courts are set on the play day itself (or follow from
@@ -582,10 +587,25 @@ func (a *App) handleRound(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	if d.period.Archived() {
+		a.renderDay(w, r, d, false)
+		return
+	}
 	a.renderRound(w, r, d, nil, http.StatusOK)
 }
 
 func roundPath(t *Tally, roundID string) string { return tallyPath(t, "/rounds/"+roundID) }
+
+// editableRound is loadRound for changes. An archived season's play days are
+// read-only, so it sends the admin to the play day's read-only page instead.
+func (a *App) editableRound(w http.ResponseWriter, r *http.Request, tc tallyCtx, roundID string) (*roundData, bool) {
+	d, ok := a.loadRound(w, r, tc, roundID)
+	if ok && d.period.Archived() {
+		http.Redirect(w, r, roundPath(tc.Tally, d.round.ID), http.StatusSeeOther)
+		return nil, false
+	}
+	return d, ok
+}
 
 func (a *App) handleRoundSetup(w http.ResponseWriter, r *http.Request) {
 	tc, u, ok := a.adminTally(w, r, "play")
@@ -593,7 +613,7 @@ func (a *App) handleRoundSetup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	limitBody(w, r, maxFormBytes)
-	d, ok := a.loadRound(w, r, tc, r.PathValue("rid"))
+	d, ok := a.editableRound(w, r, tc, r.PathValue("rid"))
 	if !ok {
 		return
 	}
@@ -617,7 +637,7 @@ func (a *App) handleShuffle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	limitBody(w, r, maxFormBytes)
-	d, ok := a.loadRound(w, r, tc, r.PathValue("rid"))
+	d, ok := a.editableRound(w, r, tc, r.PathValue("rid"))
 	if !ok {
 		return
 	}
@@ -649,7 +669,7 @@ func (a *App) handleAddMatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	limitBody(w, r, maxFormBytes)
-	d, ok := a.loadRound(w, r, tc, r.PathValue("rid"))
+	d, ok := a.editableRound(w, r, tc, r.PathValue("rid"))
 	if !ok {
 		return
 	}
@@ -691,7 +711,7 @@ func (a *App) loadMatch(w http.ResponseWriter, r *http.Request) (tallyCtx, *User
 		internalError(w, "load match", err)
 		return tc, nil, nil, nil, false
 	}
-	d, ok := a.loadRound(w, r, tc, m.RoundID)
+	d, ok := a.editableRound(w, r, tc, m.RoundID)
 	return tc, u, d, m, ok
 }
 
@@ -793,7 +813,7 @@ func (a *App) handleAddAwards(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	limitBody(w, r, maxFormBytes)
-	d, ok := a.loadRound(w, r, tc, r.PathValue("rid"))
+	d, ok := a.editableRound(w, r, tc, r.PathValue("rid"))
 	if !ok {
 		return
 	}
@@ -861,6 +881,10 @@ func (a *App) handleDeleteAward(w http.ResponseWriter, r *http.Request) {
 		a.notFound(w, r)
 		return
 	}
+	if errors.Is(err, ErrArchived) {
+		http.Redirect(w, r, roundPath(tc.Tally, roundID), http.StatusSeeOther)
+		return
+	}
 	if err != nil {
 		internalError(w, "delete award", err)
 		return
@@ -880,7 +904,7 @@ func (a *App) handleAddExtra(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	limitBody(w, r, maxFormBytes)
-	d, ok := a.loadRound(w, r, tc, r.PathValue("rid"))
+	d, ok := a.editableRound(w, r, tc, r.PathValue("rid"))
 	if !ok {
 		return
 	}
@@ -946,7 +970,7 @@ func (a *App) handleAddScore(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	limitBody(w, r, maxFormBytes)
-	d, ok := a.loadRound(w, r, tc, r.PathValue("rid"))
+	d, ok := a.editableRound(w, r, tc, r.PathValue("rid"))
 	if !ok {
 		return
 	}

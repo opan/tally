@@ -369,7 +369,8 @@ label.award input { width: 4.5em; flex: none; text-align: center; font-weight: 7
   .mf-actions .btn { flex: 1; }
   .who { display: none; }
 }
-.periodrow .small { white-space: nowrap; }
+.periodrow > .small { white-space: nowrap; }
+.periodrow > div { min-width: 0; }
 
 /* Collapsible sections show a chevron: right when closed, down when open. */
 .summaryhead, .manual > summary { position: relative; }

@@ -66,6 +66,7 @@ func (a *App) loadBoard(w http.ResponseWriter, r *http.Request, tc tallyCtx) (vm
 		}
 		vm.Period = cur
 	}
+	vm.Periods = pickerPeriods(vm.Periods, vm.Period)
 	if vm.Period == nil {
 		return vm, true
 	}
@@ -124,6 +125,18 @@ func (a *App) loadBoard(w http.ResponseWriter, r *http.Request, tc tallyCtx) (vm
 		}
 	}
 	return vm, true
+}
+
+// pickerPeriods drops archived seasons from a season picker, except the one
+// on screen (opened from the seasons page), so it still shows as selected.
+func pickerPeriods(all []Period, selected *Period) []Period {
+	var out []Period
+	for _, p := range all {
+		if !p.Archived() || (selected != nil && p.ID == selected.ID) {
+			out = append(out, p)
+		}
+	}
+	return out
 }
 
 // useEntries makes "played" count every entry, for counter tallies where
