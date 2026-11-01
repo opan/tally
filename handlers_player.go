@@ -131,6 +131,9 @@ func (a *App) playerPage(w http.ResponseWriter, r *http.Request, vm playerVM) {
 			return
 		}
 	}
+	if !vm.Admin {
+		vm.Periods = pickerPeriods(vm.Periods, vm.Period)
+	}
 	if vm.Period == nil {
 		a.render(w, r, "player", vm)
 		return

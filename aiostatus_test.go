@@ -132,7 +132,7 @@ func TestAdminTemplatesRender(t *testing.T) {
 		Seasons: []adminSeasonRow{{Period: season, PlayDays: 2, Players: 3, Plays: 7, Points: 279}},
 		Players: []TallyPlayerRow{{Participant: Participant{ID: "x1", Name: "Ana", Active: true}, Plays: 4, Points: 160, LastPlayed: &last}}}
 	day := &Round{ID: "r1", PlayedOn: joined, WeekPart: 1, WeekDays: 2}
-	dayPage := adminDayVM{tallyCtx: tallyCtx{Tally: priv}, Round: day, Period: &season, Plays: 2,
+	dayPage := adminDayVM{tallyCtx: tallyCtx{Tally: priv}, Round: day, Period: &season, Plays: 2, SiteAdmin: true,
 		ScoreRows: []scoreRow{{Player: Participant{ID: "x1", Name: "Ana"}, Chips: []playChip{{Points: 42, AwardID: "a1"}, {Points: 40, MatchID: "m1"}}, Total: 82}}}
 	cases := []struct {
 		page, lang string

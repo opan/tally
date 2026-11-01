@@ -117,6 +117,7 @@ given round. Movement arrow = rank after round N vs rank after round N‑1.
 | UX | Simpler play night + engagement (early feedback: UX too complex). First slice: points per player like the club's sheet, sheet view, XLSX import | ✅ built 2026-10-30 (PRs #9–#13) except the sheet view; [RFC-001](docs/rfc/RFC-001-simpler-play-night.md) §11 has what shipped |
 | LINK | Link players to accounts (optional): admin invites by username without revealing whether it exists; "Mabar saya" on the home page | RFC draft: [docs/rfc/RFC-002-player-links.md](docs/rfc/RFC-002-player-links.md), 2026-10-30 |
 | — | k8s deploy in `homelab/k8s/tally` | manifests in homelab 2026-10-14; opan deploys |
+| P11 | Archive a season: read-only, out of the season pickers, never the current season | ✅ built 2026-11-01, PR #18 |
 
 ## P1 notes (2026-10-13)
 
@@ -516,6 +517,24 @@ Built from [RFC-002](docs/rfc/RFC-002-player-links.md) with the §8 decisions.
 - **Metric:** `tally.player_invites{action=sent|accepted|declined|ignored|unlinked}`.
 - **Guide:** §7 "Menghubungkan pemain ke akun", §8 "Dengan akun: Mabar saya", one FAQ entry;
   screenshots `link-invite`, `invite`, `mine`.
+
+## P11 notes: archiving a season (2026-11-01)
+
+Asked for by opan as urgent. **Any admin** can archive and unarchive (first planned as
+owner-only; opan: that's the point of having admins). Button on the season's page.
+
+- **Data:** `periods.archived_at` (NULL = active). Audit actions `archive` / `unarchive`.
+- **Read-only, enforced in the handlers:** `editableRound` (play-day writes, matches via
+  `loadMatch`) and `openPeriod` (edit, import) redirect to the read-only page; creating a play
+  day on an archived season's date shows `err.season_archived`; `DeleteAward` returns
+  `ErrArchived`. `GET` of an archived play day renders the site admin's read-only day view
+  (`renderDay`, now shared).
+- **Out of the way:** `CurrentPeriod` skips archived seasons; `PeriodForDate` prefers an
+  active one; `pickerPeriods` drops them from the board, player and play pickers except the
+  season on screen. The Seasons tab lists them in a collapsed **Arsip** section at the bottom
+  (opan: bottom, collapsible for long lists).
+- **Not blocked:** renaming a player, and deleting a player who only attended (which removes
+  their attendance in archived seasons too). Both are tally-wide player actions.
 
 ## Open questions
 

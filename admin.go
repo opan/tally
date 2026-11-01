@@ -207,11 +207,22 @@ type adminDayVM struct {
 	Done      []*Match
 	Awards    []Award
 	Present   []Participant
+	SiteAdmin bool // else a tally admin looking at an archived season's play day
 }
 
-// PlayerHref links a player inside the site admin's view.
+// PlayerHref links a player inside the view's own pages.
 func (v adminDayVM) PlayerHref(id string) string {
+	if !v.SiteAdmin {
+		return tallyPath(v.Tally, "/players/"+id+"?season="+v.Period.ID)
+	}
 	return "/admin/tallies/" + v.Tally.ID + "/players/" + id + "?season=" + v.Period.ID
+}
+
+func (v adminDayVM) SeasonHref() string {
+	if !v.SiteAdmin {
+		return tallyPath(v.Tally, "/periods/"+v.Period.ID)
+	}
+	return "/admin/tallies/" + v.Tally.ID + "/seasons/" + v.Period.ID
 }
 
 func (a *App) handleAdminDay(w http.ResponseWriter, r *http.Request) {
@@ -223,7 +234,14 @@ func (a *App) handleAdminDay(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	vm := adminDayVM{tallyCtx: tc, Round: d.round, Period: d.period, Awards: d.awards}
+	a.logAdminTallyView(r, admin, "day", tc.Tally.ID, d.round.ID)
+	a.renderDay(w, r, d, true)
+}
+
+// renderDay shows a play day read-only: in the site admin's pages, and to a
+// tally's admins once its season is archived.
+func (a *App) renderDay(w http.ResponseWriter, r *http.Request, d *roundData, siteAdmin bool) {
+	vm := adminDayVM{tallyCtx: d.tc, Round: d.round, Period: d.period, Awards: d.awards, SiteAdmin: siteAdmin}
 	vm.ScoreRows, vm.Plays = d.scoreRows()
 	for _, m := range d.matches {
 		if m.Scheduled() {
@@ -239,7 +257,6 @@ func (a *App) handleAdminDay(w http.ResponseWriter, r *http.Request) {
 			vm.Present = append(vm.Present, p)
 		}
 	}
-	a.logAdminTallyView(r, admin, "day", tc.Tally.ID, d.round.ID)
 	a.render(w, r, "adminday", vm)
 }
 

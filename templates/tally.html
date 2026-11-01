@@ -35,7 +35,7 @@
   <form method="get" class="boardsel" data-autosubmit>
     {{if gt (len $d.Periods) 1}}
     <label><span class="muted small">{{$.T "board.season"}}</span>
-      <select name="season">{{range $d.Periods}}<option value="{{.ID}}" {{if eq .ID $d.Period.ID}}selected{{end}}>{{.Name}}</option>{{end}}</select>
+      <select name="season">{{range $d.Periods}}<option value="{{.ID}}" {{if eq .ID $d.Period.ID}}selected{{end}}>{{.Name}}{{if .Archived}} ({{$.T "season.status_archived"}}){{end}}</option>{{end}}</select>
     </label>
     {{end}}
     {{if $d.Rounds}}
