@@ -1,8 +1,8 @@
 # RFC-002: Linking players to accounts
 
-- **Status:** Draft; decisions made (§8, opan, 2026-10-30); building is a separate step
+- **Status:** Built (§11); decisions in §8 (opan, 2026-10-30)
 - **Author:** opan
-- **Created:** 2026-10-30 · **Updated:** 2026-10-30
+- **Created:** 2026-10-30 · **Updated:** 2026-11-01
 - **Scope:** every tally type; both login modes (`AUTH_PROVIDER=local` and `aio`)
 - **Related:** RFC-001 §9 ("link a player to a tally user", backlog); `participants.user_id`
   (in the schema since P0, unused); NOTES.md "Players"
@@ -237,4 +237,37 @@ Answered by opan on 2026-10-30.
 ## 10. Next steps
 
 - [x] opan answers §8 (2026-10-30).
-- [ ] Build §7: invites and linking, the home page, private access, the guide.
+- [x] Build §7: invites and linking, the home page, private access, the guide (PR #16, §11).
+
+## 11. As built (2026-10-30)
+
+### 11.1 What shipped
+
+| PR | What |
+|---|---|
+| #15 | This RFC, with the §8 decisions |
+| #16 | All of §7: invites and linking on the Pemain tab, the home page (invites, **Mabar saya**, ignored tallies), the player page's *kamu* and unlink, read access to private tallies, the two settings, the metric, the guide (ID + EN) with new screenshots, tests |
+
+### 11.2 Where it differs from §7
+
+- **No `expired` status.** Expiry is computed (`expires_at > now()`), so no job has to mark
+  invites expired. The status CHECK has `pending`, `accepted`, `declined` and `cancelled`.
+- **Declined looks pending to admins.** A declined invite keeps showing as *Diundang* on the
+  Pemain tab until it expires, like an invite to a username nobody has. Otherwise a quick
+  decline would tell the admin that the account exists, which §5.1 rules out. This goes
+  slightly beyond §8.2.
+- **Re-inviting cancels the open invite,** pending or declined-but-unexpired, not only a
+  pending one (§8.5), for the same reason.
+- **The daily cap** counts every invite created in the last 24 hours, cancelled ones
+  included, under a lock on the tally's row, so cancelling and re-sending can't get around it.
+- **"Abaikan tally ini"** is a decline plus a `tally_mutes` row (with `muted_at`); the tally's
+  audit log shows only the decline.
+- **Extra indexes:** `player_invites (tally_id, created_at)` for the cap and
+  `participants (user_id)` for the home page.
+- **Where the link controls are.** *Hubungkan ke akun* is a collapsed card at the bottom of the
+  Pemain tab; cancelling an invite and unlinking are under each player's *Ubah* menu.
+- **Metric:** `tally.player_invites{action=sent|accepted|declined|ignored|unlinked}`
+  (`tally_player_invites_total` in VictoriaMetrics).
+
+More detail in NOTES.md, "RFC-002 notes".
+
