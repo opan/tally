@@ -72,6 +72,8 @@ func main() {
 
 	app := &App{store: &Store{pool: pool}, aio: aio, tmpl: buildTemplates(), guideVer: guideVersion(), guideSizes: guideImageSizes(), guard: newSubmitGuard(24 * time.Hour), assetVer: assetVersion("static/style.css", "static/app.js", "static/poster.js", "static/vendor/html-to-image.js")}
 
+	app.inviteTTL, app.invitesPerDay = inviteSettings()
+
 	staticFS, err := fs.Sub(staticEmbed, "static")
 	if err != nil {
 		log.Fatalf("static fs: %v", err)
@@ -95,6 +97,10 @@ func main() {
 	mux.HandleFunc("GET /admin/tallies/{id}/seasons/{pid}", app.handleAdminSeason)
 	mux.HandleFunc("GET /admin/tallies/{id}/players/{pid}", app.handleAdminPlayer)
 	mux.HandleFunc("GET /admin/tallies/{id}/days/{rid}", app.handleAdminDay)
+	// Player links (RFC-002): the invited user's side.
+	mux.HandleFunc("POST /invites/{id}", app.handleInviteAnswer)
+	mux.HandleFunc("POST /mutes/{tid}/delete", app.handleUnmute)
+	mux.HandleFunc("POST /links/{pid}/unlink", app.handleUnlinkSelf)
 	mux.HandleFunc("GET /panduan", app.handleGuide)
 	mux.HandleFunc("GET /guide", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/panduan", http.StatusMovedPermanently)
@@ -104,6 +110,7 @@ func main() {
 	mux.HandleFunc("GET /t/{slug}/players", app.handlePlayers)
 	mux.HandleFunc("POST /t/{slug}/players", app.handleAddPlayers)
 	mux.HandleFunc("POST /t/{slug}/players/{id}", app.handlePlayerAction)
+	mux.HandleFunc("POST /t/{slug}/invites", app.handleSendInvite)
 	mux.HandleFunc("GET /t/{slug}/periods", app.handlePeriods)
 	mux.HandleFunc("POST /t/{slug}/periods", app.handleCreatePeriod)
 	mux.HandleFunc("GET /t/{slug}/periods/{id}", app.handlePeriodDetail)

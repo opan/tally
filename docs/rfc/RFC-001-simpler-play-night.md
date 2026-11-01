@@ -326,7 +326,7 @@ who sees the sheet view, how season dates are set, and whether points and matche
 ## 9. Backlog
 
 - **Link a player to a tally user** (`participants.user_id` already exists), so players can
-  see "my matches" and get notified. From §6.11.
+  see "my matches" and get notified. From §6.11; now [RFC-002](RFC-002-player-links.md).
 - A setting to raise the 7-matches-per-play-day cap.
 - A season option "no deuce" so **match** scores are also capped at the target. Today match
   entry accepts deuce scores (e.g. 43–41, or 22–20 in 21-point games) for other clubs.
