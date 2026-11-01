@@ -16,6 +16,7 @@ var (
 	ErrInUse         = errors.New("still referenced")
 	ErrUserNotFound  = errors.New("user not found")
 	ErrAlreadyAdmin  = errors.New("already admin")
+	ErrNotOwner      = errors.New("not the owner")
 	ErrRoundsOutside = errors.New("play days fall outside the new dates")
 )
 
@@ -383,6 +384,44 @@ func (s *Store) RemoveAdmin(ctx context.Context, tallyID, actorID, userID string
 			return err
 		}
 		return audit(ctx, tx, tallyID, actorID, "delete", "admin", userID, map[string]string{"username": username}, nil)
+	})
+}
+
+// TransferOwnership makes one of the tally's admins its owner; the old owner
+// stays on as a regular admin. Only the current owner may do it, checked
+// again under the tally's row lock so two transfers can't both pass.
+// Returns ErrUserNotFound if newOwnerID isn't an admin of this tally.
+func (s *Store) TransferOwnership(ctx context.Context, tallyID, actorID, newOwnerID string) error {
+	return pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
+		var ownerID string
+		if err := tx.QueryRow(ctx, `SELECT owner_id FROM tallies WHERE id = $1 FOR UPDATE`, tallyID).Scan(&ownerID); err != nil {
+			return err
+		}
+		if ownerID != actorID {
+			return ErrNotOwner
+		}
+		var oldName, newName string
+		err := tx.QueryRow(ctx,
+			`SELECT o.username, n.username
+			 FROM tally_admins ta JOIN users n ON n.id = ta.user_id, users o
+			 WHERE ta.tally_id = $1 AND ta.user_id = $2 AND ta.role = 'admin' AND o.id = $3`,
+			tallyID, newOwnerID, ownerID).Scan(&oldName, &newName)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrUserNotFound
+		}
+		if err != nil {
+			return err
+		}
+		if _, err := tx.Exec(ctx,
+			`UPDATE tally_admins SET role = CASE WHEN user_id = $2 THEN 'owner' ELSE 'admin' END
+			 WHERE tally_id = $1 AND user_id IN ($2, $3)`, tallyID, newOwnerID, ownerID); err != nil {
+			return err
+		}
+		if _, err := tx.Exec(ctx, `UPDATE tallies SET owner_id = $2 WHERE id = $1`, tallyID, newOwnerID); err != nil {
+			return err
+		}
+		return audit(ctx, tx, tallyID, actorID, "update", "owner", newOwnerID,
+			map[string]string{"owner": oldName}, map[string]string{"owner": newName})
 	})
 }
 

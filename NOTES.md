@@ -113,6 +113,7 @@ given round. Movement arrow = rank after round N vs rank after round N‑1.
 | P7 | Login through aio (`AUTH_PROVIDER=aio`) | ✅ done 2026-10-14 (linking players to accounts: later) |
 | P8 | Read-only site admin pages, admin decided by aio (RFC-002 in all-in-one) | ✅ built 2026-10-18, PR #2 |
 | P9 | Forgot / change password and email links to aio (RFC-003 in all-in-one) | ✅ built 2026-10-27, waits for all-in-one#36 |
+| P10 | Transfer a tally's ownership to one of its admins | ✅ built 2026-11-01, PR #17 |
 | UX | Simpler play night + engagement (early feedback: UX too complex). First slice: points per player like the club's sheet, sheet view, XLSX import | ✅ built 2026-10-30 (PRs #9–#13) except the sheet view; [RFC-001](docs/rfc/RFC-001-simpler-play-night.md) §11 has what shipped |
 | LINK | Link players to accounts (optional): admin invites by username without revealing whether it exists; "Mabar saya" on the home page | RFC draft: [docs/rfc/RFC-002-player-links.md](docs/rfc/RFC-002-player-links.md), 2026-10-30 |
 | — | k8s deploy in `homelab/k8s/tally` | manifests in homelab 2026-10-14; opan deploys |
@@ -383,6 +384,20 @@ still in the security backlog.
   now reads `pageData.Aio` instead of its own flag.
 - Needs aio with RFC-003 deployed; until then the links lead to aio pages that
   don't exist yet, so merge after all-in-one#36 is live.
+
+## P10 notes: transfer ownership (2026-11-01)
+
+Asked for by opan as urgent. Settings → Admin: the owner sees **Jadikan pemilik** next to each
+admin (with a confirmation naming them).
+
+- **Only to an existing admin, instantly.** No acceptance step: the admin already chose to help
+  run the tally. Handing it to someone who isn't an admin yet means adding them first.
+- **The old owner stays on as a regular admin,** so nothing is lost by mistake; the new owner
+  can remove them like any admin.
+- `tally_admins.role` and `tallies.owner_id` change together in one transaction, which checks
+  under the tally's row lock that the actor is still the owner, so two transfers can't both
+  pass. Audit: `update` / `owner` with the old and new username.
+- Owner-only powers stay as they were: adding and removing admins, and now transferring.
 
 ## RFC-001 S1 notes: points per player (2026-10-30)
 

@@ -160,6 +160,7 @@ code { background: var(--card-2); padding: 1px 6px; border-radius: 4px; }
 .prow { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 0; }
 .prow.inactive .pname { color: var(--muted); }
 .pname { font-weight: 600; }
+.rowactions { display: flex; gap: 6px; }
 .pmenu { flex-basis: auto; }
 .pmenu[open] { flex-basis: 100%; }
 .pmenu summary { list-style: none; float: right; }
