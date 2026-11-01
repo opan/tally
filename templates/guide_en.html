@@ -193,11 +193,20 @@
     already have points are skipped, so importing again is safe; tick <em>Replace</em> to overwrite them.
     After that, keep recording in Tally.</p>
   {{template "gimg" (dict "P" $P "N" "import" "Alt" "The import preview: play days, new players, and notes about the sheet")}}
+  <h3 id="hubungkan">Linking players to accounts</h3>
+  <p>Optional. Players with a Tally account can see the tally and their own points on their home page. On the
+    <em>Players</em> tab, open <strong>Link to an account</strong>, pick the player, and type the account's username
+    exactly as the player sent it (it's at the top right of their Tally). The answer is always the same,
+    <em>Invite sent</em>, because Tally won't tell you whether the username exists. Invites last
+    {{.Data.InviteDays}} days. Once the player accepts, their row shows <em>Linked: @username</em>; until then,
+    <em>Invited</em>. Cancel an invite or unlink the account under <em>Edit</em>. Only admins see players' usernames.</p>
+  {{template "gimg" (dict "P" $P "N" "link-invite" "Alt" "The Link to an account form: player name and account username")}}
   <h3>Other admins</h3>
   <p>In <em>Settings → Admins</em>, type their username. They have to {{if .Aio}}log in to Tally{{else}}sign up{{end}}
     once first. Admins can manage players, seasons, and matches; only the owner can add or remove admins.</p>
   <h3>Who can see it</h3>
-  <p><strong>Anyone with the link</strong> (the default) or <strong>admins only</strong>.</p>
+  <p><strong>Anyone with the link</strong> (the default) or <strong>admins only</strong>. Players linked to an
+    account can open an admins-only tally too, without being able to change anything.</p>
   {{template "gimg" (dict "P" $P "N" "visibility" "Alt" "Settings for name, description, and who can see the tally")}}
   <h3>Sharing the link</h3>
   <p>The link is at the bottom of <em>Overview</em>; tap <strong>Copy</strong> and send it to the group.</p>
@@ -209,6 +218,16 @@
   <p>Players don't need an account. Open the link from your admin to see the leaderboard, pick another play
     day, and tap your own name for your stats. Spotted a wrong score? Tell the admin; fixing it updates points
     and ranks right away.</p>
+  <h3>With an account: My mabar</h3>
+  <p>If you have a Tally account, send your username (top right) to your admin. Once they send an invite, it
+    shows on your Tally home page: the player name, the tally, and who invited you. Tap <strong>Accept</strong>
+    if that's you, or <strong>Decline</strong>. <strong>Ignore this tally</strong> hides any other invites from
+    the same tally; you can show them again from the bottom of the home page.</p>
+  {{template "gimg" (dict "P" $P "N" "invite" "Alt" "A player invite on the home page with Accept, Decline, and Ignore this tally")}}
+  <p>Once accepted, the tally is under <strong>My mabar</strong> with your rank and points this season; tap it
+    to open your player page. To unlink, open your player page and tap <em>This player is linked to your
+    account</em>.</p>
+  {{template "gimg" (dict "P" $P "N" "mine" "Alt" "My mabar: the tally, player name, rank, and points")}}
 </section>
 
 <section class="card gsec" id="faq">
@@ -219,6 +238,8 @@
   <details><summary>How do I add an email or change my password?</summary>
     <p>Open the <a href="/akun">Account</a> menu and tap <em>Change password &amp; email</em>. The page is on <strong>{{.Aio.Host}}</strong> because your account is managed by All-in-one. After adding an email, click the confirmation link sent to it.</p></details>
   {{end}}
+  <details><summary>An invite from my admin doesn't show up.</summary>
+    <p>Check that the admin typed your username exactly as it appears at the top right of Tally, and that the invite is less than {{.Data.InviteDays}} days old. If you once tapped <em>Ignore this tally</em>, show that tally again from the bottom of the home page. Then ask the admin to send it again.</p></details>
   <details><summary>Why can't I delete a player?</summary>
     <p>They already have matches or points. Deactivate them instead: their name leaves the pickers, and the history stays correct.</p></details>
   <details><summary>I entered a wrong score. How do I fix it?</summary>

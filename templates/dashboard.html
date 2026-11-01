@@ -1,6 +1,40 @@
 {{define "title"}}{{.T "dashboard.title"}} &mdash; {{.T "app.name"}}{{end}}
 {{define "content"}}
 <h1>{{.T "dashboard.title"}}</h1>
+{{if .Data.Notice}}<div class="alert ok" role="status">{{.Data.Notice}}</div>{{end}}
+{{if .Data.InviteErr}}<div class="alert error" role="alert">{{.Data.InviteErr}}</div>{{end}}
+
+{{range .Data.Invites}}
+<section class="card invite" id="undangan">
+  <h2>{{$.T "invite.title"}}</h2>
+  <p>{{$.T "invite.body" .PlayerName .TallyName}}{{if .InvitedBy}} {{$.T "invite.by" .InvitedBy}}{{end}}</p>
+  <p class="muted small">{{$.T "invite.help" ($.DayMonth .ExpiresAt)}}</p>
+  <div class="invite-actions">
+    <form method="post" action="/invites/{{.ID}}"><input type="hidden" name="answer" value="accept"><button type="submit" class="btn primary">{{$.T "invite.accept"}}</button></form>
+    <form method="post" action="/invites/{{.ID}}"><input type="hidden" name="answer" value="decline"><button type="submit" class="btn">{{$.T "invite.decline"}}</button></form>
+    <form method="post" action="/invites/{{.ID}}" data-confirm="{{$.T "invite.mute_confirm" .TallyName}}"><input type="hidden" name="answer" value="mute"><button type="submit" class="btn ghost small">{{$.T "invite.mute"}}</button></form>
+  </div>
+</section>
+{{end}}
+
+{{if .Data.Mine}}
+<h2 class="listhead">{{.T "mine.title"}}</h2>
+<ul class="cards">
+  {{range .Data.Mine}}
+  <li>
+    <a class="tallycard" href="/t/{{.Tally.Slug}}/players/{{.PlayerID}}">
+      <span class="eyebrow">{{.Tally.Name}}</span>
+      <strong class="tname">{{.PlayerName}}</strong>
+      <span class="muted small">
+        {{if .Period}}{{.Period.Name}} &middot; {{if .Rank}}{{$.T "mine.rank" .Rank .Of .Points}}{{else}}{{$.T "mine.no_points"}}{{end}}{{else}}{{$.T "dashboard.no_period"}}{{end}}
+      </span>
+    </a>
+  </li>
+  {{end}}
+</ul>
+<h2 class="listhead">{{.T "mine.run_title"}}</h2>
+{{end}}
+
 {{if .Data.Cards}}
 <ul class="cards">
   {{range .Data.Cards}}
@@ -19,6 +53,19 @@
 </ul>
 {{else}}
 <p class="muted">{{.T "dashboard.empty"}} <a href="/panduan#mulai">{{.T "guide.read"}}</a></p>
+{{end}}
+
+{{if .Data.Muted}}
+<details class="muted-list">
+  <summary class="muted small">{{.T "mute.title" (len .Data.Muted)}}</summary>
+  <ul class="rows">
+    {{range .Data.Muted}}
+    <li class="prow"><span class="pname">{{.Name}}</span>
+      <form method="post" action="/mutes/{{.ID}}/delete"><button type="submit" class="btn small ghost">{{$.T "mute.undo"}}</button></form>
+    </li>
+    {{end}}
+  </ul>
+</details>
 {{end}}
 
 <section class="card" id="new">

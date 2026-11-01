@@ -47,6 +47,11 @@ const rnd = (lo, hi) => { seed = (seed * 9301 + 49297) % 233280; return lo + Mat
   await post(B + '/tallies', { name: 'Badminton Sampai Pingsan', slug: SLUG, template: 'badminton_doubles',
     description: 'Main bareng tiap Minggu pagi.' });
   await post(T + '/players', { names: NAMES.join('\n') });
+  // A player with their own account, for the player-link shots (RFC-002).
+  await page.request.post(B + '/logout');
+  await post(B + '/register', { username: 'prabski', password: 'demo-password', password2: 'demo-password' });
+  await page.request.post(B + '/logout');
+  await post(B + '/login', { username: 'demo', password: 'demo-password' });
   await post(T + '/periods', { name: 'Musim #1', starts_on: '2026-10-01', ends_on: '2026-12-31',
     format: 'continuous', target: '42', game_target: '21', win_bonus: '0' });
   await post(T + '/settings', { name: 'Badminton Sampai Pingsan', description: 'Main bareng tiap Minggu pagi.', visibility: 'link' });
@@ -179,6 +184,30 @@ const rnd = (lo, hi) => { seed = (seed * 9301 + 49297) % 233280; return lo + Mat
     await Promise.all([page.waitForNavigation(), page.click('.board td.pname a >> nth=0')]);
     await page.waitForLoadState('networkidle');
     await page.screenshot({ path: path.join(OUT, lang, 'player.jpg'), type: 'jpeg', quality: 72 });
+
+    // Player links: the admin's invite form, then the player's home page.
+    await go(T + '/players');
+    await page.locator('#hubungkan details').evaluate(d => d.open = true);
+    await page.fill('#hubungkan input[name=player]', 'Prabski');
+    await page.fill('#hubungkan input[name=username]', 'prabski');
+    await page.locator('main h1').click(); // blur the fields; the card's h2 would close it
+    await shot(lang, 'link-invite', page.locator('#hubungkan'));
+    await submit('#hubungkan button[type=submit]');
+    const admin = page;
+    const pctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, locale });
+    page = await pctx.newPage();
+    page.on('dialog', d => d.accept());
+    await post(B + '/login', { username: 'prabski', password: 'demo-password' });
+    await go(`${B}/lang/${lang}?next=/`);
+    await shot(lang, 'invite', page.locator('.invite'));
+    await submit('.invite button.primary');
+    await shot(lang, 'mine', page.locator('ul.cards'));
+    await pctx.close();
+    // Unlink again, so the next language starts from the same state.
+    page = admin;
+    await go(T + '/players');
+    const unlink = page.locator('form:has(input[name=action][value=unlink])');
+    await post(B + await unlink.getAttribute('action'), { action: 'unlink' });
   }
   await browser.close();
   console.log('screenshots written to', OUT);

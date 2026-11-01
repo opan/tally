@@ -192,11 +192,20 @@
     hitung. Hari main yang sudah punya poin dilewati, jadi impor aman diulang; centang <em>Ganti</em> untuk
     menimpanya. Setelah itu, lanjutkan mencatat langsung di Tally.</p>
   {{template "gimg" (dict "P" $P "N" "import" "Alt" "Pratinjau impor: hari main, pemain baru, dan catatan dari spreadsheet")}}
+  <h3 id="hubungkan">Menghubungkan pemain ke akun</h3>
+  <p>Tidak wajib. Pemain yang punya akun Tally bisa melihat tally dan poinnya sendiri di halaman utamanya. Di tab
+    <em>Pemain</em>, buka <strong>Hubungkan ke akun</strong>, pilih pemainnya, lalu tulis username akunnya persis
+    seperti yang dikirim pemain (terlihat di kanan atas Tally miliknya). Jawabannya selalu sama, <em>Undangan
+    dikirim</em>, karena Tally tidak memberi tahu apakah username itu ada. Undangan berlaku {{.Data.InviteDays}} hari.
+    Setelah pemain menerima, barisnya menampilkan <em>Terhubung: @username</em>; sebelum itu <em>Diundang</em>.
+    Undangan bisa dibatalkan dan akun bisa diputus lewat <em>Ubah</em>. Username pemain hanya terlihat oleh admin.</p>
+  {{template "gimg" (dict "P" $P "N" "link-invite" "Alt" "Formulir Hubungkan ke akun: nama pemain dan username akunnya")}}
   <h3>Admin lain</h3>
   <p>Di <em>Setelan → Admin</em>, tulis nama penggunanya. Orang itu harus {{if .Aio}}masuk ke Tally{{else}}daftar{{end}}
     sekali dulu. Admin bisa mengelola pemain, musim, dan pertandingan; hanya pemilik yang bisa menambah atau menghapus admin.</p>
   <h3>Siapa yang bisa melihat</h3>
-  <p><strong>Siapa saja yang punya tautan</strong> (bawaan) atau <strong>hanya admin</strong>.</p>
+  <p><strong>Siapa saja yang punya tautan</strong> (bawaan) atau <strong>hanya admin</strong>. Pemain yang
+    terhubung ke akun juga bisa membuka tally hanya-admin, tanpa bisa mengubah apa pun.</p>
   {{template "gimg" (dict "P" $P "N" "visibility" "Alt" "Pengaturan nama, deskripsi, dan siapa yang bisa melihat")}}
   <h3>Membagikan tautan</h3>
   <p>Tautan ada di bagian bawah <em>Ringkasan</em>; tekan <strong>Salin</strong> lalu kirim ke grup.</p>
@@ -208,6 +217,16 @@
   <p>Pemain tidak perlu akun. Buka tautan dari admin untuk melihat papan peringkat, pilih hari main lain,
     dan tekan nama sendiri untuk melihat statistik. Ada skor yang salah? Beri tahu admin; perbaikannya langsung
     mengubah poin dan peringkat.</p>
+  <h3>Dengan akun: Mabar saya</h3>
+  <p>Kalau punya akun Tally, kirim username kamu (di kanan atas) ke admin. Setelah admin mengirim undangan,
+    undangannya muncul di halaman utama Tally: nama pemain, tally-nya, dan siapa yang mengundang. Tekan
+    <strong>Terima</strong> kalau itu memang kamu, atau <strong>Tolak</strong>. <strong>Abaikan tally ini</strong>
+    menyembunyikan undangan lain dari tally yang sama; bisa ditampilkan lagi dari bawah halaman utama.</p>
+  {{template "gimg" (dict "P" $P "N" "invite" "Alt" "Undangan pemain di halaman utama dengan tombol Terima, Tolak, dan Abaikan tally ini")}}
+  <p>Setelah diterima, tally itu ada di <strong>Mabar saya</strong> dengan peringkat dan poinmu di musim ini;
+    tekan untuk membuka halaman pemainmu. Untuk memutus akun, buka halaman pemainmu dan tekan
+    <em>Pemain ini terhubung ke akunmu</em>.</p>
+  {{template "gimg" (dict "P" $P "N" "mine" "Alt" "Mabar saya: tally, nama pemain, peringkat, dan poin")}}
 </section>
 
 <section class="card gsec" id="faq">
@@ -218,6 +237,8 @@
   <details><summary>Bagaimana menambah email atau mengganti kata sandi?</summary>
     <p>Buka menu <a href="/akun">Akun</a>, lalu tekan <em>Ubah kata sandi &amp; email</em>. Halamannya ada di <strong>{{.Aio.Host}}</strong> karena akun Anda dikelola oleh All-in-one. Setelah menambah email, klik tautan konfirmasi yang dikirim ke email itu.</p></details>
   {{end}}
+  <details><summary>Undangan dari admin tidak muncul.</summary>
+    <p>Pastikan admin menulis username kamu persis seperti di kanan atas Tally, dan undangannya belum lewat {{.Data.InviteDays}} hari. Kalau kamu pernah menekan <em>Abaikan tally ini</em>, tampilkan lagi tally itu dari bawah halaman utama. Lalu minta admin mengirim ulang.</p></details>
   <details><summary>Kenapa pemain tidak bisa dihapus?</summary>
     <p>Pemain itu sudah punya pertandingan atau poin. Nonaktifkan saja: namanya hilang dari pilihan, tapi riwayatnya tetap benar.</p></details>
   <details><summary>Salah input skor, bagaimana memperbaikinya?</summary>

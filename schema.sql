@@ -205,3 +205,32 @@ DO $$ BEGIN
     END IF;
 END $$;
 CREATE INDEX IF NOT EXISTS point_awards_round_player_idx ON point_awards (round_id, participant_id);
+
+-- RFC-002: an admin invites a player's account by username. The username is
+-- stored as typed (normalized) and never looked up on submit, so the form
+-- can't tell whether an account exists; the user sees invites for their own
+-- username on the home page. A pending invite past expires_at is expired.
+CREATE TABLE IF NOT EXISTS player_invites (
+    id             uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+    tally_id       uuid        NOT NULL REFERENCES tallies(id) ON DELETE CASCADE,
+    participant_id uuid        NOT NULL REFERENCES participants(id) ON DELETE CASCADE,
+    username       text        NOT NULL,
+    invited_by     uuid        REFERENCES users(id) ON DELETE SET NULL,
+    created_at     timestamptz NOT NULL DEFAULT now(),
+    expires_at     timestamptz NOT NULL,
+    status         text        NOT NULL DEFAULT 'pending'
+                   CHECK (status IN ('pending', 'accepted', 'declined', 'cancelled'))
+);
+CREATE UNIQUE INDEX IF NOT EXISTS player_invites_pending_uniq ON player_invites (participant_id) WHERE status = 'pending';
+CREATE INDEX IF NOT EXISTS player_invites_username_idx ON player_invites (username) WHERE status = 'pending';
+CREATE INDEX IF NOT EXISTS player_invites_tally_idx ON player_invites (tally_id, created_at);
+-- One player per account per tally.
+CREATE UNIQUE INDEX IF NOT EXISTS participants_user_uniq ON participants (tally_id, user_id) WHERE user_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS participants_user_idx ON participants (user_id) WHERE user_id IS NOT NULL;
+-- "Abaikan tally ini": invites from these tallies aren't shown to the user.
+CREATE TABLE IF NOT EXISTS tally_mutes (
+    user_id  uuid        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    tally_id uuid        NOT NULL REFERENCES tallies(id) ON DELETE CASCADE,
+    muted_at timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (user_id, tally_id)
+);

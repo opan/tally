@@ -51,7 +51,7 @@ p { margin: 0 0 10px; }
 }
 .nav { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; justify-content: flex-end; }
 .nav a { color: var(--ink); text-decoration: none; font-size: .92rem; }
-.who { color: var(--muted); font-size: .9rem; max-width: 14ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.who { color: var(--muted); font-size: .9rem; overflow-wrap: anywhere; }
 .langs { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
 .langs a { padding: 2px 9px; font-size: .78rem; font-weight: 700; color: var(--muted); }
 .langs a.on { background: var(--gold); color: var(--gold-ink); }
@@ -367,7 +367,8 @@ label.award input { width: 4.5em; flex: none; text-align: center; font-weight: 7
   .tabs a { padding: 8px 6px; font-size: .84rem; }
   .mf-actions { margin-left: 0; width: 100%; }
   .mf-actions .btn { flex: 1; }
-  .who { display: none; }
+  /* The full username on its own row: players read it to send to an admin (RFC-002). */
+  .who { order: -1; flex-basis: 100%; text-align: right; font-size: .82rem; }
 }
 .periodrow .small { white-space: nowrap; }
 
@@ -505,3 +506,13 @@ a.chip.match:hover { color: var(--ink); border-color: var(--muted); }
   .scorerow { grid-template-columns: 1fr auto; row-gap: 6px; }
   .sr-chips { grid-column: 1 / -1; grid-row: 2; }
 }
+
+/* Player links (RFC-002) */
+.plink { display: block; font-weight: 400; }
+.invite { border-color: var(--gold); }
+.invite-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.listhead { margin: 18px 0 10px; font-size: 1.05rem; }
+.melink { margin: -4px 0 14px; }
+.melink form { margin-top: 6px; }
+.muted-list { margin-top: 14px; }
+.muted-list .rows { margin-top: 8px; }
