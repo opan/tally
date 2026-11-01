@@ -71,9 +71,14 @@
     <li class="prow">
       <span class="pname">{{.Username}} {{if eq .Role "owner"}}<span class="badge gold">{{$.T "role.owner"}}</span>{{else}}<span class="badge">{{$.T "role.admin"}}</span>{{end}}</span>
       {{if and $.Data.IsOwner (ne .Role "owner")}}
+      <span class="rowactions">
+      <form method="post" action="/t/{{$t.Slug}}/admins/{{.UserID}}/owner" data-confirm="{{$.T "admins.owner_confirm" .Username}}">
+        <button type="submit" class="btn small">{{$.T "admins.make_owner"}}</button>
+      </form>
       <form method="post" action="/t/{{$t.Slug}}/admins/{{.UserID}}/remove" data-confirm="{{$.T "admins.remove_confirm" .Username}}">
         <button type="submit" class="btn small danger">{{$.T "admins.remove"}}</button>
       </form>
+      </span>
       {{end}}
     </li>
     {{end}}

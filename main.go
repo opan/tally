@@ -132,6 +132,7 @@ func main() {
 	mux.HandleFunc("POST /t/{slug}/settings", app.handleSaveSettings)
 	mux.HandleFunc("POST /t/{slug}/admins", app.handleAddAdmin)
 	mux.HandleFunc("POST /t/{slug}/admins/{uid}/remove", app.handleRemoveAdmin)
+	mux.HandleFunc("POST /t/{slug}/admins/{uid}/owner", app.handleTransferOwner)
 	mux.Handle("GET /static/", http.StripPrefix("/static/", cacheStatic(http.FileServerFS(staticFS))))
 	mux.HandleFunc("/", app.notFound)
 

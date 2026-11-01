@@ -113,7 +113,7 @@ func (a *App) adminTally(w http.ResponseWriter, r *http.Request, tab string) (ta
 
 // okNotices are the success messages a redirect may ask for with ?ok=.
 var okNotices = map[string]bool{
-	"tally_created": true, "settings_saved": true, "admin_added": true, "admin_removed": true,
+	"tally_created": true, "settings_saved": true, "admin_added": true, "admin_removed": true, "owner_transferred": true,
 	"branding_saved": true, "player_renamed": true, "player_activated": true, "player_deactivated": true, "player_deleted": true,
 	"period_created": true, "period_saved": true,
 	"round_saved": true, "awards_saved": true, "award_deleted": true, "score_saved": true, "score_deleted": true, "import_done": true, "match_saved": true, "match_deleted": true, "match_cancelled": true,
@@ -835,6 +835,26 @@ func (a *App) handleAddAdmin(w http.ResponseWriter, r *http.Request) {
 	}
 	tc.Err = tr(r, key, username)
 	a.renderSettings(w, r, settingsVM{tallyCtx: tc, FUsername: username}, http.StatusUnprocessableEntity)
+}
+
+// handleTransferOwner hands the tally to one of its admins (the form asks to
+// confirm). The old owner stays on as an admin, so they land back on settings.
+func (a *App) handleTransferOwner(w http.ResponseWriter, r *http.Request) {
+	tc, u, ok := a.ownerTally(w, r)
+	if !ok {
+		return
+	}
+	err := a.store.TransferOwnership(r.Context(), tc.Tally.ID, u.ID, r.PathValue("uid"))
+	switch {
+	case errors.Is(err, ErrUserNotFound):
+		a.notFound(w, r)
+	case errors.Is(err, ErrNotOwner):
+		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+	case err != nil:
+		internalError(w, "transfer owner", err)
+	default:
+		redirectOK(w, r, tallyPath(tc.Tally, "/settings"), "owner_transferred")
+	}
 }
 
 func (a *App) handleRemoveAdmin(w http.ResponseWriter, r *http.Request) {
