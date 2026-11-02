@@ -335,3 +335,26 @@ func TestInviteSettings(t *testing.T) {
 		t.Fatalf("invalid values = %v, %d", ttl, n)
 	}
 }
+
+// The metrics gauges count linked players, pending invites and seasons by state.
+func TestTotalsForMetrics(t *testing.T) {
+	f := newLinkFixture(t)
+	s, ctx := f.s, context.Background()
+	if err := s.CreateInvite(ctx, f.tally.ID, f.owner.ID, f.anaID, "ana_u", 14*24*time.Hour, 30); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.pool.Exec(ctx, `UPDATE participants SET user_id = $1 WHERE id = $2`, f.other.ID, f.budiID); err != nil {
+		t.Fatal(err)
+	}
+	periods, _ := s.ListPeriods(ctx, f.tally.ID, defaultBoard(t, s, f.tally.ID))
+	if err := s.SetPeriodArchived(ctx, f.tally.ID, f.owner.ID, periods[0].ID, true); err != nil {
+		t.Fatal(err)
+	}
+	tot, err := s.Totals(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if tot.LinkedPlayers != 1 || tot.PendingInvites != 1 || tot.Seasons != 1 || tot.ArchivedSeasons != 1 {
+		t.Errorf("totals = %+v; want 1 linked, 1 pending, 1 season (archived)", tot)
+	}
+}

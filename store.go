@@ -159,6 +159,7 @@ func (s *Store) DeleteExpiredSessions(ctx context.Context) (int64, error) {
 // Totals are app-wide counts for the metrics gauges.
 type Totals struct {
 	Users, Tallies, ActiveTallies, Players, Matches, PlayDays int64
+	LinkedPlayers, PendingInvites, Seasons, ArchivedSeasons   int64
 }
 
 func (s *Store) Totals(ctx context.Context) (Totals, error) {
@@ -170,8 +171,13 @@ func (s *Store) Totals(ctx context.Context) (Totals, error) {
 		  WHERE r.played_on >= current_date - 30),
 		(SELECT count(*) FROM participants WHERE active),
 		(SELECT count(*) FROM matches WHERE status = 'done'),
-		(SELECT count(*) FROM rounds)`,
-	).Scan(&t.Users, &t.Tallies, &t.ActiveTallies, &t.Players, &t.Matches, &t.PlayDays)
+		(SELECT count(*) FROM rounds),
+		(SELECT count(*) FROM participants WHERE user_id IS NOT NULL),
+		(SELECT count(*) FROM player_invites WHERE status = 'pending' AND expires_at > now()),
+		(SELECT count(*) FROM periods),
+		(SELECT count(*) FROM periods WHERE archived_at IS NOT NULL)`,
+	).Scan(&t.Users, &t.Tallies, &t.ActiveTallies, &t.Players, &t.Matches, &t.PlayDays,
+		&t.LinkedPlayers, &t.PendingInvites, &t.Seasons, &t.ArchivedSeasons)
 	return t, err
 }
 
