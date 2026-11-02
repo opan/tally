@@ -17,8 +17,8 @@ CREATE TABLE IF NOT EXISTS sessions (
 );
 CREATE INDEX IF NOT EXISTS sessions_user_idx ON sessions (user_id);
 
--- A tally is a club or group, e.g. "Bala Bulu"; its leaderboards are below
--- (RFC-003). template and side_size moved there.
+-- A tally is a club or group, e.g. "Badminton Sampai Pingsan"; its leaderboards
+-- are below (RFC-003). template and side_size moved there.
 CREATE TABLE IF NOT EXISTS tallies (
     id          uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
     owner_id    uuid        NOT NULL REFERENCES users(id),
