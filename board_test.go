@@ -11,8 +11,8 @@ func st(id string, pts, played int) Standing {
 }
 
 func TestBuildBoard(t *testing.T) {
-	prev := []Standing{st("dhamar", 300, 7), st("dimas", 290, 7), st("aaron", 280, 7), st("qq", 250, 6)}
-	cur := []Standing{st("dhamar", 487, 12), st("dimas", 486, 12), st("qq", 432, 11), st("aaron", 399, 11), st("yeri", 42, 1)}
+	prev := []Standing{st("gembul", 300, 7), st("smash", 290, 7), st("backhand", 280, 7), st("lob", 250, 6)}
+	cur := []Standing{st("gembul", 487, 12), st("smash", 486, 12), st("lob", 432, 11), st("backhand", 399, 11), st("rally", 42, 1)}
 	rows := buildBoard(cur, prev, true)
 
 	want := []struct {
@@ -20,11 +20,11 @@ func TestBuildBoard(t *testing.T) {
 		rank, move int
 		new        bool
 	}{
-		{"dhamar", 1, 0, false},
-		{"dimas", 2, 0, false},
-		{"qq", 3, 1, false},
-		{"aaron", 4, -1, false},
-		{"yeri", 5, 0, true},
+		{"gembul", 1, 0, false},
+		{"smash", 2, 0, false},
+		{"lob", 3, 1, false},
+		{"backhand", 4, -1, false},
+		{"rally", 5, 0, true},
 	}
 	for i, w := range want {
 		r := rows[i]
