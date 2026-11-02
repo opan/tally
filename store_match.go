@@ -131,9 +131,11 @@ func (s *Store) RoundByID(ctx context.Context, tallyID, id string) (*Round, erro
 	return scanRound(s.pool.QueryRow(ctx, roundSelect+`WHERE p.tally_id = $1 AND r.id = $2`, tallyID, id))
 }
 
-func (s *Store) RoundByDate(ctx context.Context, tallyID string, d time.Time) (*Round, error) {
+// RoundByDate is the leaderboard's play day on d; each leaderboard has its own.
+func (s *Store) RoundByDate(ctx context.Context, tallyID, boardID string, d time.Time) (*Round, error) {
 	return scanRound(s.pool.QueryRow(ctx,
-		roundSelect+`WHERE p.tally_id = $1 AND r.played_on = $2 ORDER BY p.starts_on DESC LIMIT 1`, tallyID, d))
+		roundSelect+`WHERE p.tally_id = $1 AND p.leaderboard_id = $2 AND r.played_on = $3
+		 ORDER BY p.starts_on DESC LIMIT 1`, tallyID, boardID, d))
 }
 
 func (s *Store) RoundsForPeriod(ctx context.Context, periodID string) ([]Round, error) {
@@ -156,12 +158,12 @@ func (s *Store) RoundsForPeriod(ctx context.Context, periodID string) ([]Round, 
 	})
 }
 
-// PeriodForDate is the season covering d (the latest-starting one if seasons
-// overlap). pgx.ErrNoRows when none does.
-func (s *Store) PeriodForDate(ctx context.Context, tallyID string, d time.Time) (*Period, error) {
+// PeriodForDate is the leaderboard's season covering d (the latest-starting
+// one if seasons overlap, active ones first). pgx.ErrNoRows when none does.
+func (s *Store) PeriodForDate(ctx context.Context, tallyID, boardID string, d time.Time) (*Period, error) {
 	return scanPeriod(s.pool.QueryRow(ctx,
-		`SELECT `+periodCols+` FROM periods WHERE tally_id = $1 AND $2 BETWEEN starts_on AND ends_on
-		 ORDER BY archived_at IS NULL DESC, starts_on DESC, created_at DESC LIMIT 1`, tallyID, d))
+		`SELECT `+periodCols+` FROM periods WHERE tally_id = $1 AND leaderboard_id = $2 AND $3 BETWEEN starts_on AND ends_on
+		 ORDER BY archived_at IS NULL DESC, starts_on DESC, created_at DESC LIMIT 1`, tallyID, boardID, d))
 }
 
 func setAttendance(ctx context.Context, tx pgx.Tx, tallyID, roundID string, ids []string) error {

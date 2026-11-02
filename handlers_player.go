@@ -113,10 +113,15 @@ func (a *App) handlePlayer(w http.ResponseWriter, r *http.Request) {
 // playerPage fills in a player's season (?season=, else the current one) and
 // renders it; shared with the site admin's read-only view (vm.Admin).
 func (a *App) playerPage(w http.ResponseWriter, r *http.Request, vm playerVM) {
-	ctx, tc, player := r.Context(), vm.tallyCtx, vm.Player
-	vm.Counter = tc.Tally.Preset().IsCounter()
+	ctx, player := r.Context(), vm.Player
+	if err := a.seasonBoard(r, &vm.tallyCtx); err != nil {
+		internalError(w, "season leaderboard", err)
+		return
+	}
+	tc := vm.tallyCtx
+	vm.Counter = tc.Board.Preset().IsCounter()
 	var err error
-	if vm.Periods, err = a.store.ListPeriods(ctx, tc.Tally.ID); err != nil {
+	if vm.Periods, err = a.store.ListPeriods(ctx, tc.Tally.ID, tc.Board.ID); err != nil {
 		internalError(w, "list periods", err)
 		return
 	}
@@ -126,7 +131,7 @@ func (a *App) playerPage(w http.ResponseWriter, r *http.Request, vm playerVM) {
 		}
 	}
 	if vm.Period == nil {
-		if vm.Period, err = a.store.CurrentPeriod(ctx, tc.Tally.ID); err != nil && !isNotFound(err) {
+		if vm.Period, err = a.store.CurrentPeriod(ctx, tc.Tally.ID, tc.Board.ID); err != nil && !isNotFound(err) {
 			internalError(w, "current period", err)
 			return
 		}

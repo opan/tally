@@ -13,7 +13,7 @@
 <div class="poster-frame" id="posterFrame">
   <div class="poster {{$d.Density}}" id="poster">
     <i class="pz-streak s1"></i><i class="pz-streak s2"></i><i class="pz-streak s3"></i><i class="pz-streak s4"></i><i class="pz-streak s5"></i>
-    {{if hasPrefix $t.Template "badminton"}}{{template "shuttle" "pz-shuttle-bg"}}{{end}}
+    {{if hasPrefix $.Data.Board.Template "badminton"}}{{template "shuttle" "pz-shuttle-bg"}}{{end}}
 
     <header class="pz-head">
       <div class="pz-titles {{titleSize $d.Title1 $d.Title2}}">
@@ -22,7 +22,7 @@
       </div>
       <div class="pz-brand">
         {{if $t.HasLogo}}<img class="pz-logo" src="/t/{{$t.Slug}}/logo?v={{$t.LogoVer}}" alt="">
-        {{else if hasPrefix $t.Template "badminton"}}<div class="pz-emblem">{{template "shuttle" "pz-shuttle"}}</div>{{end}}
+        {{else if hasPrefix $.Data.Board.Template "badminton"}}<div class="pz-emblem">{{template "shuttle" "pz-shuttle"}}</div>{{end}}
         {{if $d.Badge}}<div class="pz-badge">{{$d.Badge}}</div>{{end}}
       </div>
     </header>

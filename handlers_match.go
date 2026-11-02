@@ -105,7 +105,7 @@ type playVM struct {
 
 func (a *App) renderPlay(w http.ResponseWriter, r *http.Request, vm playVM, status int) {
 	ctx := r.Context()
-	cur, err := a.store.CurrentPeriod(ctx, vm.Tally.ID)
+	cur, err := a.store.CurrentPeriod(ctx, vm.Tally.ID, vm.Board.ID)
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		internalError(w, "current period", err)
 		return
@@ -117,7 +117,7 @@ func (a *App) renderPlay(w http.ResponseWriter, r *http.Request, vm playVM, stat
 			return
 		}
 	}
-	if vm.Periods, err = a.store.ListPeriods(ctx, vm.Tally.ID); err != nil {
+	if vm.Periods, err = a.store.ListPeriods(ctx, vm.Tally.ID, vm.Board.ID); err != nil {
 		internalError(w, "list periods", err)
 		return
 	}
@@ -164,7 +164,7 @@ func (a *App) handlePlay(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	vm := playVM{tallyCtx: tc}
-	rd, err := a.store.RoundByDate(r.Context(), tc.Tally.ID, today())
+	rd, err := a.store.RoundByDate(r.Context(), tc.Tally.ID, tc.Board.ID, today())
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		internalError(w, "round by date", err)
 		return
@@ -204,7 +204,7 @@ func (a *App) handleCreateRound(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ctx := r.Context()
-	period, err := a.store.PeriodForDate(ctx, tc.Tally.ID, d)
+	period, err := a.store.PeriodForDate(ctx, tc.Tally.ID, tc.Board.ID, d)
 	if errors.Is(err, pgx.ErrNoRows) {
 		fail("err.no_period_for_date")
 		return
@@ -230,7 +230,7 @@ func (a *App) handleCreateRound(w http.ResponseWriter, r *http.Request) {
 	}
 	id, err := a.store.CreateRound(ctx, tc.Tally.ID, u.ID, period.ID, d, courts, nil)
 	if errors.Is(err, ErrRoundExists) {
-		existing, err := a.store.RoundByDate(ctx, tc.Tally.ID, d)
+		existing, err := a.store.RoundByDate(ctx, tc.Tally.ID, tc.Board.ID, d)
 		if err != nil {
 			internalError(w, "round by date", err)
 			return
@@ -342,6 +342,7 @@ func (a *App) loadRound(w http.ResponseWriter, r *http.Request, tc tallyCtx, rou
 		internalError(w, "load period", err)
 		return nil, false
 	}
+	d.tc.boardOf(d.period)
 	if d.players, err = a.store.ListParticipants(ctx, tc.Tally.ID); err != nil {
 		internalError(w, "list players", err)
 		return nil, false
@@ -368,7 +369,7 @@ func (a *App) loadRound(w http.ResponseWriter, r *http.Request, tc tallyCtx, rou
 // scoreMax is the most points one play can earn when points are entered per
 // player, and false when the season's format doesn't support that: only a
 // race to a target (badminton to 42) does for now.
-func (d *roundData) scoreMax() (int, bool) { return scoreLimit(d.tc.Tally, d.period) }
+func (d *roundData) scoreMax() (int, bool) { return scoreLimit(d.tc.Board, d.period) }
 
 // scoreRows lists everyone who played today, by name: their scores in the
 // order entered, then their matches.
@@ -476,12 +477,12 @@ func (a *App) renderRound(w http.ResponseWriter, r *http.Request, d *roundData, 
 // renderRoundVM renders the play day; tweak (if set) adjusts the view model
 // last, e.g. to keep a failed points entry as typed.
 func (a *App) renderRoundVM(w http.ResponseWriter, r *http.Request, d *roundData, override map[string]*matchForm, tweak func(*roundVM), status int) {
-	t := d.tc.Tally
-	sideSize, games := t.SideSize(), d.period.Scoring.GamesPerMatch()
+	b := d.tc.Board
+	sideSize, games := b.SideSize(), d.period.Scoring.GamesPerMatch()
 	vm := roundVM{
 		tallyCtx: d.tc, Round: d.round, Period: d.period, SideSize: sideSize, Games: games,
 		Players: d.players, Present: presentSet(d.present), Forms: map[string]*matchForm{},
-		NeedPerCt: 2 * sideSize, Counter: t.Preset().IsCounter(), Awards: d.awards,
+		NeedPerCt: 2 * sideSize, Counter: b.Preset().IsCounter(), Awards: d.awards,
 		MaxPlays: maxPlaysPerDay,
 	}
 	if vm.ScoreMax, vm.Tabs = d.scoreMax(); vm.Tabs {
@@ -514,7 +515,7 @@ func (a *App) renderRoundVM(w http.ResponseWriter, r *http.Request, d *roundData
 	for _, m := range d.matches {
 		if m.Scheduled() {
 			vm.OnCourt = append(vm.OnCourt, m)
-			vm.Forms[m.ID] = formFromMatch(m, tallyPath(t, "/matches/"+m.ID), sideSize, games)
+			vm.Forms[m.ID] = formFromMatch(m, tallyPath(d.tc.Tally, "/matches/"+m.ID), sideSize, games)
 		} else {
 			vm.Done = append(vm.Done, m)
 		}
@@ -523,7 +524,7 @@ func (a *App) renderRoundVM(w http.ResponseWriter, r *http.Request, d *roundData
 		}
 	}
 	slices.Reverse(vm.Done) // newest first
-	vm.Forms["new"] = newMatchForm(tallyPath(t, "/rounds/"+d.round.ID+"/matches"), sideSize, games)
+	vm.Forms["new"] = newMatchForm(tallyPath(d.tc.Tally, "/rounds/"+d.round.ID+"/matches"), sideSize, games)
 	for k, f := range override {
 		vm.Forms[k] = f
 		vm.AutoOpen = k
@@ -641,7 +642,7 @@ func (a *App) handleShuffle(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	sideSize := tc.Tally.SideSize()
+	sideSize := d.tc.Board.SideSize()
 	in := d.shuffleInput(sideSize)
 	if in.Courts == 0 {
 		d.tc.Err = tr(r, "err.courts_busy")
@@ -679,7 +680,7 @@ func (a *App) handleAddMatch(w http.ResponseWriter, r *http.Request) {
 	}
 	saved := false
 	defer done(&saved)
-	f := readMatchForm(r, tallyPath(tc.Tally, "/rounds/"+d.round.ID+"/matches"), tc.Tally.SideSize(), d.period.Scoring.GamesPerMatch())
+	f := readMatchForm(r, tallyPath(tc.Tally, "/rounds/"+d.round.ID+"/matches"), d.tc.Board.SideSize(), d.period.Scoring.GamesPerMatch())
 	res, msg := f.parse(r, d.period.Scoring, d.validPlayers())
 	if msg != "" {
 		d.tc.Err = msg
@@ -727,7 +728,7 @@ type matchEditVM struct {
 }
 
 func (a *App) renderMatchEdit(w http.ResponseWriter, r *http.Request, d *roundData, m *Match, f *matchForm, status int) {
-	sideSize, games := d.tc.Tally.SideSize(), d.period.Scoring.GamesPerMatch()
+	sideSize, games := d.tc.Board.SideSize(), d.period.Scoring.GamesPerMatch()
 	if f == nil {
 		f = formFromMatch(m, tallyPath(d.tc.Tally, "/matches/"+m.ID), sideSize, games)
 	}
@@ -772,7 +773,7 @@ func (a *App) handleMatchAction(w http.ResponseWriter, r *http.Request) {
 		recordMatchEvent(r.Context(), action, 1)
 		redirectOK(w, r, back, key)
 	case "save":
-		f := readMatchForm(r, tallyPath(tc.Tally, "/matches/"+m.ID), tc.Tally.SideSize(), d.period.Scoring.GamesPerMatch())
+		f := readMatchForm(r, tallyPath(tc.Tally, "/matches/"+m.ID), d.tc.Board.SideSize(), d.period.Scoring.GamesPerMatch())
 		res, msg := f.parse(r, d.period.Scoring, d.validPlayers())
 		if msg != "" {
 			d.tc.Err = msg

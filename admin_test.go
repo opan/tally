@@ -30,12 +30,12 @@ func TestAdminTallyPages(t *testing.T) {
 	siteAdmin.AioUserID = adminSub
 	owner, _ := s.CreateAioUser(ctx, userSub, "owner")
 	owner.AioUserID = userSub
-	tl, err := s.CreateTally(ctx, owner.ID, Tally{Slug: "rahasia", Name: "Rahasia", Template: "badminton_doubles", Visibility: VisibilityPrivate})
+	tl, err := s.CreateTally(ctx, owner.ID, Tally{Slug: "rahasia", Name: "Rahasia", Visibility: VisibilityPrivate}, Leaderboard{Template: "badminton_doubles"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	d := time.Date(2026, 10, 4, 0, 0, 0, 0, time.UTC)
-	period, _ := s.CreatePeriod(ctx, owner.ID, Period{TallyID: tl.ID, Name: "S1", StartsOn: d, EndsOn: d.AddDate(0, 2, 0), Scoring: DefaultContinuous})
+	period, _ := s.CreatePeriod(ctx, owner.ID, Period{TallyID: tl.ID, LeaderboardID: defaultBoard(t, s, tl.ID), Name: "S1", StartsOn: d, EndsOn: d.AddDate(0, 2, 0), Scoring: DefaultContinuous})
 	rid, _ := s.CreateRound(ctx, tl.ID, owner.ID, period.ID, d, 1, nil)
 	rd, _ := s.RoundByID(ctx, tl.ID, rid)
 	if err := s.AddScore(ctx, tl.ID, owner.ID, rd, "", "Ana", 42, 7); err != nil {
@@ -89,7 +89,7 @@ func TestAdminTallyPages(t *testing.T) {
 		t.Errorf("logged %d admin views, want %d", logged, len(pages))
 	}
 	// A play day of another tally isn't reachable through this one.
-	other, _ := s.CreateTally(ctx, owner.ID, Tally{Slug: "lain", Name: "Lain", Template: "badminton_doubles", Visibility: VisibilityLink})
+	other, _ := s.CreateTally(ctx, owner.ID, Tally{Slug: "lain", Name: "Lain", Visibility: VisibilityLink}, Leaderboard{Template: "badminton_doubles"})
 	if w := get(siteAdmin, app.handleAdminDay, "/admin/x", map[string]string{"id": other.ID, "rid": rid}); w.Code != http.StatusNotFound {
 		t.Errorf("play day through the wrong tally: %d, want 404", w.Code)
 	}

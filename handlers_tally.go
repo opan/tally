@@ -59,6 +59,8 @@ func baseURL(r *http.Request) string {
 // tallyCtx is the shared part of every /t/{slug} page's view model.
 type tallyCtx struct {
 	Tally  *Tally
+	Boards []Leaderboard // the default first
+	Board  *Leaderboard  // the one this page shows: ?board=, its season's, or the default
 	Role   string
 	Tab    string
 	Notice string
@@ -68,6 +70,38 @@ type tallyCtx struct {
 
 func (c tallyCtx) IsAdmin() bool { return c.Role != "" }
 func (c tallyCtx) IsOwner() bool { return c.Role == RoleOwner }
+
+// boardOf switches the page to the leaderboard p belongs to.
+func (c *tallyCtx) boardOf(p *Period) {
+	for i := range c.Boards {
+		if c.Boards[i].ID == p.LeaderboardID {
+			c.Board = &c.Boards[i]
+		}
+	}
+}
+
+// loadBoards fills tc.Boards and picks tc.Board from ?board= (the slug), else
+// the default. ok is false for an unknown slug.
+func (a *App) loadBoards(r *http.Request, tc *tallyCtx) (ok bool, err error) {
+	if tc.Boards, err = a.store.ListLeaderboards(r.Context(), tc.Tally.ID); err != nil {
+		return false, err
+	}
+	if len(tc.Boards) == 0 {
+		return false, errors.New("tally has no leaderboard")
+	}
+	slug := r.URL.Query().Get("board")
+	if slug == "" {
+		tc.Board = &tc.Boards[0]
+		return true, nil
+	}
+	for i := range tc.Boards {
+		if tc.Boards[i].Slug == slug {
+			tc.Board = &tc.Boards[i]
+			return true, nil
+		}
+	}
+	return false, nil
+}
 
 // loadTally resolves /t/{slug} and the viewer's role. Private tallies look
 // like 404s to everyone but admins and linked players, who get read-only
@@ -94,6 +128,13 @@ func (a *App) loadTally(w http.ResponseWriter, r *http.Request, tab string) (tc 
 		}
 	}
 	if t.Visibility == VisibilityPrivate && !tc.IsAdmin() && tc.MeID == "" {
+		a.notFound(w, r)
+		return tc, false
+	}
+	if found, err := a.loadBoards(r, &tc); err != nil {
+		internalError(w, "load leaderboards", err)
+		return tc, false
+	} else if !found {
 		a.notFound(w, r)
 		return tc, false
 	}
@@ -243,7 +284,8 @@ func (a *App) handleCreateTally(w http.ResponseWriter, r *http.Request) {
 		}
 		sideSize = &n
 	}
-	t, err := a.store.CreateTally(r.Context(), u.ID, Tally{Slug: slug, Name: name, Description: desc, Template: tmpl, Visibility: VisibilityLink, SideSizeSet: sideSize})
+	t, err := a.store.CreateTally(r.Context(), u.ID, Tally{Slug: slug, Name: name, Description: desc, Visibility: VisibilityLink},
+		Leaderboard{Template: tmpl, SideSizeSet: sideSize})
 	if errors.Is(err, ErrSlugTaken) {
 		fail("err.slug_taken")
 		return
@@ -544,7 +586,7 @@ type periodsVM struct {
 
 func (a *App) renderPeriods(w http.ResponseWriter, r *http.Request, vm periodsVM, status int) {
 	ctx := r.Context()
-	periods, err := a.store.ListPeriods(ctx, vm.Tally.ID)
+	periods, err := a.store.ListPeriods(ctx, vm.Tally.ID, vm.Board.ID)
 	if err != nil {
 		internalError(w, "list periods", err)
 		return
@@ -557,7 +599,7 @@ func (a *App) renderPeriods(w http.ResponseWriter, r *http.Request, vm periodsVM
 		}
 	}
 	if vm.Form == (periodForm{}) {
-		vm.Form = a.newPeriodDefaults(r, vm.Tally, periods)
+		vm.Form = a.newPeriodDefaults(r, vm.Board, periods)
 	}
 	page := "periods"
 	if vm.Editing != nil {
@@ -572,12 +614,13 @@ func (a *App) renderPeriods(w http.ResponseWriter, r *http.Request, vm periodsVM
 
 // newPeriodDefaults suggests the next season: numbered after the existing
 // ones, starting the day after the latest one ends (or today), three months
-// long, with the latest season's rule (or the preset's).
-func (a *App) newPeriodDefaults(r *http.Request, t *Tally, existing []Period) periodForm {
+// long, with the latest season's rule (or the preset's). existing are the
+// leaderboard's seasons.
+func (a *App) newPeriodDefaults(r *http.Request, b *Leaderboard, existing []Period) periodForm {
 	p := Period{
 		Name:     tr(r, "period.default_name", len(existing)+1),
 		StartsOn: today(),
-		Scoring:  t.Preset().Scoring,
+		Scoring:  b.Preset().Scoring,
 	}
 	if len(existing) > 0 {
 		latest := existing[0]
@@ -611,13 +654,13 @@ func (a *App) handleCreatePeriod(w http.ResponseWriter, r *http.Request) {
 	saved := false
 	defer done(&saved)
 	f := readPeriodForm(r)
-	p, msg := f.parse(r, tc.Tally.Preset())
+	p, msg := f.parse(r, tc.Board.Preset())
 	if msg != "" {
 		tc.Err = msg
 		a.renderPeriods(w, r, periodsVM{tallyCtx: tc, Form: f}, http.StatusUnprocessableEntity)
 		return
 	}
-	p.TallyID = tc.Tally.ID
+	p.TallyID, p.LeaderboardID = tc.Tally.ID, tc.Board.ID
 	if _, err := a.store.CreatePeriod(r.Context(), u.ID, p); err != nil {
 		internalError(w, "create period", err)
 		return
@@ -640,6 +683,7 @@ func (a *App) editablePeriod(w http.ResponseWriter, r *http.Request) (tallyCtx, 
 		internalError(w, "load period", err)
 		return tc, nil, nil, false
 	}
+	tc.boardOf(p)
 	return tc, u, p, true
 }
 
@@ -738,7 +782,7 @@ func (a *App) periodPage(w http.ResponseWriter, r *http.Request, vm periodVM) {
 		return
 	}
 	vm.Months, vm.PlayDays, vm.Players = seasonMonths(p, rounds, stats), len(rounds), players
-	_, vm.CanImport = scoreLimit(tc.Tally, p)
+	_, vm.CanImport = scoreLimit(tc.Board, p)
 	vm.CanImport = vm.CanImport && !vm.Admin
 	for _, s := range stats {
 		vm.Plays += s.Plays
@@ -801,7 +845,7 @@ func (a *App) handleEditPeriod(w http.ResponseWriter, r *http.Request) {
 	}
 	limitBody(w, r, maxFormBytes)
 	f := readPeriodForm(r)
-	p, msg := f.parse(r, tc.Tally.Preset())
+	p, msg := f.parse(r, tc.Board.Preset())
 	if msg != "" {
 		tc.Err = msg
 		a.renderPeriods(w, r, periodsVM{tallyCtx: tc, Editing: before, Form: f}, http.StatusUnprocessableEntity)

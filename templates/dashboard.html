@@ -40,7 +40,7 @@
   {{range .Data.Cards}}
   <li>
     <a class="tallycard" href="/t/{{.Tally.Slug}}">
-      <span class="eyebrow">{{$.T .Tally.Preset.NameKey}}</span>
+      <span class="eyebrow">{{$.T .Board.Preset.NameKey}}</span>
       <strong class="tname">{{.Tally.Name}}</strong>
       <span class="muted small">
         {{$.T "dashboard.players" .Players}}

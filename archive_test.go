@@ -17,7 +17,7 @@ func TestArchiveSeason(t *testing.T) {
 	app := &App{store: s, tmpl: buildTemplates()}
 	owner, _ := s.CreateUser(ctx, "owner", "x")
 	admin, _ := s.CreateUser(ctx, "admin", "x")
-	tl, err := s.CreateTally(ctx, owner.ID, Tally{Slug: "club", Name: "Club", Template: "badminton_doubles", Visibility: VisibilityLink})
+	tl, err := s.CreateTally(ctx, owner.ID, Tally{Slug: "club", Name: "Club", Visibility: VisibilityLink}, Leaderboard{Template: "badminton_doubles"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -25,8 +25,8 @@ func TestArchiveSeason(t *testing.T) {
 		t.Fatal(err)
 	}
 	old := today().AddDate(0, -4, 0)
-	s1, _ := s.CreatePeriod(ctx, owner.ID, Period{TallyID: tl.ID, Name: "S1", StartsOn: old, EndsOn: old.AddDate(0, 2, 0), Scoring: DefaultContinuous})
-	s2, _ := s.CreatePeriod(ctx, owner.ID, Period{TallyID: tl.ID, Name: "S2", StartsOn: today().AddDate(0, -1, 0), EndsOn: today().AddDate(0, 2, 0), Scoring: DefaultContinuous})
+	s1, _ := s.CreatePeriod(ctx, owner.ID, Period{TallyID: tl.ID, LeaderboardID: defaultBoard(t, s, tl.ID), Name: "S1", StartsOn: old, EndsOn: old.AddDate(0, 2, 0), Scoring: DefaultContinuous})
+	s2, _ := s.CreatePeriod(ctx, owner.ID, Period{TallyID: tl.ID, LeaderboardID: defaultBoard(t, s, tl.ID), Name: "S2", StartsOn: today().AddDate(0, -1, 0), EndsOn: today().AddDate(0, 2, 0), Scoring: DefaultContinuous})
 	rid, _ := s.CreateRound(ctx, tl.ID, owner.ID, s1.ID, old, 1, nil)
 	rd, _ := s.RoundByID(ctx, tl.ID, rid)
 	if err := s.AddScore(ctx, tl.ID, owner.ID, rd, "", "Jacque Oui", 42, 7); err != nil {
@@ -56,14 +56,14 @@ func TestArchiveSeason(t *testing.T) {
 	if w := archive(s2.ID, "1"); w.Code != http.StatusSeeOther || !strings.Contains(w.Header().Get("Location"), "ok=season_archived") {
 		t.Fatalf("archive by an admin: %d %s", w.Code, w.Header().Get("Location"))
 	}
-	if cur, _ := s.CurrentPeriod(ctx, tl.ID); cur == nil || cur.ID != s1.ID {
+	if cur, _ := s.CurrentPeriod(ctx, tl.ID, defaultBoard(t, s, tl.ID)); cur == nil || cur.ID != s1.ID {
 		t.Errorf("current after archiving S2: %v, want S1", cur)
 	}
 	if w := archive(s2.ID, "1"); w.Code != http.StatusSeeOther {
 		t.Errorf("archiving twice: %d, want a redirect", w.Code)
 	}
 	archive(s1.ID, "1")
-	if _, err := s.CurrentPeriod(ctx, tl.ID); !isNotFound(err) {
+	if _, err := s.CurrentPeriod(ctx, tl.ID, defaultBoard(t, s, tl.ID)); !isNotFound(err) {
 		t.Errorf("current with every season archived: %v, want none", err)
 	}
 	if p, _ := s.PeriodByID(ctx, tl.ID, s1.ID); !p.Archived() || p.Status() != SeasonArchived {
@@ -109,7 +109,7 @@ func TestArchiveSeason(t *testing.T) {
 	if body := w.Body.String(); w.Code != 200 || !strings.Contains(body, "Jacque Oui") {
 		t.Errorf("board of an archived season: %d", w.Code)
 	}
-	all, _ := s.ListPeriods(ctx, tl.ID)
+	all, _ := s.ListPeriods(ctx, tl.ID, defaultBoard(t, s, tl.ID))
 	if got := pickerPeriods(all, nil); len(got) != 0 {
 		t.Errorf("picker with both archived: %d seasons, want 0", len(got))
 	}

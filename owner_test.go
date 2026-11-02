@@ -14,7 +14,7 @@ func TestTransferOwnership(t *testing.T) {
 	owner, _ := s.CreateUser(ctx, "owner", "x")
 	next, _ := s.CreateUser(ctx, "next", "x")
 	outsider, _ := s.CreateUser(ctx, "outsider", "x")
-	tl, err := s.CreateTally(ctx, owner.ID, Tally{Slug: "club", Name: "Club", Template: "badminton_doubles", Visibility: VisibilityLink})
+	tl, err := s.CreateTally(ctx, owner.ID, Tally{Slug: "club", Name: "Club", Visibility: VisibilityLink}, Leaderboard{Template: "badminton_doubles"})
 	if err != nil {
 		t.Fatal(err)
 	}

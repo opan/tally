@@ -217,7 +217,7 @@ func TestImportScores(t *testing.T) {
 	s := testStore(t)
 	ctx := context.Background()
 	u, _ := s.CreateUser(ctx, "owner", "x")
-	tl, err := s.CreateTally(ctx, u.ID, Tally{Slug: "club", Name: "Club", Template: "badminton_doubles", Visibility: VisibilityLink})
+	tl, err := s.CreateTally(ctx, u.ID, Tally{Slug: "club", Name: "Club", Visibility: VisibilityLink}, Leaderboard{Template: "badminton_doubles"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -225,7 +225,7 @@ func TestImportScores(t *testing.T) {
 		t.Fatal(err)
 	}
 	day := func(d int) time.Time { return time.Date(2026, 10, d, 0, 0, 0, 0, time.UTC) }
-	period, _ := s.CreatePeriod(ctx, u.ID, Period{TallyID: tl.ID, Name: "S1", StartsOn: day(10), EndsOn: day(31), Scoring: DefaultContinuous})
+	period, _ := s.CreatePeriod(ctx, u.ID, Period{TallyID: tl.ID, LeaderboardID: defaultBoard(t, s, tl.ID), Name: "S1", StartsOn: day(10), EndsOn: day(31), Scoring: DefaultContinuous})
 	days := []ImportDay{
 		{Date: day(4), Plays: []sheetPlays{{Name: "ana", Points: []int{42, 40, 41}}, {Name: "Budi", Points: []int{30}}}},
 		{Date: day(23), Plays: []sheetPlays{{Name: "Budi", Points: []int{42, 42}}}},

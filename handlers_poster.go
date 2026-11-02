@@ -78,7 +78,7 @@ func (a *App) handlePoster(w http.ResponseWriter, r *http.Request) {
 	if vm.Title1 == "" && vm.Title2 == "" {
 		vm.Title1, vm.Title2 = splitTitle(tc.Tally.Name)
 	}
-	vm.Rows = board.Board
+	vm.Rows = board.Standings
 	if len(vm.Rows) > maxPosterRows {
 		vm.Rows = vm.Rows[:maxPosterRows]
 	}

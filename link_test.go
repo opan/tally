@@ -33,11 +33,11 @@ func newLinkFixture(t *testing.T) linkFixture {
 	}
 	f.ana, _ = s.CreateUser(ctx, "ana_u", "x")
 	f.other, _ = s.CreateUser(ctx, "other", "x")
-	if f.tally, err = s.CreateTally(ctx, f.owner.ID, Tally{Slug: "rahasia", Name: "Rahasia", Template: "badminton_doubles", Visibility: VisibilityPrivate}); err != nil {
+	if f.tally, err = s.CreateTally(ctx, f.owner.ID, Tally{Slug: "rahasia", Name: "Rahasia", Visibility: VisibilityPrivate}, Leaderboard{Template: "badminton_doubles"}); err != nil {
 		t.Fatal(err)
 	}
 	d := today().AddDate(0, 0, -3)
-	period, err := s.CreatePeriod(ctx, f.owner.ID, Period{TallyID: f.tally.ID, Name: "S1", StartsOn: d, EndsOn: d.AddDate(0, 2, 0), Scoring: DefaultContinuous})
+	period, err := s.CreatePeriod(ctx, f.owner.ID, Period{TallyID: f.tally.ID, LeaderboardID: defaultBoard(t, s, f.tally.ID), Name: "S1", StartsOn: d, EndsOn: d.AddDate(0, 2, 0), Scoring: DefaultContinuous})
 	if err != nil {
 		t.Fatal(err)
 	}
