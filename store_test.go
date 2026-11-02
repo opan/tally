@@ -34,6 +34,16 @@ func testStore(t *testing.T) *Store {
 	return &Store{pool: pool}
 }
 
+// defaultBoard is the id of the tally's default leaderboard.
+func defaultBoard(t *testing.T, s *Store, tallyID string) string {
+	t.Helper()
+	b, err := s.DefaultLeaderboard(context.Background(), tallyID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return b.ID
+}
+
 func TestDeletePlayerWhoOnlyAttended(t *testing.T) {
 	s := testStore(t)
 	ctx := context.Background()
@@ -41,7 +51,7 @@ func TestDeletePlayerWhoOnlyAttended(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tl, err := s.CreateTally(ctx, u.ID, Tally{Slug: "club", Name: "Club", Template: "badminton_doubles", Visibility: VisibilityLink})
+	tl, err := s.CreateTally(ctx, u.ID, Tally{Slug: "club", Name: "Club", Visibility: VisibilityLink}, Leaderboard{Template: "badminton_doubles"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -56,7 +66,7 @@ func TestDeletePlayerWhoOnlyAttended(t *testing.T) {
 		all = append(all, p.ID)
 	}
 	d := time.Date(2026, 10, 11, 0, 0, 0, 0, time.UTC)
-	period, err := s.CreatePeriod(ctx, u.ID, Period{TallyID: tl.ID, Name: "S1", StartsOn: d, EndsOn: d.AddDate(0, 3, 0), Scoring: DefaultContinuous})
+	period, err := s.CreatePeriod(ctx, u.ID, Period{TallyID: tl.ID, LeaderboardID: defaultBoard(t, s, tl.ID), Name: "S1", StartsOn: d, EndsOn: d.AddDate(0, 3, 0), Scoring: DefaultContinuous})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -95,7 +105,7 @@ func TestAddScore(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tl, err := s.CreateTally(ctx, u.ID, Tally{Slug: "club", Name: "Club", Template: "badminton_doubles", Visibility: VisibilityLink})
+	tl, err := s.CreateTally(ctx, u.ID, Tally{Slug: "club", Name: "Club", Visibility: VisibilityLink}, Leaderboard{Template: "badminton_doubles"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -108,7 +118,7 @@ func TestAddScore(t *testing.T) {
 		id[p.Name] = p.ID
 	}
 	d := time.Date(2026, 10, 11, 0, 0, 0, 0, time.UTC)
-	period, err := s.CreatePeriod(ctx, u.ID, Period{TallyID: tl.ID, Name: "S1", StartsOn: d, EndsOn: d.AddDate(0, 3, 0), Scoring: DefaultContinuous})
+	period, err := s.CreatePeriod(ctx, u.ID, Period{TallyID: tl.ID, LeaderboardID: defaultBoard(t, s, tl.ID), Name: "S1", StartsOn: d, EndsOn: d.AddDate(0, 3, 0), Scoring: DefaultContinuous})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -184,12 +194,12 @@ func TestRoundWeekLabels(t *testing.T) {
 	s := testStore(t)
 	ctx := context.Background()
 	u, _ := s.CreateUser(ctx, "owner", "x")
-	tl, err := s.CreateTally(ctx, u.ID, Tally{Slug: "club", Name: "Club", Template: "badminton_doubles", Visibility: VisibilityLink})
+	tl, err := s.CreateTally(ctx, u.ID, Tally{Slug: "club", Name: "Club", Visibility: VisibilityLink}, Leaderboard{Template: "badminton_doubles"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	day := func(m time.Month, d int) time.Time { return time.Date(2026, m, d, 0, 0, 0, 0, time.UTC) }
-	period, err := s.CreatePeriod(ctx, u.ID, Period{TallyID: tl.ID, Name: "S1", StartsOn: day(10, 1), EndsOn: day(12, 31), Scoring: DefaultContinuous})
+	period, err := s.CreatePeriod(ctx, u.ID, Period{TallyID: tl.ID, LeaderboardID: defaultBoard(t, s, tl.ID), Name: "S1", StartsOn: day(10, 1), EndsOn: day(12, 31), Scoring: DefaultContinuous})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -225,12 +235,12 @@ func TestDayStandingsAndSeasonStats(t *testing.T) {
 	s := testStore(t)
 	ctx := context.Background()
 	u, _ := s.CreateUser(ctx, "owner", "x")
-	tl, err := s.CreateTally(ctx, u.ID, Tally{Slug: "club", Name: "Club", Template: "badminton_doubles", Visibility: VisibilityLink})
+	tl, err := s.CreateTally(ctx, u.ID, Tally{Slug: "club", Name: "Club", Visibility: VisibilityLink}, Leaderboard{Template: "badminton_doubles"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	d1 := time.Date(2026, 10, 11, 0, 0, 0, 0, time.UTC)
-	period, _ := s.CreatePeriod(ctx, u.ID, Period{TallyID: tl.ID, Name: "S1", StartsOn: d1, EndsOn: d1.AddDate(0, 3, 0), Scoring: DefaultContinuous})
+	period, _ := s.CreatePeriod(ctx, u.ID, Period{TallyID: tl.ID, LeaderboardID: defaultBoard(t, s, tl.ID), Name: "S1", StartsOn: d1, EndsOn: d1.AddDate(0, 3, 0), Scoring: DefaultContinuous})
 	id1, _ := s.CreateRound(ctx, tl.ID, u.ID, period.ID, d1, 1, nil)
 	id2, _ := s.CreateRound(ctx, tl.ID, u.ID, period.ID, d1.AddDate(0, 0, 7), 1, nil)
 	r1, _ := s.RoundByID(ctx, tl.ID, id1)

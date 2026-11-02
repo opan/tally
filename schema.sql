@@ -17,7 +17,8 @@ CREATE TABLE IF NOT EXISTS sessions (
 );
 CREATE INDEX IF NOT EXISTS sessions_user_idx ON sessions (user_id);
 
--- A tally is one leaderboard a group runs, e.g. "Bala Bulu Point Rank".
+-- A tally is a club or group, e.g. "Bala Bulu"; its leaderboards are below
+-- (RFC-003). template and side_size moved there.
 CREATE TABLE IF NOT EXISTS tallies (
     id          uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
     owner_id    uuid        NOT NULL REFERENCES users(id),
@@ -236,3 +237,40 @@ CREATE TABLE IF NOT EXISTS tally_mutes (
     muted_at timestamptz NOT NULL DEFAULT now(),
     PRIMARY KEY (user_id, tally_id)
 );
+
+-- RFC-003: a tally is the club; its leaderboards (papan) are one per sport or
+-- game, each with its own type and seasons. Seasons keep tally_id, so every
+-- "does this belong to the tally in the URL" check stays as it is; the
+-- composite key keeps a season's leaderboard inside the same tally. The
+-- default leaderboard is the lowest position (oldest first on a tie).
+CREATE TABLE IF NOT EXISTS leaderboards (
+    id         uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+    tally_id   uuid        NOT NULL REFERENCES tallies(id) ON DELETE CASCADE,
+    slug       text        NOT NULL,             -- unique in the tally, used in ?board=
+    name       text        NOT NULL DEFAULT '',  -- '' = the type's translated name
+    template   text        NOT NULL,             -- a preset id
+    side_size  smallint    CHECK (side_size BETWEEN 1 AND 11), -- team presets; NULL = the preset's
+    position   smallint    NOT NULL DEFAULT 0,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    UNIQUE (tally_id, slug),
+    UNIQUE (id, tally_id)
+);
+-- Upgrade: every tally gets one leaderboard with the type it had (the slug
+-- mirrors boardSlug in Go), and its seasons move onto it.
+-- tallies.template and side_size stay one release for rollbacks, then go.
+INSERT INTO leaderboards (tally_id, slug, template, side_size, created_at)
+SELECT t.id, CASE WHEN t.template LIKE 'badminton%' THEN 'badminton' ELSE replace(t.template, '_', '-') END,
+       t.template, t.side_size, t.created_at
+FROM tallies t WHERE NOT EXISTS (SELECT 1 FROM leaderboards b WHERE b.tally_id = t.id);
+ALTER TABLE periods ADD COLUMN IF NOT EXISTS leaderboard_id uuid;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'periods_leaderboard_fkey') THEN
+        ALTER TABLE periods ADD CONSTRAINT periods_leaderboard_fkey FOREIGN KEY (leaderboard_id, tally_id)
+            REFERENCES leaderboards (id, tally_id) ON DELETE CASCADE;
+    END IF;
+END $$;
+UPDATE periods p SET leaderboard_id = (SELECT b.id FROM leaderboards b WHERE b.tally_id = p.tally_id
+                                       ORDER BY b.position, b.created_at LIMIT 1)
+WHERE p.leaderboard_id IS NULL;
+ALTER TABLE periods ALTER COLUMN leaderboard_id SET NOT NULL;
+CREATE INDEX IF NOT EXISTS periods_leaderboard_idx ON periods (leaderboard_id, starts_on DESC);

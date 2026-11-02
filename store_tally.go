@@ -35,20 +35,10 @@ type Tally struct {
 	Slug        string
 	Name        string
 	Description string
-	Template    string
 	Visibility  string
 	CreatedAt   time.Time
 	Branding    Branding
 	LogoVer     int64 // logo's update time (unix); 0 when there's no logo
-	SideSizeSet *int  // chosen players per side (team presets); nil = preset's
-}
-
-// SideSize is how many players play on each side.
-func (t *Tally) SideSize() int {
-	if t.SideSizeSet != nil {
-		return *t.SideSizeSet
-	}
-	return t.Preset().SideSize
 }
 
 // Branding is the poster's optional text. Empty fields fall back to defaults.
@@ -61,19 +51,13 @@ type Branding struct {
 
 func (t *Tally) HasLogo() bool { return t.LogoVer > 0 }
 
-func (t *Tally) Preset() Preset {
-	if p, ok := presetByID(t.Template); ok {
-		return p
-	}
-	return presets[0]
-}
-
 // TallyCard is a tally as listed on the dashboard.
 type TallyCard struct {
 	Tally   Tally
+	Board   *Leaderboard // the default one
 	Role    string
 	Players int
-	Current *Period
+	Current *Period // the default leaderboard's
 }
 
 type Participant struct {
@@ -83,12 +67,13 @@ type Participant struct {
 }
 
 type Period struct {
-	ID       string
-	TallyID  string
-	Name     string
-	StartsOn time.Time
-	EndsOn   time.Time
-	Scoring  ScoringConfig
+	ID            string
+	TallyID       string
+	LeaderboardID string
+	Name          string
+	StartsOn      time.Time
+	EndsOn        time.Time
+	Scoring       ScoringConfig
 	// ArchivedAt is set while the season is archived: read-only, left out
 	// of the season pickers and never the current season.
 	ArchivedAt *time.Time `json:",omitempty"`
@@ -170,26 +155,30 @@ func audit(ctx context.Context, tx pgx.Tx, tallyID, actorID, action, entity, ent
 
 // --- Tallies ---
 
-const tallyCols = `t.id, t.owner_id, t.slug, t.name, t.description, t.template, t.visibility, t.created_at, t.branding, t.side_size,
+const tallyCols = `t.id, t.owner_id, t.slug, t.name, t.description, t.visibility, t.created_at, t.branding,
 	COALESCE((SELECT extract(epoch FROM l.updated_at)::bigint FROM tally_logos l WHERE l.tally_id = t.id), 0)`
 
 func scanTally(row pgx.Row, extra ...any) (*Tally, error) {
 	t := &Tally{}
-	dest := append([]any{&t.ID, &t.OwnerID, &t.Slug, &t.Name, &t.Description, &t.Template, &t.Visibility, &t.CreatedAt, &t.Branding, &t.SideSizeSet, &t.LogoVer}, extra...)
+	dest := append([]any{&t.ID, &t.OwnerID, &t.Slug, &t.Name, &t.Description, &t.Visibility, &t.CreatedAt, &t.Branding, &t.LogoVer}, extra...)
 	if err := row.Scan(dest...); err != nil {
 		return nil, err
 	}
 	return t, nil
 }
 
-func (s *Store) CreateTally(ctx context.Context, ownerID string, t Tally) (*Tally, error) {
+// CreateTally creates the tally with b (Template and SideSizeSet) as its
+// first leaderboard.
+func (s *Store) CreateTally(ctx context.Context, ownerID string, t Tally, b Leaderboard) (*Tally, error) {
 	var out *Tally
 	err := pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
 		var err error
+		// template and side_size are still written so an image from before
+		// RFC-003 shows the right type after a rollback.
 		out, err = scanTally(tx.QueryRow(ctx,
 			`INSERT INTO tallies AS t (owner_id, slug, name, description, template, visibility, side_size)
 			 VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING `+tallyCols,
-			ownerID, t.Slug, t.Name, t.Description, t.Template, t.Visibility, t.SideSizeSet))
+			ownerID, t.Slug, t.Name, t.Description, b.Template, t.Visibility, b.SideSizeSet))
 		if err != nil {
 			return err
 		}
@@ -198,7 +187,15 @@ func (s *Store) CreateTally(ctx context.Context, ownerID string, t Tally) (*Tall
 			out.ID, ownerID, RoleOwner); err != nil {
 			return err
 		}
-		return audit(ctx, tx, out.ID, ownerID, "create", "tally", out.ID, nil, out)
+		if err := audit(ctx, tx, out.ID, ownerID, "create", "tally", out.ID, nil, out); err != nil {
+			return err
+		}
+		b.TallyID, b.Slug, b.Position = out.ID, boardSlug(b.Preset()), 0
+		board, err := insertBoard(ctx, tx, b)
+		if err != nil {
+			return err
+		}
+		return audit(ctx, tx, out.ID, ownerID, "create", "leaderboard", board.ID, nil, board)
 	})
 	if isUniqueViolation(err) {
 		return nil, ErrSlugTaken
@@ -281,11 +278,15 @@ func (s *Store) TalliesForUser(ctx context.Context, userID string) ([]TallyCard,
 		return nil, err
 	}
 	for i := range cards {
-		p, err := s.CurrentPeriod(ctx, cards[i].Tally.ID)
+		c := &cards[i]
+		if c.Board, err = s.DefaultLeaderboard(ctx, c.Tally.ID); err != nil {
+			return nil, err
+		}
+		p, err := s.CurrentPeriod(ctx, c.Tally.ID, c.Board.ID)
 		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 			return nil, err
 		}
-		cards[i].Current = p
+		c.Current = p
 	}
 	return cards, nil
 }
@@ -544,12 +545,12 @@ func (s *Store) DeleteParticipant(ctx context.Context, tallyID, actorID, id stri
 
 // --- Periods ---
 
-const periodCols = `id, tally_id, name, starts_on, ends_on, scoring, archived_at`
+const periodCols = `id, tally_id, leaderboard_id, name, starts_on, ends_on, scoring, archived_at`
 
 func scanPeriod(row pgx.Row) (*Period, error) {
 	p := &Period{}
 	var raw []byte
-	if err := row.Scan(&p.ID, &p.TallyID, &p.Name, &p.StartsOn, &p.EndsOn, &raw, &p.ArchivedAt); err != nil {
+	if err := row.Scan(&p.ID, &p.TallyID, &p.LeaderboardID, &p.Name, &p.StartsOn, &p.EndsOn, &raw, &p.ArchivedAt); err != nil {
 		return nil, err
 	}
 	if err := json.Unmarshal(raw, &p.Scoring); err != nil {
@@ -563,9 +564,11 @@ func scoringJSON(c ScoringConfig) string {
 	return string(b)
 }
 
-func (s *Store) ListPeriods(ctx context.Context, tallyID string) ([]Period, error) {
+// ListPeriods lists a leaderboard's seasons, newest first.
+func (s *Store) ListPeriods(ctx context.Context, tallyID, boardID string) ([]Period, error) {
 	rows, err := s.pool.Query(ctx,
-		`SELECT `+periodCols+` FROM periods WHERE tally_id = $1 ORDER BY starts_on DESC, created_at DESC`, tallyID)
+		`SELECT `+periodCols+` FROM periods WHERE tally_id = $1 AND leaderboard_id = $2
+		 ORDER BY starts_on DESC, created_at DESC`, tallyID, boardID)
 	if err != nil {
 		return nil, err
 	}
@@ -583,14 +586,14 @@ func (s *Store) PeriodByID(ctx context.Context, tallyID, id string) (*Period, er
 		`SELECT `+periodCols+` FROM periods WHERE tally_id = $1 AND id = $2`, tallyID, id))
 }
 
-// CurrentPeriod is the active period containing today, else the most recently
-// started active one. pgx.ErrNoRows when the tally has none (archived seasons
-// never count).
-func (s *Store) CurrentPeriod(ctx context.Context, tallyID string) (*Period, error) {
+// CurrentPeriod is the leaderboard's active period containing today, else the
+// most recently started active one. pgx.ErrNoRows when it has none (archived
+// seasons never count).
+func (s *Store) CurrentPeriod(ctx context.Context, tallyID, boardID string) (*Period, error) {
 	return scanPeriod(s.pool.QueryRow(ctx,
-		`SELECT `+periodCols+` FROM periods WHERE tally_id = $1 AND archived_at IS NULL
-		 ORDER BY ($2 BETWEEN starts_on AND ends_on) DESC, starts_on DESC, created_at DESC
-		 LIMIT 1`, tallyID, today()))
+		`SELECT `+periodCols+` FROM periods WHERE tally_id = $1 AND leaderboard_id = $2 AND archived_at IS NULL
+		 ORDER BY ($3 BETWEEN starts_on AND ends_on) DESC, starts_on DESC, created_at DESC
+		 LIMIT 1`, tallyID, boardID, today()))
 }
 
 func (s *Store) CreatePeriod(ctx context.Context, actorID string, p Period) (*Period, error) {
@@ -598,9 +601,9 @@ func (s *Store) CreatePeriod(ctx context.Context, actorID string, p Period) (*Pe
 	err := pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
 		var err error
 		out, err = scanPeriod(tx.QueryRow(ctx,
-			`INSERT INTO periods (tally_id, name, starts_on, ends_on, scoring)
-			 VALUES ($1, $2, $3, $4, $5::jsonb) RETURNING `+periodCols,
-			p.TallyID, p.Name, p.StartsOn, p.EndsOn, scoringJSON(p.Scoring)))
+			`INSERT INTO periods (tally_id, leaderboard_id, name, starts_on, ends_on, scoring)
+			 VALUES ($1, $2, $3, $4, $5, $6::jsonb) RETURNING `+periodCols,
+			p.TallyID, p.LeaderboardID, p.Name, p.StartsOn, p.EndsOn, scoringJSON(p.Scoring)))
 		if err != nil {
 			return err
 		}
@@ -609,9 +612,6 @@ func (s *Store) CreatePeriod(ctx context.Context, actorID string, p Period) (*Pe
 	return out, err
 }
 
-// UpdatePeriod saves a season. Once it has scored matches its format is
-// locked (stored game scores wouldn't fit), other rule changes such as the win
-// bonus rescore every match, and its dates must still cover all play days.
 // SetPeriodArchived archives or unarchives a season. Returns pgx.ErrNoRows if
 // the tally has no such season or it is already in that state.
 func (s *Store) SetPeriodArchived(ctx context.Context, tallyID, actorID, periodID string, archived bool) error {
@@ -632,6 +632,9 @@ func (s *Store) SetPeriodArchived(ctx context.Context, tallyID, actorID, periodI
 	})
 }
 
+// UpdatePeriod saves a season. Once it has scored matches its format is
+// locked (stored game scores wouldn't fit), other rule changes such as the win
+// bonus rescore every match, and its dates must still cover all play days.
 func (s *Store) UpdatePeriod(ctx context.Context, actorID string, before *Period, p Period) error {
 	return pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
 		var scored, outside int

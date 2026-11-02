@@ -71,10 +71,11 @@ Example (reset): 21‑9, 21‑19 → A/B 42, C/D 28. 21‑19, 18‑21 → draw, 
 
 ```
 users(id, username, password_hash NULL, aio_user_id NULL)   sessions(...)
-tallies(id, owner_id, slug UNIQUE, name, description, template, visibility)
+tallies(id, owner_id, slug UNIQUE, name, description, visibility)   -- the club
+leaderboards(id, tally_id, slug, name, template, side_size, position) -- one per sport (RFC-003)
 tally_admins(tally_id, user_id, role owner|admin)
 participants(id, tally_id, display_name, active, user_id NULL)
-periods(id, tally_id, name, starts_on, ends_on, scoring jsonb)
+periods(id, tally_id, leaderboard_id, name, starts_on, ends_on, scoring jsonb, archived_at)
 rounds(id, period_id, number, label, played_on)              -- "Week #2 – 11 Oct"
 matches(id, period_id, round_id, played_on, notes, created_by, updated_by)
 match_sides(match_id, side, games int[], total, result win|draw|loss)
@@ -535,6 +536,30 @@ owner-only; opan: that's the point of having admins). Button on the season's pag
   (opan: bottom, collapsible for long lists).
 - **Not blocked:** renaming a player, and deleting a player who only attended (which removes
   their attendance in archived seasons too). Both are tally-wide player actions.
+
+## RFC-003 phase 1 notes: leaderboards behind the scenes (2026-11-02)
+
+Phase 1 of `docs/rfc/RFC-003-leaderboards.md` §7.1: the model moves to leaderboards while every
+tally still has exactly one, so nothing on screen changes.
+
+- **Data:** `leaderboards` table; `periods.leaderboard_id` NOT NULL, with a composite key
+  `(leaderboard_id, tally_id)` so a season can't sit on another tally's leaderboard. The
+  upgrade in `schema.sql` gives each tally one leaderboard with its `template`/`side_size`
+  (slug `badminton` for the badminton presets, else the preset id) and assigns its seasons.
+  `tallies.template`/`side_size` are still written on create, for rollbacks, and read by
+  nothing; drop them in a later release. New tallies also get a `create leaderboard` audit entry.
+- **Code:** `Leaderboard` (`store_board.go`) has `Preset()` and `SideSize()`, which `Tally` no
+  longer has. `ListPeriods`, `CurrentPeriod`, `PeriodForDate` and `RoundByDate` take a
+  leaderboard. `tallyCtx.Boards` (default first) and `tallyCtx.Board`: from `?board=` (unknown
+  slug → 404), else the default; pages on a season, play day or match, and `?season=` on the
+  board and player pages, switch to that season's leaderboard (`boardOf`, `seasonBoard`).
+  `tallyVM.Board` (the standings) became `Standings`. Home cards and Mabar saya use the default
+  leaderboard until phase 2. The site admin's tally page lists every leaderboard's seasons.
+- **Checked:** tests for the upgrade on old-shape data (run twice), the composite key, two
+  leaderboards with seasons and play days on the same dates, and every tally page rendering
+  for match, team and counter types. End to end: main's database after the guide script,
+  upgraded by this build, serves the same HTML as main on 23 pages, and new seasons, play days
+  and scores land on the leaderboard.
 
 ## Open questions
 

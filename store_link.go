@@ -41,9 +41,10 @@ type IncomingInvite struct {
 // MyPlayer is a player linked to the viewer's account, for "Mabar saya".
 type MyPlayer struct {
 	Tally      Tally
+	Board      *Leaderboard // the default one (RFC-003 phase 2: one line per leaderboard)
 	PlayerID   string
 	PlayerName string
-	Period     *Period // the current season; nil before the first one
+	Period     *Period // its current season; nil before the first one
 	Rank       int     // 0 before their first points this season
 	Of         int
 	Points     int
@@ -341,7 +342,10 @@ func (s *Store) MyPlayers(ctx context.Context, userID string) ([]MyPlayer, error
 	}
 	for i := range out {
 		m := &out[i]
-		p, err := s.CurrentPeriod(ctx, m.Tally.ID)
+		if m.Board, err = s.DefaultLeaderboard(ctx, m.Tally.ID); err != nil {
+			return nil, err
+		}
+		p, err := s.CurrentPeriod(ctx, m.Tally.ID, m.Board.ID)
 		if errors.Is(err, pgx.ErrNoRows) {
 			continue
 		}
@@ -353,7 +357,7 @@ func (s *Store) MyPlayers(ctx context.Context, userID string) ([]MyPlayer, error
 		if err != nil {
 			return nil, err
 		}
-		if m.Tally.Preset().IsCounter() {
+		if m.Board.Preset().IsCounter() {
 			useEntries(st)
 		}
 		sortStandings(st)

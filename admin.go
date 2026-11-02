@@ -92,7 +92,15 @@ func (a *App) siteAdminTally(w http.ResponseWriter, r *http.Request) (*User, tal
 		internalError(w, "admin: load tally", err)
 		return nil, tallyCtx{}, false
 	}
-	return admin, tallyCtx{Tally: t}, true
+	tc := tallyCtx{Tally: t}
+	if found, err := a.loadBoards(r, &tc); err != nil {
+		internalError(w, "admin: load leaderboards", err)
+		return nil, tallyCtx{}, false
+	} else if !found {
+		a.notFound(w, r)
+		return nil, tallyCtx{}, false
+	}
+	return admin, tc, true
 }
 
 func (a *App) logAdminTallyView(r *http.Request, admin *User, page, tallyID, detail string) {
@@ -129,10 +137,15 @@ func (a *App) handleAdminTally(w http.ResponseWriter, r *http.Request) {
 		internalError(w, "admin: tally admins", err)
 		return
 	}
-	periods, err := a.store.ListPeriods(ctx, tc.Tally.ID)
-	if err != nil {
-		internalError(w, "admin: periods", err)
-		return
+	// Every leaderboard's seasons, the default leaderboard's first.
+	var periods []Period
+	for _, b := range tc.Boards {
+		ps, err := a.store.ListPeriods(ctx, tc.Tally.ID, b.ID)
+		if err != nil {
+			internalError(w, "admin: periods", err)
+			return
+		}
+		periods = append(periods, ps...)
 	}
 	for _, p := range periods {
 		row := adminSeasonRow{Period: p}
@@ -175,6 +188,7 @@ func (a *App) handleAdminSeason(w http.ResponseWriter, r *http.Request) {
 		internalError(w, "admin: load period", err)
 		return
 	}
+	tc.boardOf(p)
 	a.logAdminTallyView(r, admin, "season", tc.Tally.ID, p.ID)
 	a.periodPage(w, r, periodVM{tallyCtx: tc, Period: p, Admin: true})
 }

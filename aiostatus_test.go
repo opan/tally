@@ -125,14 +125,16 @@ func TestAdminTemplatesRender(t *testing.T) {
 			{Tally: Tally{ID: "t1", Slug: "bala-bulu", Name: "Bala Bulu", Visibility: "link"}, Role: "owner", Players: 12, PlayDays: 3, Plays: 80, LastPlayed: &last},
 			{Tally: Tally{ID: "t2", Slug: "rahasia", Name: "Rahasia", Visibility: "private"}, Role: "admin"},
 		}}
-	priv := &Tally{ID: "t2", Slug: "rahasia", Name: "Rahasia", Visibility: "private", Template: "badminton_doubles", CreatedAt: joined}
+	priv := &Tally{ID: "t2", Slug: "rahasia", Name: "Rahasia", Visibility: "private", CreatedAt: joined}
+	boards := []Leaderboard{{ID: "b1", TallyID: "t2", Slug: "badminton", Template: "badminton_doubles"}}
+	privCtx := tallyCtx{Tally: priv, Boards: boards, Board: &boards[0]}
 	season := Period{ID: "p1", Name: "Season #1", StartsOn: joined, EndsOn: joined.AddDate(0, 3, 0), Scoring: DefaultContinuous}
-	tallyPage := adminTallyVM{tallyCtx: tallyCtx{Tally: priv},
+	tallyPage := adminTallyVM{tallyCtx: privCtx,
 		Admins:  []Admin{{UserID: "u1", Username: "budi", Role: "owner"}},
 		Seasons: []adminSeasonRow{{Period: season, PlayDays: 2, Players: 3, Plays: 7, Points: 279}},
 		Players: []TallyPlayerRow{{Participant: Participant{ID: "x1", Name: "Ana", Active: true}, Plays: 4, Points: 160, LastPlayed: &last}}}
 	day := &Round{ID: "r1", PlayedOn: joined, WeekPart: 1, WeekDays: 2}
-	dayPage := adminDayVM{tallyCtx: tallyCtx{Tally: priv}, Round: day, Period: &season, Plays: 2, SiteAdmin: true,
+	dayPage := adminDayVM{tallyCtx: privCtx, Round: day, Period: &season, Plays: 2, SiteAdmin: true,
 		ScoreRows: []scoreRow{{Player: Participant{ID: "x1", Name: "Ana"}, Chips: []playChip{{Points: 42, AwardID: "a1"}, {Points: 40, MatchID: "m1"}}, Total: 82}}}
 	cases := []struct {
 		page, lang string

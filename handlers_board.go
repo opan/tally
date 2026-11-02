@@ -8,7 +8,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-// tallyVM is the overview: the leaderboard of one season as of one play day.
+// tallyVM is the overview: the standings of one season as of one play day.
 type tallyVM struct {
 	tallyCtx
 	ShareURL   string
@@ -17,7 +17,7 @@ type tallyVM struct {
 	Rounds     []Round // of the selected season with points, newest first
 	Round      *Round  // the filtered play day, else the latest one; nil before the first
 	Day        *Round  // set when the board shows one play day only (?day=)
-	Board      []BoardRow
+	Standings  []BoardRow
 	Results    []*Match // scored matches of the selected play day
 	HasPlayers bool
 }
@@ -38,8 +38,12 @@ func (a *App) loadBoard(w http.ResponseWriter, r *http.Request, tc tallyCtx) (vm
 	ctx := r.Context()
 	vm = tallyVM{tallyCtx: tc, ShareURL: baseURL(r) + tallyPath(tc.Tally, "")}
 
+	if err := a.seasonBoard(r, &vm.tallyCtx); err != nil {
+		internalError(w, "season leaderboard", err)
+		return vm, false
+	}
 	var err error
-	if vm.Periods, err = a.store.ListPeriods(ctx, tc.Tally.ID); err != nil {
+	if vm.Periods, err = a.store.ListPeriods(ctx, tc.Tally.ID, vm.Board.ID); err != nil {
 		internalError(w, "list periods", err)
 		return vm, false
 	}
@@ -59,7 +63,7 @@ func (a *App) loadBoard(w http.ResponseWriter, r *http.Request, tc tallyCtx) (vm
 		}
 	}
 	if vm.Period == nil {
-		cur, err := a.store.CurrentPeriod(ctx, tc.Tally.ID)
+		cur, err := a.store.CurrentPeriod(ctx, tc.Tally.ID, vm.Board.ID)
 		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 			internalError(w, "current period", err)
 			return vm, false
@@ -108,11 +112,11 @@ func (a *App) loadBoard(w http.ResponseWriter, r *http.Request, tc tallyCtx) (vm
 		internalError(w, "standings", err)
 		return vm, false
 	}
-	if tc.Tally.Preset().IsCounter() {
+	if vm.Board.Preset().IsCounter() {
 		useEntries(cur)
 		useEntries(prev)
 	}
-	vm.Board = buildBoard(cur, prev, hasPrev)
+	vm.Standings = buildBoard(cur, prev, hasPrev)
 
 	matches, err := a.store.MatchesForRound(ctx, tc.Tally.ID, vm.Round.ID)
 	if err != nil {
@@ -125,6 +129,24 @@ func (a *App) loadBoard(w http.ResponseWriter, r *http.Request, tc tallyCtx) (vm
 		}
 	}
 	return vm, true
+}
+
+// seasonBoard points a page with ?season= at that season's leaderboard. An
+// unknown season is left to the page, which shows the current one instead.
+func (a *App) seasonBoard(r *http.Request, tc *tallyCtx) error {
+	id := r.URL.Query().Get("season")
+	if id == "" {
+		return nil
+	}
+	p, err := a.store.PeriodByID(r.Context(), tc.Tally.ID, id)
+	if isNotFound(err) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	tc.boardOf(p)
+	return nil
 }
 
 // pickerPeriods drops archived seasons from a season picker, except the one

@@ -25,7 +25,7 @@
     </fieldset>
     <dl class="facts">
       <dt>{{.T "create.slug"}}</dt><dd><code>/t/{{$t.Slug}}</code></dd>
-      <dt>{{.T "create.template"}}</dt><dd>{{.T $t.Preset.NameKey}}{{if $t.Preset.TeamSizes}} · {{.T "tally.per_side" $t.SideSize}}{{end}}</dd>
+      <dt>{{.T "create.template"}}</dt><dd>{{.T $.Data.Board.Preset.NameKey}}{{if $.Data.Board.Preset.TeamSizes}} · {{.T "tally.per_side" $.Data.Board.SideSize}}{{end}}</dd>
     </dl>
     <button type="submit" class="btn primary">{{.T "common.save"}}</button>
   </form>

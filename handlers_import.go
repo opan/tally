@@ -60,9 +60,9 @@ type importVM struct {
 // scoreLimit is the most points one play can earn when points are entered per
 // player, and false when the season's format doesn't support that: only a
 // race to a target (badminton to 42) does for now.
-func scoreLimit(t *Tally, p *Period) (int, bool) {
+func scoreLimit(b *Leaderboard, p *Period) (int, bool) {
 	c := p.Scoring
-	if t.Preset().IsCounter() || c.Format != FormatContinuous {
+	if b.Preset().IsCounter() || c.Format != FormatContinuous {
 		return 0, false
 	}
 	return c.Target + c.WinBonus, true
@@ -73,7 +73,7 @@ func (a *App) importPeriod(w http.ResponseWriter, r *http.Request) (tallyCtx, *U
 	if !ok {
 		return tc, nil, nil, 0, false
 	}
-	limit, ok := scoreLimit(tc.Tally, p)
+	limit, ok := scoreLimit(tc.Board, p)
 	if !ok {
 		a.notFound(w, r)
 		return tc, nil, nil, 0, false
