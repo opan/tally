@@ -109,7 +109,7 @@ is already ahead; its natural next step is **level-balanced pairing**, using A+â
 the shuffle avoids lopsided matches. BadminHub collects levels but doesn't use them.
 
 
-### 4.2 The club's spreadsheet ("BALA BULU POINT")
+### 4.2 The club's spreadsheet
 
 The club keeps its leaderboard in a Google Sheet today. This is what tally is compared
 with, so it shows what "simple" means to these users. Analysed 2026-10-29 from an XLSX

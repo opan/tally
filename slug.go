@@ -12,7 +12,7 @@ var slugRe = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
 var reservedSlugs = map[string]bool{"new": true, "admin": true, "api": true, "static": true}
 
 // normalizeSlug lowercases and converts spaces/underscores to single hyphens,
-// stripping anything that isn't [a-z0-9-]. "Bala Bulu BC!" -> "bala-bulu-bc".
+// stripping anything that isn't [a-z0-9-]. "Sampai Pingsan BC!" -> "sampai-pingsan-bc".
 func normalizeSlug(s string) string {
 	s = strings.ToLower(strings.TrimSpace(s))
 	var b strings.Builder

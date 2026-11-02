@@ -94,11 +94,11 @@ func TestTranslate(t *testing.T) {
 
 func TestSafeNext(t *testing.T) {
 	for raw, want := range map[string]string{
-		"/t/bala-bulu?x=1": "/t/bala-bulu?x=1",
-		"//evil.com":       "",
-		"/\\evil.com":      "",
-		"https://evil.com": "",
-		"":                 "",
+		"/t/sampai-pingsan?x=1": "/t/sampai-pingsan?x=1",
+		"//evil.com":            "",
+		"/\\evil.com":           "",
+		"https://evil.com":      "",
+		"":                      "",
 		// Browsers drop tabs/newlines and read "\\" as "/", so these are "//evil.com".
 		"/\t/evil.com": "",
 		"/\n/evil.com": "",

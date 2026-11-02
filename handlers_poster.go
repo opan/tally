@@ -38,7 +38,7 @@ type posterVM struct {
 }
 
 // splitTitle breaks a tally name into a white and a gold line at the word
-// boundary closest to the middle: "Bala Bulu Point Rank" -> "Bala Bulu" / "Point Rank".
+// boundary closest to the middle: "Sampai Pingsan Point Rank" -> "Sampai Pingsan" / "Point Rank".
 func splitTitle(name string) (string, string) {
 	words := strings.Fields(name)
 	if len(words) < 2 {
