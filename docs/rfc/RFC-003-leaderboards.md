@@ -79,7 +79,7 @@ CREATE TABLE leaderboards (
     name       text        NOT NULL DEFAULT '',   -- '' = the type's translated name
     template   text        NOT NULL,              -- a preset id, as tallies.template today
     side_size  smallint    CHECK (side_size BETWEEN 1 AND 11),
-    position   smallint    NOT NULL DEFAULT 0,    -- order in the switcher; 0 = default board
+    position   smallint    NOT NULL DEFAULT 0,    -- order in the switcher; lowest = default board
     created_at timestamptz NOT NULL DEFAULT now(),
     UNIQUE (tally_id, slug),
     UNIQUE (id, tally_id)                          -- target of the composite key below
@@ -120,8 +120,12 @@ therefore possible for a short while, but not something to stay on.
   season.
 - Pages that pick "the current season" take **`?board={slug}`**: the board `/t/{slug}`,
   the Main tab `/play`, the Seasons tab `/periods`, the poster and the player page.
-  Without it they use the default leaderboard (`position = 0`), so every link shared today
-  keeps working.
+  Without it they use the **default leaderboard**: the one with the lowest `position`
+  (oldest first on a tie), i.e. the top of the list in Setelan → Papan. Every link shared
+  today has no `?board=`, so it keeps working and shows the default. The home page's tally
+  card and the tally name in the header lead there too.
+- Once on a leaderboard, the tabs and the switcher carry its `?board=`, so Main, Musim and
+  Poster stay on it: an admin picks the leaderboard once per visit, not once per entry.
 - Forms that create something (a season, a play day) carry the board in a hidden field.
 
 ### 6.2 What changes on screen
@@ -153,7 +157,8 @@ one, so the app looks and behaves the same and can be deployed on its own.
 
 1. **Schema:** §5.1 and the migration in §5.2.
 2. **Store:** `Leaderboard` type with `Preset()` and `SideSize()` (moved from `Tally`);
-   `ListLeaderboards(tallyID)`, `LeaderboardBySlug`, `DefaultLeaderboard`;
+   `ListLeaderboards(tallyID)` (by `position`, then `created_at`), `LeaderboardBySlug`,
+   `DefaultLeaderboard` (the first of that list);
    `ListPeriods`, `CurrentPeriod`, `PeriodForDate`, `RoundByDate` take a leaderboard id;
    `CreatePeriod` sets it; `CreateTally` also creates the first leaderboard in the same
    transaction. `Period` gains `LeaderboardID`.
@@ -212,7 +217,13 @@ Phase 1 PR → merge and deploy → phase 2 PR. One Deck card per phase.
    double every route and clash with names like `players`.
 2. **Deleting a leaderboard:** only while it has no seasons (proposed). Archiving seasons
    covers "we stopped playing this".
-3. **Default leaderboard:** the first one; reorder in Setelan to change it (proposed).
+3. **Default leaderboard:** the first one; reorder in Setelan to change it. **Agreed** (opan,
+   2026-11-02). A new leaderboard goes to the bottom, so adding one never changes what
+   `/t/{slug}` shows; moving another to the top does, while links with `?board=` keep their
+   leaderboard. The default only decides where a link without `?board=` lands; it has no
+   effect on points, rankings, admins or visibility. Considered and dropped: a separate
+   "Jadikan utama" control (one more setting for something rarely changed), and "the one
+   played most recently" (links would jump between sports).
 
 ## 10. Backlog (after this)
 
