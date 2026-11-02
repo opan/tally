@@ -10,13 +10,13 @@
     <h2>{{.T "setup.title"}}</h2>
     <ol class="checklist">
       <li class="{{if $d.HasPlayers}}done{{end}}"><a href="/t/{{$t.Slug}}/players">{{.T "setup.players"}}</a></li>
-      <li class="{{if $d.Periods}}done{{end}}"><a href="/t/{{$t.Slug}}/periods">{{.T "setup.period"}}</a></li>
+      <li class="{{if $d.Periods}}done{{end}}"><a href="{{$d.BoardPath "/periods"}}">{{.T "setup.period"}}</a></li>
       <li>{{.T "setup.matches"}}</li>
     </ol>
     <p class="small"><a href="/panduan#mulai">{{.T "guide.read"}}</a></p>
   </section>
   {{else}}
-  <a class="btn primary wide" href="/t/{{$t.Slug}}/play">{{.T "tally.play_cta"}}</a>
+  <a class="btn primary wide" href="{{$d.BoardPath "/play"}}">{{.T "tally.play_cta"}}</a>
   {{end}}
 {{end}}
 

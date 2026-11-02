@@ -71,6 +71,46 @@ type tallyCtx struct {
 func (c tallyCtx) IsAdmin() bool { return c.Role != "" }
 func (c tallyCtx) IsOwner() bool { return c.Role == RoleOwner }
 
+// MultiBoard reports whether the tally has several leaderboards, so pages
+// show the switcher and links name the leaderboard.
+func (c tallyCtx) MultiBoard() bool { return len(c.Boards) > 1 }
+
+// BoardPath is tallyPath for a page that shows one leaderboard (board, Main,
+// Seasons, poster): with several leaderboards it names this page's in
+// ?board=, so the link stays on it even after the list is reordered. A
+// one-leaderboard tally keeps its plain links.
+func (c tallyCtx) BoardPath(sub string) string {
+	if !c.MultiBoard() || c.Board == nil {
+		return tallyPath(c.Tally, sub)
+	}
+	return withQuery(tallyPath(c.Tally, sub), "board="+url.QueryEscape(c.Board.Slug))
+}
+
+// SwitchPath is the current tab's page on leaderboard b, for the switcher.
+func (c tallyCtx) SwitchPath(b Leaderboard) string {
+	sub := ""
+	switch c.Tab {
+	case "play":
+		sub = "/play"
+	case "periods":
+		sub = "/periods"
+	}
+	return withQuery(tallyPath(c.Tally, sub), "board="+url.QueryEscape(b.Slug))
+}
+
+// withQuery adds q to path's query string, before any #fragment.
+func withQuery(path, q string) string {
+	frag := ""
+	if i := strings.IndexByte(path, '#'); i >= 0 {
+		path, frag = path[:i], path[i:]
+	}
+	sep := "?"
+	if strings.Contains(path, "?") {
+		sep = "&"
+	}
+	return path + sep + q + frag
+}
+
 // boardOf switches the page to the leaderboard p belongs to.
 func (c *tallyCtx) boardOf(p *Period) {
 	for i := range c.Boards {
@@ -162,6 +202,7 @@ func (a *App) adminTally(w http.ResponseWriter, r *http.Request, tab string) (ta
 var okNotices = map[string]bool{
 	"tally_created": true, "settings_saved": true, "admin_added": true, "admin_removed": true, "owner_transferred": true,
 	"branding_saved": true, "player_renamed": true, "player_activated": true, "player_deactivated": true, "player_deleted": true,
+	"board_added": true, "board_saved": true, "board_moved": true, "board_deleted": true,
 	"period_created": true, "period_saved": true, "season_archived": true, "season_unarchived": true,
 	"invite_sent": true, "invite_cancelled": true, "player_unlinked": true,
 	"invite_accept": true, "invite_decline": true, "invite_mute": true, "unmuted": true, "link_removed": true,
@@ -176,7 +217,7 @@ func okNotice(r *http.Request) string {
 }
 
 func redirectOK(w http.ResponseWriter, r *http.Request, path, key string) {
-	http.Redirect(w, r, path+"?ok="+key, http.StatusSeeOther)
+	http.Redirect(w, r, withQuery(path, "ok="+key), http.StatusSeeOther)
 }
 
 func tallyPath(t *Tally, sub string) string { return "/t/" + t.Slug + sub }
@@ -647,7 +688,7 @@ func (a *App) handleCreatePeriod(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	limitBody(w, r, maxFormBytes)
-	done, ok := a.claimSubmit(w, r, tallyPath(tc.Tally, "/periods")+"?ok=period_created")
+	done, ok := a.claimSubmit(w, r, withQuery(tc.BoardPath("/periods"), "ok=period_created"))
 	if !ok {
 		return
 	}
@@ -666,7 +707,7 @@ func (a *App) handleCreatePeriod(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	saved = true
-	redirectOK(w, r, tallyPath(tc.Tally, "/periods"), "period_created")
+	redirectOK(w, r, tc.BoardPath("/periods"), "period_created")
 }
 
 func (a *App) editablePeriod(w http.ResponseWriter, r *http.Request) (tallyCtx, *User, *Period, bool) {
@@ -865,7 +906,7 @@ func (a *App) handleEditPeriod(w http.ResponseWriter, r *http.Request) {
 		internalError(w, "update period", err)
 		return
 	}
-	redirectOK(w, r, tallyPath(tc.Tally, "/periods"), "period_saved")
+	redirectOK(w, r, tc.BoardPath("/periods"), "period_saved")
 }
 
 // --- Settings & admins ---
@@ -881,6 +922,14 @@ type settingsVM struct {
 	typed       bool // F* hold a failed settings submit; don't reset them
 	DefTitle1   string
 	DefTitle2   string
+
+	// Papan (RFC-003): the leaderboards, and the add form as typed.
+	Leaderboards   []LeaderboardRow
+	Presets        []Preset
+	FBoardName     string
+	FBoardTemplate string
+	FBoardSide     string
+	OpenBoard      bool // show the add form open (it failed)
 }
 
 func (a *App) renderSettings(w http.ResponseWriter, r *http.Request, vm settingsVM, status int) {
@@ -890,6 +939,14 @@ func (a *App) renderSettings(w http.ResponseWriter, r *http.Request, vm settings
 		return
 	}
 	vm.Admins = admins
+	if vm.Leaderboards, err = a.store.LeaderboardRows(r.Context(), vm.Tally.ID); err != nil {
+		internalError(w, "list leaderboards", err)
+		return
+	}
+	vm.Presets = presets
+	if vm.FBoardTemplate == "" {
+		vm.FBoardTemplate, vm.FBoardSide = presets[0].ID, "5"
+	}
 	vm.DefTitle1, vm.DefTitle2 = splitTitle(vm.Tally.Name)
 	vm.ShareURL = baseURL(r) + tallyPath(vm.Tally, "")
 	if !vm.typed {

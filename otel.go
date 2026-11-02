@@ -26,6 +26,7 @@ var (
 	activeReqs   metric.Int64UpDownCounter
 	usersCreated metric.Int64Counter // {method: local|aio}
 	talliesMade  metric.Int64Counter // {type: preset id}
+	boardsMade   metric.Int64Counter // {type: preset id}
 	logins       metric.Int64Counter // {method: local|aio, result: ok|failed|<aio error>}
 	playDays     metric.Int64Counter
 	matchEvents  metric.Int64Counter // {action: scheduled|scored|added|edited|deleted|cancelled}
@@ -86,6 +87,7 @@ func initOTel(ctx context.Context) (shutdown func(context.Context) error, enable
 	}{
 		{&usersCreated, "tally.users.created", "Accounts created, by login method."},
 		{&talliesMade, "tally.tallies.created", "Tallies created, by type."},
+		{&boardsMade, "tally.leaderboards.created", "Leaderboards added to a tally after it was created (RFC-003), by type."},
 		{&logins, "tally.logins", "Login attempts, by method and result."},
 		{&playDays, "tally.play_days.started", "Play days started."},
 		{&matchEvents, "tally.match.events", "Match changes, by action."},
@@ -150,6 +152,10 @@ func recordUserCreated(ctx context.Context, method string) {
 
 func recordTallyCreated(ctx context.Context, preset string) {
 	add(ctx, talliesMade, 1, attribute.String("type", preset))
+}
+
+func recordLeaderboardCreated(ctx context.Context, preset string) {
+	add(ctx, boardsMade, 1, attribute.String("type", preset))
 }
 
 // recordLogin counts a login attempt. result is "ok", "failed" (wrong local

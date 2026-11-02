@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -271,5 +273,174 @@ func TestTallyPagesRender(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// Phase 2: admins add, rename, reorder and delete leaderboards in Setelan →
+// Papan; pages, forms and links stay on the leaderboard they show.
+func TestLeaderboardsInApp(t *testing.T) {
+	s := testStore(t)
+	ctx := context.Background()
+	owner, _ := s.CreateUser(ctx, "owner", "x")
+	fan, _ := s.CreateUser(ctx, "fan", "x")
+	tl, _ := s.CreateTally(ctx, owner.ID, Tally{Slug: "club", Name: "Badminton Sampai Pingsan", Visibility: VisibilityPrivate}, Leaderboard{Template: "badminton_doubles"})
+	app := &App{store: s, tmpl: buildTemplates(), aio: &AioAuth{}}
+	do := func(u *User, method, path string, h http.HandlerFunc, vals map[string]string, form url.Values) *httptest.ResponseRecorder {
+		r := httptest.NewRequest(method, path, strings.NewReader(form.Encode()))
+		if form != nil {
+			r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		}
+		r.SetPathValue("slug", "club")
+		for k, v := range vals {
+			r.SetPathValue(k, v)
+		}
+		if u != nil {
+			r = r.WithContext(context.WithValue(r.Context(), userCtxKey, u))
+		}
+		w := httptest.NewRecorder()
+		h(w, r)
+		return w
+	}
+	get := func(u *User, path string, h http.HandlerFunc, vals map[string]string) string {
+		t.Helper()
+		w := do(u, "GET", path, h, vals, nil)
+		if w.Code != 200 {
+			t.Fatalf("GET %s: %d", path, w.Code)
+		}
+		return w.Body.String()
+	}
+
+	// One leaderboard: no switcher, plain links.
+	if body := get(owner, "/t/club", app.handleTally, nil); strings.Contains(body, "?board=") || strings.Contains(body, "boardswitch") {
+		t.Error("a tally with one leaderboard shows ?board= links or the switcher")
+	}
+
+	// Add "Basket" (team of 5) and a nameless counter.
+	add := func(form url.Values) *httptest.ResponseRecorder {
+		return do(owner, "POST", "/t/club/boards", app.handleCreateBoard, nil, form)
+	}
+	if w := add(url.Values{"name": {"Basket"}, "template": {"team"}, "side_size": {"5"}}); w.Code != http.StatusSeeOther || w.Header().Get("Location") != "/t/club/settings?ok=board_added#papan" {
+		t.Fatalf("add leaderboard: %d %s", w.Code, w.Header().Get("Location"))
+	}
+	if w := add(url.Values{"template": {"team"}, "side_size": {"2"}}); w.Code != http.StatusUnprocessableEntity {
+		t.Errorf("team of 2: %d, want 422", w.Code)
+	}
+	add(url.Values{"template": {"counter"}})
+	add(url.Values{"name": {"Basket"}, "template": {"team"}, "side_size": {"3"}})
+	rows, _ := s.LeaderboardRows(ctx, tl.ID)
+	var slugs []string
+	for _, b := range rows {
+		slugs = append(slugs, b.Slug)
+	}
+	if strings.Join(slugs, ",") != "badminton,basket,counter,basket-2" {
+		t.Fatalf("slugs = %v", slugs)
+	}
+	basket, counter, basket2 := rows[1], rows[2], rows[3]
+
+	// A season and a play day created on the Basket board land on it.
+	w := do(owner, "POST", "/t/club/periods?board=basket", app.handleCreatePeriod, nil, url.Values{
+		"name": {"Musim basket"}, "starts_on": {today().AddDate(0, 0, -7).Format(dateLayout)}, "ends_on": {today().AddDate(0, 2, 0).Format(dateLayout)},
+		"format": {"outcome"}, "win_pts": {"3"}, "draw_pts": {"1"}, "loss_pts": {"0"}})
+	if w.Code != http.StatusSeeOther || w.Header().Get("Location") != "/t/club/periods?board=basket&ok=period_created" {
+		t.Fatalf("create season on basket: %d %s %s", w.Code, w.Header().Get("Location"), w.Body.String())
+	}
+	if ps, _ := s.ListPeriods(ctx, tl.ID, basket.ID); len(ps) != 1 {
+		t.Fatalf("basket seasons = %v", ps)
+	}
+	if ps, _ := s.ListPeriods(ctx, tl.ID, rows[0].ID); len(ps) != 0 {
+		t.Errorf("badminton got a season: %v", ps)
+	}
+	w = do(owner, "POST", "/t/club/rounds?board=basket", app.handleCreateRound, nil, url.Values{"played_on": {today().Format(dateLayout)}})
+	if w.Code != http.StatusSeeOther {
+		t.Fatalf("start play day on basket: %d %s", w.Code, w.Body.String())
+	}
+	if w := do(owner, "POST", "/t/club/rounds", app.handleCreateRound, nil, url.Values{"played_on": {today().Format(dateLayout)}}); w.Code != http.StatusUnprocessableEntity {
+		t.Errorf("play day on badminton, which has no season: %d, want 422", w.Code)
+	}
+
+	// Pages: switcher on board tabs, links keep ?board=, settings lists all.
+	body := get(owner, "/t/club/play?board=basket", app.handlePlay, nil)
+	for _, want := range []string{`class="boardswitch"`, `href="/t/club/play?board=badminton"`, `action="/t/club/rounds?board=basket"`, `href="/t/club/periods?board=basket"`, "Musim basket", ">Basket</a>"} {
+		if !strings.Contains(body, want) {
+			t.Errorf("basket Main tab: missing %q", want)
+		}
+	}
+	if body := get(owner, "/t/club/players", app.handlePlayers, nil); strings.Contains(body, "boardswitch") {
+		t.Error("the players tab shows the leaderboard switcher")
+	}
+	body = get(owner, "/t/club/settings", app.handleSettings, nil)
+	for _, want := range []string{`id="papan"`, "?board=basket-2", "1 musim"} {
+		if !strings.Contains(body, want) {
+			t.Errorf("settings: missing %q", want)
+		}
+	}
+
+	// Rename, reorder: moving Basket up makes it the default.
+	action := func(id, act string, extra url.Values) *httptest.ResponseRecorder {
+		form := url.Values{"action": {act}}
+		for k, v := range extra {
+			form[k] = v
+		}
+		return do(owner, "POST", "/t/club/boards/"+id, app.handleBoardAction, map[string]string{"id": id}, form)
+	}
+	action(counter.ID, "rename", url.Values{"name": {"Lari pagi"}})
+	action(basket.ID, "up", nil)
+	if b, _ := s.DefaultLeaderboard(ctx, tl.ID); b.ID != basket.ID {
+		t.Errorf("default after moving Basket up: %s", b.Slug)
+	}
+	if body := get(owner, "/t/club", app.handleTally, nil); !strings.Contains(body, "Musim basket") {
+		t.Error("/t/club doesn't show the new default leaderboard")
+	}
+	if body := get(owner, "/t/club?board=counter", app.handleTally, nil); !strings.Contains(body, "Lari pagi") {
+		t.Error("renamed leaderboard's name isn't on the switcher")
+	}
+
+	// Delete: refused with seasons, allowed while empty.
+	if w := action(basket.ID, "delete", nil); w.Code != http.StatusUnprocessableEntity {
+		t.Errorf("delete a leaderboard with a season: %d, want 422", w.Code)
+	}
+	if w := action(basket2.ID, "delete", nil); w.Code != http.StatusSeeOther {
+		t.Errorf("delete an empty leaderboard: %d", w.Code)
+	}
+	if rows, _ := s.LeaderboardRows(ctx, tl.ID); len(rows) != 3 || rows[0].Position != 0 || rows[2].Position != 2 {
+		t.Errorf("after delete: %+v", rows)
+	}
+	other, _ := s.CreateTally(ctx, owner.ID, Tally{Slug: "lain", Name: "Lain", Visibility: VisibilityLink}, Leaderboard{Template: "duel"})
+	if err := s.DeleteLeaderboard(ctx, other.ID, owner.ID, defaultBoard(t, s, other.ID)); !errors.Is(err, ErrLastBoard) {
+		t.Errorf("delete the only leaderboard: %v, want ErrLastBoard", err)
+	}
+	if w := action(defaultBoard(t, s, other.ID), "delete", nil); w.Code != http.StatusNotFound {
+		t.Errorf("delete another tally's leaderboard through this one: %d, want 404", w.Code)
+	}
+
+	// Private stays private on every leaderboard; a linked player sees them.
+	for _, p := range []string{"/t/club", "/t/club?board=basket", "/t/club?board=counter"} {
+		if w := do(nil, "GET", p, app.handleTally, nil, nil); w.Code != http.StatusNotFound {
+			t.Errorf("anonymous %s: %d, want 404", p, w.Code)
+		}
+	}
+
+	// Mabar saya: one line per leaderboard with points this season.
+	rd, _ := s.RoundByDate(ctx, tl.ID, basket.ID, today())
+	if err := s.AddAwards(ctx, tl.ID, owner.ID, rd, nil, ""); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := s.AddParticipants(ctx, tl.ID, owner.ID, []string{"Prabski"}); err != nil {
+		t.Fatal(err)
+	}
+	players, _ := s.ListParticipants(ctx, tl.ID)
+	s.pool.Exec(ctx, `UPDATE participants SET user_id = $1 WHERE id = $2`, fan.ID, players[0].ID)
+	mine, err := s.MyPlayers(ctx, fan.ID)
+	if err != nil || len(mine) != 1 || mine[0].Board == nil || mine[0].Board.ID != basket.ID {
+		t.Fatalf("Mabar saya before points: %+v, %v (want the default leaderboard's line)", mine, err)
+	}
+	if err := s.AddAwards(ctx, tl.ID, owner.ID, rd, []AwardInput{{ParticipantID: players[0].ID, Points: 3}}, "Menang"); err != nil {
+		t.Fatal(err)
+	}
+	if mine, _ := s.MyPlayers(ctx, fan.ID); len(mine) != 1 || mine[0].Rank != 1 || !strings.Contains(mine[0].Href(), "?season=") {
+		t.Errorf("Mabar saya with points on basket: %+v", mine)
+	}
+	if body := get(fan, "/", app.handleHome, nil); !strings.Contains(body, "Badminton Sampai Pingsan &middot; Basket") {
+		t.Error("home page doesn't name the leaderboard on the Mabar saya line")
 	}
 }

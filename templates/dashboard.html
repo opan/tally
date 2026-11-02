@@ -22,8 +22,8 @@
 <ul class="cards">
   {{range .Data.Mine}}
   <li>
-    <a class="tallycard" href="/t/{{.Tally.Slug}}/players/{{.PlayerID}}">
-      <span class="eyebrow">{{.Tally.Name}}</span>
+    <a class="tallycard" href="{{.Href}}">
+      <span class="eyebrow">{{.Tally.Name}}{{with .Board}} &middot; {{template "boardname" (dict "P" $ "B" .)}}{{end}}</span>
       <strong class="tname">{{.PlayerName}}</strong>
       <span class="muted small">
         {{if .Period}}{{.Period.Name}} &middot; {{if .Rank}}{{$.T "mine.rank" .Rank .Of .Points}}{{else}}{{$.T "mine.no_points"}}{{end}}{{else}}{{$.T "dashboard.no_period"}}{{end}}
@@ -40,7 +40,7 @@
   {{range .Data.Cards}}
   <li>
     <a class="tallycard" href="/t/{{.Tally.Slug}}">
-      <span class="eyebrow">{{$.T .Board.Preset.NameKey}}</span>
+      <span class="eyebrow">{{if gt (len .Boards) 1}}{{range $i, $b := .Boards}}{{if $i}}, {{end}}{{template "boardname" (dict "P" $ "B" $b)}}{{end}}{{else}}{{$.T .Board.Preset.NameKey}}{{end}}</span>
       <strong class="tname">{{.Tally.Name}}</strong>
       <span class="muted small">
         {{$.T "dashboard.players" .Players}}

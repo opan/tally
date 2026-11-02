@@ -1,6 +1,7 @@
 # RFC-003: Leaderboards per sport inside a tally
 
-- **Status:** Draft; decisions in §3 (opan, 2026-11-01); implementation plan in §7
+- **Status:** Built; decisions in §3 (opan, 2026-11-01); plan in §7; as built in §12
+- **Updated:** 2026-11-02
 - **Author:** opan
 - **Created:** 2026-11-01
 - **Scope:** every tally; both login modes
@@ -235,6 +236,47 @@ Phase 1 PR → merge and deploy → phase 2 PR. One Deck card per phase.
 ## 11. Next steps
 
 - [x] opan decides §3 (2026-11-01).
-- [ ] opan reviews this plan, including §9.
-- [ ] Phase 1 (§7.1).
-- [ ] Phase 2 (§7.2).
+- [x] opan reviews this plan, including §9 (2026-11-02; §9.3 default = lowest position).
+- [x] Phase 1 (§7.1): PR #21, deployed 2026-11-02.
+- [x] Phase 2 (§7.2): this PR.
+
+## 12. As built
+
+### 12.1 Phase 1 (PR #21)
+
+As planned, with these details:
+
+- No `LeaderboardBySlug`: `loadTally` loads all of a tally's leaderboards (a handful) and picks
+  from them. `tallyCtx.Boards` holds them, the default first.
+- `?season=` on the board and player pages also picks the season's leaderboard (`seasonBoard`),
+  so a season link works without `?board=`.
+- `tallyVM.Board` (the standings) became `Standings`, since `Board` is now the leaderboard.
+- The upgrade names the first leaderboard's slug after the type: `badminton` for both badminton
+  presets, else the preset id with `-` (`team`, `counter`…).
+
+### 12.2 Phase 2
+
+- **Links:** board-wide pages carry `?board=` only when the tally has **two or more**
+  leaderboards (`tallyCtx.BoardPath`), so a one-leaderboard club keeps exactly today's URLs.
+  Forms that create a season or a play day post to an action with `?board=` (no hidden field),
+  and redirects keep it. Pages tied to a season, play day or match need nothing: they know theirs.
+- **Switcher:** pills under the tally's name on Ringkasan, Main and Musim (also on a play day or
+  season page, whose tab is Main or Musim); a pill keeps the current tab. Shown to viewers too.
+  The type line above the name shows only for a named leaderboard there (the pill already says
+  the type otherwise), and not on Pemain or Setelan.
+- **Setelan → Papan:** list with the default marked *Utama*, its type, season count and
+  `?board=` slug; *Ubah* opens rename, up/down and delete. Delete only while it has no seasons
+  and never the last one. The add form reuses the create-tally type picker. Slugs come from the
+  name (else the type), made unique with `-2`, `-3`…, and never change on rename. At most 10 per
+  tally. Every change is audited (`leaderboard` create/update/delete).
+- **Home page:** a tally card lists its leaderboards' names when there are several. *Mabar saya*
+  has one line per leaderboard where the player has points in its current season, else one for
+  the default; the line names the leaderboard and links to the player page on that season.
+- **Player page:** the season picker groups seasons by leaderboard (`<optgroup>`).
+- **Site admin:** the tally page lists the leaderboards with their types, and groups the seasons
+  table under each leaderboard's name.
+- **Metrics:** `tally_leaderboards_created_total{type}` counts leaderboards added after creating
+  a tally (a new tally's first one stays in `tally_tallies_created_total`). The
+  `tally_leaderboards` gauge comes once the metrics PR (#23) is in, as it shares its code.
+- **Guide:** §7 "Beberapa papan dalam satu tally" / "Several leaderboards in one tally", with two
+  screenshots (`boards`, `switcher`); §2 points to it for another sport or type.

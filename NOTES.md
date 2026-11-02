@@ -117,7 +117,7 @@ given round. Movement arrow = rank after round N vs rank after round N‑1.
 | P10 | Transfer a tally's ownership to one of its admins | ✅ built 2026-11-01, PR #17 |
 | UX | Simpler play night + engagement (early feedback: UX too complex). First slice: points per player like the club's sheet, sheet view, XLSX import | ✅ built 2026-10-30 (PRs #9–#13) except the sheet view; [RFC-001](docs/rfc/RFC-001-simpler-play-night.md) §11 has what shipped |
 | LINK | Link players to accounts (optional): admin invites by username without revealing whether it exists; "Mabar saya" on the home page | ✅ built 2026-10-30, PR #16 ([RFC-002](docs/rfc/RFC-002-player-links.md), as built in §11) |
-| BOARDS | A tally becomes the club, with one leaderboard (papan) per sport inside it | RFC draft with implementation plan: [docs/rfc/RFC-003-leaderboards.md](docs/rfc/RFC-003-leaderboards.md), 2026-11-01 |
+| BOARDS | A tally becomes the club, with one leaderboard (papan) per sport inside it | [docs/rfc/RFC-003-leaderboards.md](docs/rfc/RFC-003-leaderboards.md): phase 1 ✅ deployed 2026-11-02 (#21); phase 2 built 2026-11-02 |
 | — | k8s deploy in `homelab/k8s/tally` | manifests in homelab 2026-10-14; opan deploys |
 | P11 | Archive a season: read-only, out of the season pickers, never the current season | ✅ built 2026-11-01, PR #18 |
 
@@ -561,6 +561,16 @@ tally still has exactly one, so nothing on screen changes.
   for match, team and counter types. End to end: main's database after the guide script,
   upgraded by this build, serves the same HTML as main on 23 pages, and new seasons, play days
   and scores land on the leaderboard.
+
+## RFC-003 phase 2 notes: several leaderboards (2026-11-02)
+
+What was built is in the RFC, §12.2. In short: Setelan → Papan (add, rename, reorder, delete
+while empty), a switcher on Ringkasan / Main / Musim, `?board=` in links only with two or more
+leaderboards, Mabar saya per leaderboard, grouped season pickers on the player and site admin
+pages, guide §7 with two screenshots. Tests: `TestLeaderboardsInApp` (settings actions, forms
+and links on the right leaderboard, default after reorder, delete rules, private tally on every
+leaderboard, Mabar saya lines). Leaderboards are created from the settings card only; the
+create-tally form still makes the first one.
 
 ## Open questions
 

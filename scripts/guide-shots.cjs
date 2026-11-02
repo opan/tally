@@ -208,6 +208,21 @@ const rnd = (lo, hi) => { seed = (seed * 9301 + 49297) % 233280; return lo + Mat
     await go(T + '/players');
     const unlink = page.locator('form:has(input[name=action][value=unlink])');
     await post(B + await unlink.getAttribute('action'), { action: 'unlink' });
+
+    // A second leaderboard (RFC-003): the settings card with the add form
+    // filled in, and the switcher; then delete it again, like the link above.
+    await post(T + '/boards', { name: lang === 'id' ? 'Badminton tunggal' : 'Badminton singles', template: 'badminton_singles' });
+    await go(T + '/settings');
+    await page.locator('#papan details.addboard').evaluate(d => d.open = true);
+    await page.fill('#papan input[name=name][placeholder]:not([aria-label])', lang === 'id' ? 'Basket' : 'Basketball');
+    await page.selectOption('#papan select[name=template]', 'team');
+    await page.locator('#papan h2').click();
+    await shot(lang, 'boards', page.locator('#papan'));
+    await go(T);
+    await shot(lang, 'switcher', page.locator('.tallyhead'));
+    await go(T + '/settings');
+    const second = page.locator('#papan ul.rows > li').nth(1).locator('form[action*="/boards/"]').first();
+    await post(B + await second.getAttribute('action'), { action: 'delete' });
   }
   await browser.close();
   console.log('screenshots written to', OUT);

@@ -36,12 +36,13 @@ func (a *App) handleTally(w http.ResponseWriter, r *http.Request) {
 // leaderboard. ok is false once an error response has been written.
 func (a *App) loadBoard(w http.ResponseWriter, r *http.Request, tc tallyCtx) (vm tallyVM, ok bool) {
 	ctx := r.Context()
-	vm = tallyVM{tallyCtx: tc, ShareURL: baseURL(r) + tallyPath(tc.Tally, "")}
+	vm = tallyVM{tallyCtx: tc}
 
 	if err := a.seasonBoard(r, &vm.tallyCtx); err != nil {
 		internalError(w, "season leaderboard", err)
 		return vm, false
 	}
+	vm.ShareURL = baseURL(r) + vm.BoardPath("")
 	var err error
 	if vm.Periods, err = a.store.ListPeriods(ctx, tc.Tally.ID, vm.Board.ID); err != nil {
 		internalError(w, "list periods", err)

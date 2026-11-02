@@ -27,7 +27,8 @@ type dayStat struct {
 type playerVM struct {
 	tallyCtx
 	Player    *Participant
-	Periods   []Period
+	Periods   []Period      // the shown leaderboard's seasons
+	Groups    []seasonGroup // with several leaderboards: every leaderboard's seasons, for the picker
 	Period    *Period
 	Rank      int
 	Of        int
@@ -72,7 +73,7 @@ func (v playerVM) BackHref() string {
 	if v.Period != nil {
 		return tallyPath(v.Tally, "?season="+v.Period.ID)
 	}
-	return tallyPath(v.Tally, "")
+	return v.BoardPath("")
 }
 
 func sortPairs(m map[string]*pairStat) []pairStat {
@@ -138,6 +139,10 @@ func (a *App) playerPage(w http.ResponseWriter, r *http.Request, vm playerVM) {
 	}
 	if !vm.Admin {
 		vm.Periods = pickerPeriods(vm.Periods, vm.Period)
+	}
+	if vm.Groups, err = a.seasonGroups(r, vm.tallyCtx, vm.Periods, vm.Admin); err != nil {
+		internalError(w, "season groups", err)
+		return
 	}
 	if vm.Period == nil {
 		a.render(w, r, "player", vm)
@@ -265,4 +270,41 @@ func (a *App) playerPage(w http.ResponseWriter, r *http.Request, vm playerVM) {
 		}
 	}
 	a.render(w, r, "player", vm)
+}
+
+// seasonGroup is one leaderboard's seasons in a season picker.
+type seasonGroup struct {
+	Board   Leaderboard
+	Periods []Period
+}
+
+// seasonGroups lists every leaderboard's seasons for a picker, the shown
+// leaderboard's being shown; nil with one leaderboard or a single season in
+// all. Archived seasons are left out unless all is set (site admin).
+func (a *App) seasonGroups(r *http.Request, tc tallyCtx, shown []Period, all bool) ([]seasonGroup, error) {
+	if !tc.MultiBoard() {
+		return nil, nil
+	}
+	var groups []seasonGroup
+	n := 0
+	for _, b := range tc.Boards {
+		ps := shown
+		if b.ID != tc.Board.ID {
+			var err error
+			if ps, err = a.store.ListPeriods(r.Context(), tc.Tally.ID, b.ID); err != nil {
+				return nil, err
+			}
+			if !all {
+				ps = pickerPeriods(ps, nil)
+			}
+		}
+		if len(ps) > 0 {
+			groups = append(groups, seasonGroup{Board: b, Periods: ps})
+			n += len(ps)
+		}
+	}
+	if n < 2 {
+		return nil, nil
+	}
+	return groups, nil
 }

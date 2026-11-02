@@ -2,7 +2,7 @@
 {{define "content"}}
 {{$t := .Data.Tally}}{{$d := .Data}}
 <div class="postertools">
-  <a class="btn small ghost" href="/t/{{$t.Slug}}{{if $d.Round}}?season={{$d.Period.ID}}&day={{$d.Round.ID}}{{end}}">← {{.T "poster.back"}}</a>
+  <a class="btn small ghost" href="{{if $d.Round}}/t/{{$t.Slug}}?season={{$d.Period.ID}}&day={{$d.Round.ID}}{{else}}{{$d.BoardPath ""}}{{end}}">← {{.T "poster.back"}}</a>
   <div class="pt-actions">
     <button type="button" class="btn small" id="posterShare" hidden>{{.T "poster.share"}}</button>
     <button type="button" class="btn primary small" id="posterDownload" data-filename="{{$d.Filename}}" data-busy="{{.T "poster.working"}}" data-failed="{{.T "poster.failed"}}">{{.T "poster.download"}}</button>

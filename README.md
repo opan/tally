@@ -153,6 +153,7 @@ Names as they appear in VictoriaMetrics / Grafana (label `job="tally"`):
 | `tally_tallies_active` | gauge | | Tallies with a play day in the last 30 days |
 | `tally_users_created_total` | counter | `method` = local, aio | New accounts |
 | `tally_tallies_created_total` | counter | `type` | New tallies, by preset |
+| `tally_leaderboards_created_total` | counter | `type` | Leaderboards added to an existing tally (RFC-003), by preset |
 | `tally_logins_total` | counter | `method`, `result` | Logins: `ok`, `failed` (wrong password), or the aio error (`state`, `denied`, `unavailable`, `exchange`, `verify`, `unlinked`) |
 | `tally_play_days_started_total` | counter | | Play days started |
 | `tally_match_events_total` | counter | `action` = scheduled, scored, added, edited, deleted, cancelled | Match activity |
