@@ -275,8 +275,8 @@ As planned, with these details:
 - **Player page:** the season picker groups seasons by leaderboard (`<optgroup>`).
 - **Site admin:** the tally page lists the leaderboards with their types, and groups the seasons
   table under each leaderboard's name.
-- **Metrics:** `tally_leaderboards_created_total{type}` counts leaderboards added after creating
-  a tally (a new tally's first one stays in `tally_tallies_created_total`). The
-  `tally_leaderboards` gauge comes once the metrics PR (#23) is in, as it shares its code.
+- **Metrics:** the `tally_leaderboards` gauge counts leaderboards across all tallies;
+  `tally_leaderboards_created_total{type}` counts leaderboards added after creating a tally (a
+  new tally's first one stays in `tally_tallies_created_total`).
 - **Guide:** §7 "Beberapa papan dalam satu tally" / "Several leaderboards in one tally", with two
   screenshots (`boards`, `switcher`); §2 points to it for another sport or type.

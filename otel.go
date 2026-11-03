@@ -34,7 +34,10 @@ var (
 	scoresMade   metric.Int64Counter
 	playersAdded metric.Int64Counter
 	adminChecks  metric.Int64Counter // {result: admin|not_admin|local_account|error}
-	inviteEvents metric.Int64Counter // {action: sent|accepted|declined|ignored|unlinked}
+	inviteEvents metric.Int64Counter // {action: sent|accepted|declined|ignored|cancelled|unlinked}
+	adminEvents  metric.Int64Counter // {action: added|removed|owner_transferred}
+	seasonEvents metric.Int64Counter // {action: created|edited|archived|unarchived}
+	sheetImports metric.Int64Counter
 )
 
 // initOTel wires up OTLP metric export (push) to the collector. Endpoint,
@@ -95,6 +98,9 @@ func initOTel(ctx context.Context) (shutdown func(context.Context) error, enable
 		{&scoresMade, "tally.scores.recorded", "Points entered per player without match details (one per play)."},
 		{&playersAdded, "tally.players.added", "Players added to tallies."},
 		{&inviteEvents, "tally.player_invites", "Player-to-account invites and links (RFC-002), by action."},
+		{&adminEvents, "tally.admin.events", "Tally admin changes: added, removed, ownership transferred."},
+		{&seasonEvents, "tally.season.events", "Season changes, by action."},
+		{&sheetImports, "tally.sheet_imports", "Points sheets imported into a season."},
 		{&adminChecks, "tally.admin.checks", "Site admin page requests, by the result of asking all-in-one."},
 	}
 	for _, c := range counters {
@@ -180,6 +186,16 @@ func recordInviteEvent(ctx context.Context, action string) {
 	add(ctx, inviteEvents, 1, attribute.String("action", action))
 }
 
+func recordAdminEvent(ctx context.Context, action string) {
+	add(ctx, adminEvents, 1, attribute.String("action", action))
+}
+
+func recordSeasonEvent(ctx context.Context, action string) {
+	add(ctx, seasonEvents, 1, attribute.String("action", action))
+}
+
+func recordSheetImport(ctx context.Context) { add(ctx, sheetImports, 1) }
+
 // registerBusinessMetrics adds gauges sampled from the database on each export
 // (every 15s): totals for the dashboard, and the connection pool. Call it only
 // when telemetry is enabled.
@@ -198,6 +214,10 @@ func registerBusinessMetrics(store *Store) {
 	players := gauge("tally.players", "Active players across all tallies.")
 	matches := gauge("tally.matches", "Finished matches.")
 	days := gauge("tally.play_days", "Play days.")
+	linked := gauge("tally.players.linked", "Players linked to an account (RFC-002).")
+	pending := gauge("tally.player_invites.pending", "Player invites waiting for an answer, not expired.")
+	seasons := gauge("tally.seasons", "Seasons, by state (active, archived).")
+	boards := gauge("tally.leaderboards", "Leaderboards across all tallies (RFC-003).")
 	conns := gauge("tally.db.connections", "Database pool connections, by state.")
 
 	_, err := meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {
@@ -216,8 +236,13 @@ func registerBusinessMetrics(store *Store) {
 		o.ObserveInt64(players, t.Players)
 		o.ObserveInt64(matches, t.Matches)
 		o.ObserveInt64(days, t.PlayDays)
+		o.ObserveInt64(linked, t.LinkedPlayers)
+		o.ObserveInt64(pending, t.PendingInvites)
+		o.ObserveInt64(seasons, t.Seasons-t.ArchivedSeasons, metric.WithAttributes(attribute.String("state", "active")))
+		o.ObserveInt64(seasons, t.ArchivedSeasons, metric.WithAttributes(attribute.String("state", "archived")))
+		o.ObserveInt64(boards, t.Leaderboards)
 		return nil
-	}, users, tallies, active, players, matches, days, conns)
+	}, users, tallies, active, players, matches, days, linked, pending, seasons, boards, conns)
 	if err != nil {
 		log.Printf("otel business metrics: %v", err)
 	}

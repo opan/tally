@@ -331,6 +331,13 @@ Metrics. Verified end to end locally through otel-collector-contrib
 "Aplikasi" section. Failed logins are on it because login rate limiting is
 still in the security backlog.
 
+2026-11-02, for the features since: gauges for linked players, pending invites
+and seasons by state (active, archived); counters for admin changes (added,
+removed, owner transferred), season changes (created, edited, archived,
+unarchived) and sheet imports; invites also count `cancelled` and admin
+unlinks. RFC-003 phase 2 adds the `tally.leaderboards` gauge and the
+`tally.leaderboards.created{type}` counter.
+
 ## P7 notes: login through aio (2026-10-14)
 
 - Port of cashflow's `aioauth.go` (same decisions: code + PKCE + nonce, link by

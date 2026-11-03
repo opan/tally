@@ -500,6 +500,12 @@ func (a *App) handlePlayerAction(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		internalError(w, "player action", err)
 	default:
+		switch okKey {
+		case "invite_cancelled":
+			recordInviteEvent(ctx, "cancelled")
+		case "player_unlinked":
+			recordInviteEvent(ctx, "unlinked")
+		}
 		redirectOK(w, r, back, okKey)
 	}
 }
@@ -707,6 +713,7 @@ func (a *App) handleCreatePeriod(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	saved = true
+	recordSeasonEvent(r.Context(), "created")
 	redirectOK(w, r, tc.BoardPath("/periods"), "period_created")
 }
 
@@ -868,6 +875,9 @@ func (a *App) handleArchivePeriod(w http.ResponseWriter, r *http.Request) {
 	if !archive {
 		key = "season_unarchived"
 	}
+	if err == nil {
+		recordSeasonEvent(r.Context(), strings.TrimPrefix(key, "season_"))
+	}
 	redirectOK(w, r, tallyPath(tc.Tally, "/periods/"+id), key)
 }
 
@@ -906,6 +916,7 @@ func (a *App) handleEditPeriod(w http.ResponseWriter, r *http.Request) {
 		internalError(w, "update period", err)
 		return
 	}
+	recordSeasonEvent(r.Context(), "edited")
 	redirectOK(w, r, tc.BoardPath("/periods"), "period_saved")
 }
 
@@ -1029,6 +1040,7 @@ func (a *App) handleAddAdmin(w http.ResponseWriter, r *http.Request) {
 		internalError(w, "add admin", err)
 		return
 	default:
+		recordAdminEvent(r.Context(), "added")
 		redirectOK(w, r, tallyPath(tc.Tally, "/settings"), "admin_added")
 		return
 	}
@@ -1052,6 +1064,7 @@ func (a *App) handleTransferOwner(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		internalError(w, "transfer owner", err)
 	default:
+		recordAdminEvent(r.Context(), "owner_transferred")
 		redirectOK(w, r, tallyPath(tc.Tally, "/settings"), "owner_transferred")
 	}
 }
@@ -1070,5 +1083,6 @@ func (a *App) handleRemoveAdmin(w http.ResponseWriter, r *http.Request) {
 		internalError(w, "remove admin", err)
 		return
 	}
+	recordAdminEvent(r.Context(), "removed")
 	redirectOK(w, r, tallyPath(tc.Tally, "/settings"), "admin_removed")
 }
