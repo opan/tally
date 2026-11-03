@@ -308,6 +308,7 @@ func (a *App) handleImportConfirm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	saved = true
+	recordSheetImport(r.Context())
 	recordScores(r.Context(), res.Entries)
 	recordPlayersAdded(r.Context(), res.NewPlayers)
 	redirectOK(w, r, back, "import_done")
