@@ -154,8 +154,10 @@ Names as they appear in VictoriaMetrics / Grafana (label `job="tally"`):
 | `tally_players_linked` | gauge | | Players linked to an account (RFC-002) |
 | `tally_player_invites_pending` | gauge | | Player invites waiting for an answer, not expired |
 | `tally_seasons` | gauge | `state` = active, archived | Seasons |
+| `tally_leaderboards` | gauge | | Leaderboards across all tallies (RFC-003) |
 | `tally_users_created_total` | counter | `method` = local, aio | New accounts |
 | `tally_tallies_created_total` | counter | `type` | New tallies, by preset |
+| `tally_leaderboards_created_total` | counter | `type` | Leaderboards added to an existing tally (RFC-003), by preset |
 | `tally_logins_total` | counter | `method`, `result` | Logins: `ok`, `failed` (wrong password), or the aio error (`state`, `denied`, `unavailable`, `exchange`, `verify`, `unlinked`) |
 | `tally_play_days_started_total` | counter | | Play days started |
 | `tally_match_events_total` | counter | `action` = scheduled, scored, added, edited, deleted, cancelled | Match activity |

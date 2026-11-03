@@ -25,10 +25,66 @@
     </fieldset>
     <dl class="facts">
       <dt>{{.T "create.slug"}}</dt><dd><code>/t/{{$t.Slug}}</code></dd>
-      <dt>{{.T "create.template"}}</dt><dd>{{.T $.Data.Board.Preset.NameKey}}{{if $.Data.Board.Preset.TeamSizes}} · {{.T "tally.per_side" $.Data.Board.SideSize}}{{end}}</dd>
     </dl>
     <button type="submit" class="btn primary">{{.T "common.save"}}</button>
   </form>
+</section>
+
+<section class="card" id="papan">
+  <div class="cardhead"><h2>{{.T "boards.title"}}</h2><span class="muted small">{{len .Data.Leaderboards}}</span></div>
+  <p class="muted small">{{.T "boards.help"}}</p>
+  {{$multi := gt (len .Data.Leaderboards) 1}}{{$last := len .Data.Leaderboards}}
+  <ul class="rows">
+    {{range $i, $b := .Data.Leaderboards}}
+    <li class="prow">
+      <span class="pname"><strong>{{template "boardname" (dict "P" $ "B" $b.Leaderboard)}}</strong>{{if and $multi (eq $i 0)}} <span class="badge gold">{{$.T "boards.default"}}</span>{{end}}
+        <span class="muted small boardmeta">{{if $b.Name}}{{$.T $b.Preset.NameKey}} · {{end}}{{if $b.Preset.TeamSizes}}{{$.T "tally.per_side" $b.SideSize}} · {{end}}{{$.T "boards.seasons_n" $b.Seasons}}{{if $multi}} · <code>?board={{$b.Slug}}</code>{{end}}</span>
+      </span>
+      <details class="pmenu">
+        <summary class="btn small ghost">{{$.T "common.edit"}}</summary>
+        <div class="pmenu-body">
+          <form method="post" action="/t/{{$t.Slug}}/boards/{{$b.ID}}" class="inlineform">
+            <input type="hidden" name="action" value="rename">
+            <input type="text" name="name" value="{{$b.Name}}" maxlength="40" placeholder="{{$.T $b.Preset.NameKey}}" aria-label="{{$.T "boards.name"}}">
+            <button type="submit" class="btn small">{{$.T "players.rename"}}</button>
+          </form>
+          {{if $multi}}
+          <div class="pactions">
+            {{if gt $i 0}}<form method="post" action="/t/{{$t.Slug}}/boards/{{$b.ID}}"><input type="hidden" name="action" value="up"><button type="submit" class="btn small ghost">↑ {{$.T "boards.up"}}</button></form>{{end}}
+            {{if lt (add1 $i) $last}}<form method="post" action="/t/{{$t.Slug}}/boards/{{$b.ID}}"><input type="hidden" name="action" value="down"><button type="submit" class="btn small ghost">↓ {{$.T "boards.down"}}</button></form>{{end}}
+            {{if not $b.Seasons}}<form method="post" action="/t/{{$t.Slug}}/boards/{{$b.ID}}" data-confirm="{{$.T "boards.delete_confirm"}}"><input type="hidden" name="action" value="delete"><button type="submit" class="btn small danger">{{$.T "common.delete"}}</button></form>{{end}}
+          </div>
+          {{if $b.Seasons}}<p class="muted small">{{$.T "boards.delete_help"}}</p>{{end}}
+          {{end}}
+          <div><button type="button" class="btn small ghost" data-close-details>{{$.T "common.cancel"}}</button></div>
+        </div>
+      </details>
+    </li>
+    {{end}}
+  </ul>
+  <details class="addboard"{{if .Data.OpenBoard}} open{{end}}>
+    <summary class="btn small">{{.T "boards.add"}}</summary>
+    <form method="post" action="/t/{{$t.Slug}}/boards" class="stack">
+      <input type="hidden" name="form_token" value="{{formToken}}">
+      <label>{{.T "boards.name"}} <span class="muted hint">{{.T "common.optional"}}</span>
+        <input type="text" name="name" value="{{.Data.FBoardName}}" maxlength="40" placeholder="{{.T "boards.name_placeholder"}}">
+      </label>
+      <label>{{.T "create.template"}}
+        <select name="template" data-preset-toggle aria-describedby="boardPresetHelp">
+          {{range .Data.Presets}}<option value="{{.ID}}" data-help="{{$.T .HelpKey}}" {{if eq .ID $.Data.FBoardTemplate}}selected{{end}}>{{$.T .NameKey}}</option>{{end}}
+        </select>
+        <span class="muted small hint" id="boardPresetHelp">{{range .Data.Presets}}{{if eq .ID $.Data.FBoardTemplate}}{{$.T .HelpKey}}{{end}}{{end}}</span>
+      </label>
+      <label data-for-preset="team">{{.T "create.team_size"}}
+        <select name="side_size">{{range $n := 9}}{{$v := add1 (add1 (add1 $n))}}<option value="{{$v}}" {{if eq (print $v) $.Data.FBoardSide}}selected{{end}}>{{$v}}</option>{{end}}</select>
+      </label>
+      <p class="muted small">{{.T "boards.add_help"}}</p>
+      <div class="formactions">
+        <button type="submit" class="btn primary">{{.T "boards.add_submit"}}</button>
+        <button type="button" class="btn ghost" data-close-details>{{.T "common.cancel"}}</button>
+      </div>
+    </form>
+  </details>
 </section>
 
 <section class="card" id="poster">

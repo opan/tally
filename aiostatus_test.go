@@ -133,6 +133,9 @@ func TestAdminTemplatesRender(t *testing.T) {
 		Admins:  []Admin{{UserID: "u1", Username: "budi", Role: "owner"}},
 		Seasons: []adminSeasonRow{{Period: season, PlayDays: 2, Players: 3, Plays: 7, Points: 279}},
 		Players: []TallyPlayerRow{{Participant: Participant{ID: "x1", Name: "Ana", Active: true}, Plays: 4, Points: 160, LastPlayed: &last}}}
+	two := []Leaderboard{boards[0], {ID: "b2", TallyID: "t2", Slug: "basket", Name: "Basket", Template: "team"}}
+	twoPage := adminTallyVM{tallyCtx: tallyCtx{Tally: priv, Boards: two, Board: &two[0]},
+		Seasons: []adminSeasonRow{{Board: two[0], First: true, Period: season}, {Board: two[1], First: true, Period: Period{ID: "p2", Name: "Liga basket", StartsOn: joined, EndsOn: joined}}}}
 	day := &Round{ID: "r1", PlayedOn: joined, WeekPart: 1, WeekDays: 2}
 	dayPage := adminDayVM{tallyCtx: privCtx, Round: day, Period: &season, Plays: 2, SiteAdmin: true,
 		ScoreRows: []scoreRow{{Player: Participant{ID: "x1", Name: "Ana"}, Chips: []playChip{{Points: 42, AwardID: "a1"}, {Points: 40, MatchID: "m1"}}, Total: 82}}}
@@ -146,6 +149,7 @@ func TestAdminTemplatesRender(t *testing.T) {
 		{"admin", "id", users, []string{"Admin situs", "akun lokal"}, nil},
 		{"adminuser", "en", user, []string{`href="/admin/tallies/t1"`, `href="/admin/tallies/t2"`, "Bala Bulu", "Rahasia", "owner", "read-only"}, []string{`href="/t/rahasia"`}},
 		{"admintally", "en", tallyPage, []string{"Rahasia", "read-only", `href="/admin/tallies/t2/seasons/p1"`, `href="/admin/tallies/t2/players/x1"`, `href="/admin/users/u1"`, "279"}, []string{`href="/t/rahasia"`, `action="/t/`}},
+		{"admintally", "id", twoPage, []string{`class="grouprow"`, ">Basket</th>", "Bulu tangkis · ganda, Basket (Tim)", "Liga basket"}, nil},
 		{"adminday", "id", dayPage, []string{"Minggu 1A", "Ana", `href="/admin/tallies/t2/players/x1?season=p1"`, ">82<"}, []string{`action="/t/`, "/delete"}},
 		{"adminerror", "id", nil, []string{"all-in-one sedang tidak terjangkau"}, nil},
 	}

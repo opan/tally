@@ -3,7 +3,7 @@
 {{$t := .Data.Tally}}{{$d := .Data}}
 <p class="small"><a href="/admin">&larr; {{.T "admin.back"}}</a></p>
 <h1>{{$t.Name}}</h1>
-<p class="muted">{{.T $.Data.Board.Preset.NameKey}} &middot; /t/{{$t.Slug}} &middot; {{if eq $t.Visibility "private"}}{{.T "visibility.private"}}{{else}}{{.T "visibility.link"}}{{end}} &middot; {{.T "admin.created" (.Date $t.CreatedAt)}}
+<p class="muted">{{range $i, $b := $d.Boards}}{{if $i}}, {{end}}{{if $b.Name}}{{$b.Name}} ({{$.T $b.Preset.NameKey}}){{else}}{{$.T $b.Preset.NameKey}}{{end}}{{end}} &middot; /t/{{$t.Slug}} &middot; {{if eq $t.Visibility "private"}}{{.T "visibility.private"}}{{else}}{{.T "visibility.link"}}{{end}} &middot; {{.T "admin.created" (.Date $t.CreatedAt)}}
   {{if ne $t.Visibility "private"}} &middot; <a href="/t/{{$t.Slug}}">{{.T "admin.open_public"}}</a>{{end}}</p>
 <p class="alert info">{{.T "admin.readonly"}}</p>
 
@@ -20,6 +20,7 @@
       <thead><tr><th>{{.T "admin.col.season"}}</th><th class="num">{{.T "season.play_days"}}</th><th class="num">{{.T "season.players"}}</th><th class="num">{{.T "season.plays"}}</th><th class="num">{{.T "board.points"}}</th></tr></thead>
       <tbody>
         {{range $d.Seasons}}
+        {{if and $d.MultiBoard .First}}<tr class="grouprow"><th colspan="5">{{template "boardname" (dict "P" $ "B" .Board)}}</th></tr>{{end}}
         <tr>
           <td><a href="/admin/tallies/{{$t.ID}}/seasons/{{.Period.ID}}">{{.Period.Name}}</a> {{template "seasonbadge" (dict "P" $ "S" .Period)}}<br><span class="muted small">{{$.Date .Period.StartsOn}} – {{$.Date .Period.EndsOn}}</span></td>
           <td class="num">{{.PlayDays}}</td><td class="num">{{.Players}}</td><td class="num">{{.Plays}}</td><td class="num">{{.Points}}</td>

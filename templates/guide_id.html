@@ -39,7 +39,8 @@
     </tbody>
   </table></div>
   <p class="muted">Untuk jenis <em>Tim</em>, jumlah pemain per tim dipilih saat membuat tally dan tidak bisa
-    diubah. Tim tetap diacak di setiap pertandingan.</p>
+    diubah. Tim tetap diacak di setiap pertandingan. Jenisnya juga tetap; untuk olahraga atau jenis lain,
+    tambahkan <a href="#papan">papan</a> di tally yang sama.</p>
 </section>
 
 <section class="card gsec" id="aturan-poin">
@@ -215,6 +216,17 @@
   <h3>Membagikan tautan</h3>
   <p>Tautan ada di bagian bawah <em>Ringkasan</em>; tekan <strong>Salin</strong> lalu kirim ke grup.</p>
   {{template "gimg" (dict "P" $P "N" "share" "Alt" "Tautan untuk dibagikan dengan tombol Salin")}}
+  <h3 id="papan">Beberapa papan dalam satu tally</h3>
+  <p>Klub yang main lebih dari satu olahraga atau permainan tidak perlu tally baru. Di <em>Setelan → Papan</em>,
+    tekan <strong>Tambah papan</strong>, beri nama (misalnya <em>Basket</em> atau <em>Badminton tunggal</em>), lalu
+    pilih jenisnya. Setiap papan punya musim, hari main, peringkat, dan posternya sendiri. Pemain, admin, dan siapa
+    yang bisa melihat berlaku untuk semua papan, jadi pemain yang main dua olahraga cukup dicatat sekali.</p>
+  {{template "gimg" (dict "P" $P "N" "boards" "Alt" "Setelan → Papan: daftar papan dan formulir Tambah papan")}}
+  <p>Begitu ada lebih dari satu papan, tombolnya muncul di bawah nama tally di <em>Ringkasan</em>, <em>Main</em>,
+    dan <em>Musim</em>. Pilih papan sekali; tab lain dan tautan yang dibagikan tetap di papan itu. Papan teratas
+    adalah papan <em>Utama</em>, yang dibuka tautan biasa; ubah urutannya lewat <em>Ubah → Naikkan</em>. Papan
+    hanya bisa dihapus selama belum punya musim. Kalau sudah tidak dimainkan, arsipkan musimnya.</p>
+  {{template "gimg" (dict "P" $P "N" "switcher" "Alt" "Tombol papan di bawah nama tally")}}
 </section>
 
 <section class="card gsec" id="pemain">

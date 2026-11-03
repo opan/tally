@@ -26,6 +26,7 @@ var (
 	activeReqs   metric.Int64UpDownCounter
 	usersCreated metric.Int64Counter // {method: local|aio}
 	talliesMade  metric.Int64Counter // {type: preset id}
+	boardsMade   metric.Int64Counter // {type: preset id}
 	logins       metric.Int64Counter // {method: local|aio, result: ok|failed|<aio error>}
 	playDays     metric.Int64Counter
 	matchEvents  metric.Int64Counter // {action: scheduled|scored|added|edited|deleted|cancelled}
@@ -89,6 +90,7 @@ func initOTel(ctx context.Context) (shutdown func(context.Context) error, enable
 	}{
 		{&usersCreated, "tally.users.created", "Accounts created, by login method."},
 		{&talliesMade, "tally.tallies.created", "Tallies created, by type."},
+		{&boardsMade, "tally.leaderboards.created", "Leaderboards added to a tally after it was created (RFC-003), by type."},
 		{&logins, "tally.logins", "Login attempts, by method and result."},
 		{&playDays, "tally.play_days.started", "Play days started."},
 		{&matchEvents, "tally.match.events", "Match changes, by action."},
@@ -158,6 +160,10 @@ func recordTallyCreated(ctx context.Context, preset string) {
 	add(ctx, talliesMade, 1, attribute.String("type", preset))
 }
 
+func recordLeaderboardCreated(ctx context.Context, preset string) {
+	add(ctx, boardsMade, 1, attribute.String("type", preset))
+}
+
 // recordLogin counts a login attempt. result is "ok", "failed" (wrong local
 // password), or a short aio error reason; keep it to a small fixed set.
 func recordLogin(ctx context.Context, method, result string) {
@@ -211,6 +217,7 @@ func registerBusinessMetrics(store *Store) {
 	linked := gauge("tally.players.linked", "Players linked to an account (RFC-002).")
 	pending := gauge("tally.player_invites.pending", "Player invites waiting for an answer, not expired.")
 	seasons := gauge("tally.seasons", "Seasons, by state (active, archived).")
+	boards := gauge("tally.leaderboards", "Leaderboards across all tallies (RFC-003).")
 	conns := gauge("tally.db.connections", "Database pool connections, by state.")
 
 	_, err := meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {
@@ -233,8 +240,9 @@ func registerBusinessMetrics(store *Store) {
 		o.ObserveInt64(pending, t.PendingInvites)
 		o.ObserveInt64(seasons, t.Seasons-t.ArchivedSeasons, metric.WithAttributes(attribute.String("state", "active")))
 		o.ObserveInt64(seasons, t.ArchivedSeasons, metric.WithAttributes(attribute.String("state", "archived")))
+		o.ObserveInt64(boards, t.Leaderboards)
 		return nil
-	}, users, tallies, active, players, matches, days, linked, pending, seasons, conns)
+	}, users, tallies, active, players, matches, days, linked, pending, seasons, boards, conns)
 	if err != nil {
 		log.Printf("otel business metrics: %v", err)
 	}

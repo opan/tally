@@ -9,7 +9,7 @@
     {{template "periodfields" .}}
     <div class="actions">
       <button type="submit" class="btn primary">{{.T "common.save"}}</button>
-      <a class="btn ghost" href="/t/{{$t.Slug}}/periods">{{.T "common.cancel"}}</a>
+      <a class="btn ghost" href="{{.Data.BoardPath "/periods"}}">{{.T "common.cancel"}}</a>
     </div>
   </form>
 </section>

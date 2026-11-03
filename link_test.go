@@ -350,11 +350,14 @@ func TestTotalsForMetrics(t *testing.T) {
 	if err := s.SetPeriodArchived(ctx, f.tally.ID, f.owner.ID, periods[0].ID, true); err != nil {
 		t.Fatal(err)
 	}
+	if _, err := s.CreateLeaderboard(ctx, f.tally.ID, f.owner.ID, Leaderboard{Template: "counter"}); err != nil {
+		t.Fatal(err)
+	}
 	tot, err := s.Totals(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if tot.LinkedPlayers != 1 || tot.PendingInvites != 1 || tot.Seasons != 1 || tot.ArchivedSeasons != 1 {
-		t.Errorf("totals = %+v; want 1 linked, 1 pending, 1 season (archived)", tot)
+	if tot.LinkedPlayers != 1 || tot.PendingInvites != 1 || tot.Seasons != 1 || tot.ArchivedSeasons != 1 || tot.Leaderboards != 2 {
+		t.Errorf("totals = %+v; want 1 linked, 1 pending, 1 season (archived), 2 leaderboards", tot)
 	}
 }

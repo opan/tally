@@ -146,6 +146,17 @@ code { background: var(--card-2); padding: 1px 6px; border-radius: 4px; }
 .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-top: 12px; overflow-x: auto; }
 .tabs a { padding: 8px 12px; color: var(--muted); text-decoration: none; font-weight: 600; font-size: .92rem; border-bottom: 2px solid transparent; white-space: nowrap; }
 .tabs a.on { color: var(--gold-2); border-bottom-color: var(--gold); }
+/* Leaderboard switcher (RFC-003): one pill per leaderboard, the current one gold. */
+.boardswitch { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+.boardswitch a { padding: 5px 12px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); text-decoration: none; font-weight: 600; font-size: .88rem; }
+.boardswitch a.on { background: var(--gold); border-color: var(--gold); color: var(--gold-ink); }
+.boardmeta { display: block; font-weight: 400; }
+.boardmeta code { white-space: nowrap; }
+.addboard summary { list-style: none; display: inline-block; margin-top: 6px; }
+.addboard summary::-webkit-details-marker { display: none; }
+.addboard[open] summary { display: none; }
+.formactions { display: flex; gap: 8px; flex-wrap: wrap; }
+.board tr.grouprow th { text-align: left; color: var(--gold-2); padding-top: 14px; }
 .checklist { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 6px; }
 .checklist li.done { color: var(--muted); text-decoration: line-through; }
 .checklist li.done::marker { color: var(--up); }

@@ -160,6 +160,7 @@ func (s *Store) DeleteExpiredSessions(ctx context.Context) (int64, error) {
 type Totals struct {
 	Users, Tallies, ActiveTallies, Players, Matches, PlayDays int64
 	LinkedPlayers, PendingInvites, Seasons, ArchivedSeasons   int64
+	Leaderboards                                              int64
 }
 
 func (s *Store) Totals(ctx context.Context) (Totals, error) {
@@ -175,9 +176,10 @@ func (s *Store) Totals(ctx context.Context) (Totals, error) {
 		(SELECT count(*) FROM participants WHERE user_id IS NOT NULL),
 		(SELECT count(*) FROM player_invites WHERE status = 'pending' AND expires_at > now()),
 		(SELECT count(*) FROM periods),
-		(SELECT count(*) FROM periods WHERE archived_at IS NOT NULL)`,
+		(SELECT count(*) FROM periods WHERE archived_at IS NOT NULL),
+		(SELECT count(*) FROM leaderboards)`,
 	).Scan(&t.Users, &t.Tallies, &t.ActiveTallies, &t.Players, &t.Matches, &t.PlayDays,
-		&t.LinkedPlayers, &t.PendingInvites, &t.Seasons, &t.ArchivedSeasons)
+		&t.LinkedPlayers, &t.PendingInvites, &t.Seasons, &t.ArchivedSeasons, &t.Leaderboards)
 	return t, err
 }
 

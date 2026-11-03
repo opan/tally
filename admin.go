@@ -110,6 +110,8 @@ func (a *App) logAdminTallyView(r *http.Request, admin *User, page, tallyID, det
 }
 
 type adminSeasonRow struct {
+	Board    Leaderboard
+	First    bool // the first season of its leaderboard: the table starts a group
 	Period   Period
 	PlayDays int
 	Players  int
@@ -138,17 +140,19 @@ func (a *App) handleAdminTally(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Every leaderboard's seasons, the default leaderboard's first.
-	var periods []Period
+	var periods []adminSeasonRow
 	for _, b := range tc.Boards {
 		ps, err := a.store.ListPeriods(ctx, tc.Tally.ID, b.ID)
 		if err != nil {
 			internalError(w, "admin: periods", err)
 			return
 		}
-		periods = append(periods, ps...)
+		for i, p := range ps {
+			periods = append(periods, adminSeasonRow{Board: b, First: i == 0, Period: p})
+		}
 	}
-	for _, p := range periods {
-		row := adminSeasonRow{Period: p}
+	for _, row := range periods {
+		p := row.Period
 		rounds, err := a.store.RoundsForPeriod(ctx, p.ID)
 		if err != nil {
 			internalError(w, "admin: rounds", err)

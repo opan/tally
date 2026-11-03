@@ -138,6 +138,8 @@ func main() {
 	mux.HandleFunc("POST /t/{slug}/branding", app.handleSaveBranding)
 	mux.HandleFunc("GET /t/{slug}/settings", app.handleSettings)
 	mux.HandleFunc("POST /t/{slug}/settings", app.handleSaveSettings)
+	mux.HandleFunc("POST /t/{slug}/boards", app.handleCreateBoard)
+	mux.HandleFunc("POST /t/{slug}/boards/{id}", app.handleBoardAction)
 	mux.HandleFunc("POST /t/{slug}/admins", app.handleAddAdmin)
 	mux.HandleFunc("POST /t/{slug}/admins/{uid}/remove", app.handleRemoveAdmin)
 	mux.HandleFunc("POST /t/{slug}/admins/{uid}/owner", app.handleTransferOwner)

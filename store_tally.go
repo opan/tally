@@ -54,7 +54,8 @@ func (t *Tally) HasLogo() bool { return t.LogoVer > 0 }
 // TallyCard is a tally as listed on the dashboard.
 type TallyCard struct {
 	Tally   Tally
-	Board   *Leaderboard // the default one
+	Boards  []Leaderboard // the default first
+	Board   *Leaderboard  // the default one
 	Role    string
 	Players int
 	Current *Period // the default leaderboard's
@@ -279,9 +280,13 @@ func (s *Store) TalliesForUser(ctx context.Context, userID string) ([]TallyCard,
 	}
 	for i := range cards {
 		c := &cards[i]
-		if c.Board, err = s.DefaultLeaderboard(ctx, c.Tally.ID); err != nil {
+		if c.Boards, err = s.ListLeaderboards(ctx, c.Tally.ID); err != nil {
 			return nil, err
 		}
+		if len(c.Boards) == 0 {
+			return nil, errors.New("tally has no leaderboard")
+		}
+		c.Board = &c.Boards[0]
 		p, err := s.CurrentPeriod(ctx, c.Tally.ID, c.Board.ID)
 		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 			return nil, err

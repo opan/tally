@@ -5,7 +5,7 @@
 {{if not .Data.Current}}
 <section class="card empty">
   <p>{{.T "play.no_period"}}</p>
-  <a class="btn primary" href="/t/{{$t.Slug}}/periods">{{.T "setup.period"}}</a>
+  <a class="btn primary" href="{{.Data.BoardPath "/periods"}}">{{.T "setup.period"}}</a>
 </section>
 {{else}}
 {{with .Data.Ended}}
@@ -13,7 +13,7 @@
   <h2>{{$.T "play.season_ended" .Name ($.Date .EndsOn)}}</h2>
   <p class="muted small">{{$.T "play.season_ended_help"}}</p>
   <div class="actions">
-    <a class="btn primary" href="/t/{{$t.Slug}}/periods#baru">{{$.T "play.new_season"}}</a>
+    <a class="btn primary" href="{{$.Data.BoardPath "/periods#baru"}}">{{$.T "play.new_season"}}</a>
     <a class="btn ghost" href="/t/{{$t.Slug}}/periods/{{.ID}}">{{$.T "play.see_season" .Name}}</a>
   </div>
 </section>
@@ -33,7 +33,7 @@
 <section class="card" id="mulai">
   <h2>{{.T "play.start_title"}}</h2>
   <p class="muted small">{{.T "play.start_help"}}</p>
-  <form method="post" action="/t/{{$t.Slug}}/rounds" class="stack startday">
+  <form method="post" action="{{.Data.BoardPath "/rounds"}}" class="stack startday">
     <label>{{.T "play.date"}}<input type="date" name="played_on" id="playDate" value="{{.Data.FDate}}" required></label>
     <div class="seasonhint" data-season-hint="playDate">
       {{range .Data.Periods}}
@@ -42,7 +42,7 @@
         &middot; <a href="/t/{{$t.Slug}}/periods/{{.ID}}">{{$.T "period.details"}}</a>
       </p>
       {{end}}
-      <p class="warn" data-none{{if .Data.Season}} hidden{{end}}>{{.T "play.season_none"}} <a href="/t/{{$t.Slug}}/periods">{{.T "play.season_manage"}}</a></p>
+      <p class="warn" data-none{{if .Data.Season}} hidden{{end}}>{{.T "play.season_none"}} <a href="{{.Data.BoardPath "/periods"}}">{{.T "play.season_manage"}}</a></p>
     </div>
     <button type="submit" class="btn primary">{{.T "play.start_submit"}}</button>
   </form>

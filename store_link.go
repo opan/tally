@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"net/url"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -41,7 +42,7 @@ type IncomingInvite struct {
 // MyPlayer is a player linked to the viewer's account, for "Mabar saya".
 type MyPlayer struct {
 	Tally      Tally
-	Board      *Leaderboard // the default one (RFC-003 phase 2: one line per leaderboard)
+	Board      *Leaderboard // nil while the tally has one leaderboard
 	PlayerID   string
 	PlayerName string
 	Period     *Period // its current season; nil before the first one
@@ -315,7 +316,8 @@ func (s *Store) LinkedPlayerID(ctx context.Context, tallyID, userID string) (str
 }
 
 // MyPlayers lists the players linked to the user, with their rank and points
-// in each tally's current season.
+// in each tally's current season: one line per leaderboard where they have
+// points this season (RFC-003), else one for the tally's default leaderboard.
 func (s *Store) MyPlayers(ctx context.Context, userID string) ([]MyPlayer, error) {
 	rows, err := s.pool.Query(ctx,
 		`SELECT `+tallyCols+`, p.id, p.display_name
@@ -325,7 +327,7 @@ func (s *Store) MyPlayers(ctx context.Context, userID string) ([]MyPlayer, error
 	if err != nil {
 		return nil, err
 	}
-	var out []MyPlayer
+	var players []MyPlayer
 	for rows.Next() {
 		var m MyPlayer
 		t, err := scanTally(rows, &m.PlayerID, &m.PlayerName)
@@ -334,41 +336,79 @@ func (s *Store) MyPlayers(ctx context.Context, userID string) ([]MyPlayer, error
 			return nil, err
 		}
 		m.Tally = *t
-		out = append(out, m)
+		players = append(players, m)
 	}
 	rows.Close()
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-	for i := range out {
-		m := &out[i]
-		if m.Board, err = s.DefaultLeaderboard(ctx, m.Tally.ID); err != nil {
-			return nil, err
-		}
-		p, err := s.CurrentPeriod(ctx, m.Tally.ID, m.Board.ID)
-		if errors.Is(err, pgx.ErrNoRows) {
-			continue
-		}
+	var out []MyPlayer
+	for _, m := range players {
+		boards, err := s.ListLeaderboards(ctx, m.Tally.ID)
 		if err != nil {
 			return nil, err
 		}
-		m.Period = p
-		st, err := s.StandingsAsOf(ctx, p.ID, time.Time{})
-		if err != nil {
-			return nil, err
-		}
-		if m.Board.Preset().IsCounter() {
-			useEntries(st)
-		}
-		sortStandings(st)
-		m.Of = len(st)
-		for j, row := range st {
-			if row.ParticipantID == m.PlayerID {
-				m.Rank, m.Points = j+1, row.Points
+		var lines []MyPlayer
+		for i := range boards {
+			line, err := s.myStanding(ctx, m, &boards[i])
+			if err != nil {
+				return nil, err
+			}
+			if line.Rank > 0 || (i == 0 && len(lines) == 0) {
+				lines = append(lines, line)
 			}
 		}
+		// The default leaderboard's line stands in only when no leaderboard
+		// has their points yet.
+		if len(lines) > 1 && lines[0].Rank == 0 {
+			lines = lines[1:]
+		}
+		if len(boards) == 1 {
+			lines[0].Board = nil
+		}
+		out = append(out, lines...)
 	}
 	return out, nil
+}
+
+// myStanding is m's rank and points in the current season of leaderboard b.
+func (s *Store) myStanding(ctx context.Context, m MyPlayer, b *Leaderboard) (MyPlayer, error) {
+	m.Board = b
+	p, err := s.CurrentPeriod(ctx, m.Tally.ID, b.ID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return m, nil
+	}
+	if err != nil {
+		return m, err
+	}
+	m.Period = p
+	st, err := s.StandingsAsOf(ctx, p.ID, time.Time{})
+	if err != nil {
+		return m, err
+	}
+	if b.Preset().IsCounter() {
+		useEntries(st)
+	}
+	sortStandings(st)
+	m.Of = len(st)
+	for j, row := range st {
+		if row.ParticipantID == m.PlayerID {
+			m.Rank, m.Points = j+1, row.Points
+		}
+	}
+	return m, nil
+}
+
+// Href is the player's page on this line's leaderboard.
+func (m MyPlayer) Href() string {
+	path := "/t/" + m.Tally.Slug + "/players/" + m.PlayerID
+	switch {
+	case m.Board == nil: // one leaderboard: the plain link, as before RFC-003
+		return path
+	case m.Period != nil:
+		return path + "?season=" + m.Period.ID
+	}
+	return path + "?board=" + url.QueryEscape(m.Board.Slug)
 }
 
 // TallyOfMyPlayer is the tally of a player linked to the user;

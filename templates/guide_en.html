@@ -39,7 +39,8 @@
     </tbody>
   </table></div>
   <p class="muted">For <em>Teams</em>, players per side is chosen when creating the tally and can't be changed.
-    Teams are still shuffled for every match.</p>
+    Teams are still shuffled for every match. The type is fixed too; for another sport or type, add a
+    <a href="#papan">leaderboard</a> to the same tally.</p>
 </section>
 
 <section class="card gsec" id="aturan-poin">
@@ -216,6 +217,17 @@
   <h3>Sharing the link</h3>
   <p>The link is at the bottom of <em>Overview</em>; tap <strong>Copy</strong> and send it to the group.</p>
   {{template "gimg" (dict "P" $P "N" "share" "Alt" "The share link with a Copy button")}}
+  <h3 id="papan">Several leaderboards in one tally</h3>
+  <p>A club that plays more than one sport or game doesn't need another tally. In <em>Settings → Leaderboards</em>,
+    tap <strong>Add leaderboard</strong>, give it a name (say <em>Basketball</em> or <em>Badminton singles</em>) and
+    pick its type. Each leaderboard has its own seasons, play days, ranking and poster. Players, admins and who can
+    see it apply to all of them, so someone who plays two sports is entered once.</p>
+  {{template "gimg" (dict "P" $P "N" "boards" "Alt" "Settings → Leaderboards: the list and the Add leaderboard form")}}
+  <p>Once there's more than one, their buttons show under the tally's name on <em>Overview</em>, <em>Play</em> and
+    <em>Seasons</em>. Pick one once; the other tabs and the link you share stay on it. The top one is the
+    <em>Main</em> leaderboard, which a plain link opens; change the order with <em>Edit → Move up</em>. A
+    leaderboard can only be deleted while it has no seasons. Once you stop playing it, archive its seasons.</p>
+  {{template "gimg" (dict "P" $P "N" "switcher" "Alt" "Leaderboard buttons under the tally's name")}}
 </section>
 
 <section class="card gsec" id="pemain">
