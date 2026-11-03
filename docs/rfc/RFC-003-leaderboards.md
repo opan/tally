@@ -1,7 +1,7 @@
 # RFC-003: Leaderboards per sport inside a tally
 
-- **Status:** Built; decisions in §3 (opan, 2026-11-01); plan in §7; as built in §12
-- **Updated:** 2026-11-02
+- **Status:** Deployed 2026-11-03; decisions in §3 (opan, 2026-11-01); plan in §7; as built in §12
+- **Updated:** 2026-11-03
 - **Author:** opan
 - **Created:** 2026-11-01
 - **Scope:** every tally; both login modes
@@ -238,7 +238,7 @@ Phase 1 PR → merge and deploy → phase 2 PR. One Deck card per phase.
 - [x] opan decides §3 (2026-11-01).
 - [x] opan reviews this plan, including §9 (2026-11-02; §9.3 default = lowest position).
 - [x] Phase 1 (§7.1): PR #21, deployed 2026-11-02.
-- [x] Phase 2 (§7.2): this PR.
+- [x] Phase 2 (§7.2): PR #24, deployed 2026-11-03.
 
 ## 12. As built
 
@@ -254,7 +254,7 @@ As planned, with these details:
 - The upgrade names the first leaderboard's slug after the type: `badminton` for both badminton
   presets, else the preset id with `-` (`team`, `counter`…).
 
-### 12.2 Phase 2
+### 12.2 Phase 2 (PR #24)
 
 - **Links:** board-wide pages carry `?board=` only when the tally has **two or more**
   leaderboards (`tallyCtx.BoardPath`), so a one-leaderboard club keeps exactly today's URLs.
