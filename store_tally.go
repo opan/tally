@@ -43,9 +43,9 @@ type Tally struct {
 
 // Branding is the poster's optional text. Empty fields fall back to defaults.
 type Branding struct {
-	Title1 string `json:"title1,omitempty"` // white line, e.g. "BALA BULU"
+	Title1 string `json:"title1,omitempty"` // white line, e.g. "SAMPAI PINGSAN"
 	Title2 string `json:"title2,omitempty"` // gold line, e.g. "POINT RANK"
-	Badge  string `json:"badge,omitempty"`  // under the logo, e.g. "BALA BULU BC"
+	Badge  string `json:"badge,omitempty"`  // under the logo, e.g. "SAMPAI PINGSAN BC"
 	Footer string `json:"footer,omitempty"` // e.g. "Play • Improve • Together"
 }
 

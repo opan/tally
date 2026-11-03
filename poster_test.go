@@ -7,7 +7,7 @@ import (
 
 func TestSplitTitle(t *testing.T) {
 	for in, want := range map[string][2]string{
-		"Bala Bulu Point Rank":         {"Bala Bulu", "Point Rank"},
+		"Sampai Pingsan Point Rank":    {"Sampai Pingsan", "Point Rank"},
 		"Liga Pingpong Kantor Jakarta": {"Liga Pingpong", "Kantor Jakarta"},
 		"Smash Club":                   {"Smash", "Club"},
 		"Solo":                         {"Solo", ""},

@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// Importing a points sheet like the club's "BALA BULU POINT" spreadsheet
+// Importing the club's points spreadsheet
 // (RFC-001 §7.4): player names in column A; per play day a block of slot
 // columns 1..7 followed by SubTot (and Total, Rank, Movement), with the date
 // in the row above the slot numbers, e.g. "Sun, 4 Oct". The year comes from

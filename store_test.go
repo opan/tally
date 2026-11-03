@@ -55,7 +55,7 @@ func TestDeletePlayerWhoOnlyAttended(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := s.AddParticipants(ctx, tl.ID, u.ID, []string{"Dhamar", "Dimas", "QQ", "Ferdian", "Aaron"}); err != nil {
+	if _, _, err := s.AddParticipants(ctx, tl.ID, u.ID, []string{"Mas Gembul", "Tante Smash", "Om Netting", "Si Lob", "Koh Backhand"}); err != nil {
 		t.Fatal(err)
 	}
 	players, _ := s.ListParticipants(ctx, tl.ID)
@@ -76,9 +76,9 @@ func TestDeletePlayerWhoOnlyAttended(t *testing.T) {
 	}
 	r, _ := s.RoundByID(ctx, tl.ID, roundID)
 
-	// Aaron plays a match; Dhamar was only ticked as present.
+	// Koh Backhand plays a match; Mas Gembul was only ticked as present.
 	res := MatchResult{
-		Players: [2][]string{{id["Aaron"], id["Dimas"]}, {id["QQ"], id["Ferdian"]}},
+		Players: [2][]string{{id["Koh Backhand"], id["Tante Smash"]}, {id["Om Netting"], id["Si Lob"]}},
 		Games:   [2][]int{{42}, {36}},
 	}
 	res.Outcome, _ = DefaultContinuous.Score(res.Games[0], res.Games[1])
@@ -86,10 +86,10 @@ func TestDeletePlayerWhoOnlyAttended(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := s.DeleteParticipant(ctx, tl.ID, u.ID, id["Dhamar"]); err != nil {
+	if err := s.DeleteParticipant(ctx, tl.ID, u.ID, id["Mas Gembul"]); err != nil {
 		t.Fatalf("deleting a player who only attended: %v", err)
 	}
-	if err := s.DeleteParticipant(ctx, tl.ID, u.ID, id["Aaron"]); !errors.Is(err, ErrInUse) {
+	if err := s.DeleteParticipant(ctx, tl.ID, u.ID, id["Koh Backhand"]); !errors.Is(err, ErrInUse) {
 		t.Fatalf("deleting a player with a match: got %v, want ErrInUse", err)
 	}
 	present, _ := s.Attendance(ctx, roundID)
@@ -109,7 +109,7 @@ func TestAddScore(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := s.AddParticipants(ctx, tl.ID, u.ID, []string{"Aaron", "Dimas", "QQ", "Ferdian"}); err != nil {
+	if _, _, err := s.AddParticipants(ctx, tl.ID, u.ID, []string{"Koh Backhand", "Tante Smash", "Om Netting", "Si Lob"}); err != nil {
 		t.Fatal(err)
 	}
 	players, _ := s.ListParticipants(ctx, tl.ID)
@@ -128,9 +128,9 @@ func TestAddScore(t *testing.T) {
 	}
 	r, _ := s.RoundByID(ctx, tl.ID, roundID)
 
-	// Aaron plays one match, then gets points entered for six more plays.
+	// Koh Backhand plays one match, then gets points entered for six more plays.
 	res := MatchResult{
-		Players: [2][]string{{id["Aaron"], id["Dimas"]}, {id["QQ"], id["Ferdian"]}},
+		Players: [2][]string{{id["Koh Backhand"], id["Tante Smash"]}, {id["Om Netting"], id["Si Lob"]}},
 		Games:   [2][]int{{42}, {36}},
 	}
 	res.Outcome, _ = DefaultContinuous.Score(res.Games[0], res.Games[1])
@@ -138,28 +138,28 @@ func TestAddScore(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, pts := range []int{42, 40, 42, 0, 42, 30} {
-		if err := s.AddScore(ctx, tl.ID, u.ID, r, id["Aaron"], "", pts, 7); err != nil {
+		if err := s.AddScore(ctx, tl.ID, u.ID, r, id["Koh Backhand"], "", pts, 7); err != nil {
 			t.Fatal(err)
 		}
 	}
-	if err := s.AddScore(ctx, tl.ID, u.ID, r, id["Aaron"], "", 42, 7); !errors.Is(err, ErrPlayCap) {
+	if err := s.AddScore(ctx, tl.ID, u.ID, r, id["Koh Backhand"], "", 42, 7); !errors.Is(err, ErrPlayCap) {
 		t.Fatalf("8th play: got %v, want ErrPlayCap", err)
 	}
 
 	// A new player is added with their first score and counts as present.
-	if err := s.AddScore(ctx, tl.ID, u.ID, r, "", "Eko", 41, 7); err != nil {
+	if err := s.AddScore(ctx, tl.ID, u.ID, r, "", "Pak Rally", 41, 7); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.AddScore(ctx, tl.ID, u.ID, r, "", "eko", 41, 7); !errors.Is(err, ErrNameTaken) {
+	if err := s.AddScore(ctx, tl.ID, u.ID, r, "", "pak rally", 41, 7); !errors.Is(err, ErrNameTaken) {
 		t.Fatalf("same new name twice: got %v, want ErrNameTaken", err)
 	}
 	present, _ := s.Attendance(ctx, r.ID)
 	if len(present) != 2 {
-		t.Errorf("present after scores = %d, want 2 (Aaron, Eko)", len(present))
+		t.Errorf("present after scores = %d, want 2 (Koh Backhand, Pak Rally)", len(present))
 	}
 
 	// An extra is not a play; scores are.
-	if err := s.AddAwards(ctx, tl.ID, u.ID, r, []AwardInput{{ParticipantID: id["Aaron"], Points: 5}}, "bonus"); err != nil {
+	if err := s.AddAwards(ctx, tl.ID, u.ID, r, []AwardInput{{ParticipantID: id["Koh Backhand"], Points: 5}}, "bonus"); err != nil {
 		t.Fatal(err)
 	}
 	st, err := s.StandingsAsOf(ctx, period.ID, time.Time{})
@@ -170,11 +170,11 @@ func TestAddScore(t *testing.T) {
 	for _, x := range st {
 		got[x.Name] = x
 	}
-	if a := got["Aaron"]; a.Points != 42+196+5 || a.Played != 7 || a.Entries != 8 {
-		t.Errorf("Aaron = %d points, %d played, %d entries; want 243, 7, 8", a.Points, a.Played, a.Entries)
+	if a := got["Koh Backhand"]; a.Points != 42+196+5 || a.Played != 7 || a.Entries != 8 {
+		t.Errorf("Koh Backhand = %d points, %d played, %d entries; want 243, 7, 8", a.Points, a.Played, a.Entries)
 	}
-	if sp := got["Eko"]; sp.Points != 41 || sp.Played != 1 {
-		t.Errorf("Eko = %d points, %d played; want 41, 1", sp.Points, sp.Played)
+	if sp := got["Pak Rally"]; sp.Points != 41 || sp.Played != 1 {
+		t.Errorf("Pak Rally = %d points, %d played; want 41, 1", sp.Points, sp.Played)
 	}
 
 	scores, _ := s.ScoreAwards(ctx, r.ID)
@@ -185,8 +185,8 @@ func TestAddScore(t *testing.T) {
 	if _, kind, err := s.DeleteAward(ctx, tl.ID, u.ID, scores[0].ID); err != nil || kind != AwardScore {
 		t.Fatalf("delete score: kind %q, err %v", kind, err)
 	}
-	if err := s.AddScore(ctx, tl.ID, u.ID, r, id["Aaron"], "", 42, 7); err != nil {
-		t.Errorf("after deleting one, Aaron can play again: %v", err)
+	if err := s.AddScore(ctx, tl.ID, u.ID, r, id["Koh Backhand"], "", 42, 7); err != nil {
+		t.Errorf("after deleting one, Koh Backhand can play again: %v", err)
 	}
 }
 
@@ -249,7 +249,7 @@ func TestDayStandingsAndSeasonStats(t *testing.T) {
 		r    *Round
 		name string
 		pts  int
-	}{{r1, "Aaron", 42}, {r1, "Aaron", 40}, {r1, "Dimas", 42}, {r2, "Dimas", 42}, {r2, "Dimas", 41}} {
+	}{{r1, "Koh Backhand", 42}, {r1, "Koh Backhand", 40}, {r1, "Tante Smash", 42}, {r2, "Tante Smash", 42}, {r2, "Tante Smash", 41}} {
 		players, _ := s.ListParticipants(ctx, tl.ID)
 		id, newName := "", e.name
 		for _, p := range players {
@@ -262,8 +262,8 @@ func TestDayStandingsAndSeasonStats(t *testing.T) {
 		}
 	}
 	day2, err := s.StandingsForRound(ctx, r2.ID)
-	if err != nil || len(day2) != 1 || day2[0].Name != "Dimas" || day2[0].Points != 83 || day2[0].Played != 2 {
-		t.Fatalf("day 2 standings = %+v, %v; want only Dimas 83 in 2", day2, err)
+	if err != nil || len(day2) != 1 || day2[0].Name != "Tante Smash" || day2[0].Points != 83 || day2[0].Played != 2 {
+		t.Fatalf("day 2 standings = %+v, %v; want only Tante Smash 83 in 2", day2, err)
 	}
 	stats, players, err := s.SeasonDayStats(ctx, period.ID)
 	if err != nil {
@@ -272,7 +272,7 @@ func TestDayStandingsAndSeasonStats(t *testing.T) {
 	if players != 2 {
 		t.Errorf("season players = %d, want 2", players)
 	}
-	if got := stats[r1.ID]; got != (DayStats{Players: 2, Plays: 3, Points: 124, TopName: "Aaron", TopPoints: 82}) {
+	if got := stats[r1.ID]; got != (DayStats{Players: 2, Plays: 3, Points: 124, TopName: "Koh Backhand", TopPoints: 82}) {
 		t.Errorf("day 1 stats = %+v", got)
 	}
 }

@@ -78,7 +78,7 @@ func TestDiscover_ConcurrentAttemptsDontQueue(t *testing.T) {
 }
 
 func TestLoginStateRoundTrip(t *testing.T) {
-	st := loginState{State: "s", Nonce: "n", Verifier: "v", Next: "/t/bala-bulu"}
+	st := loginState{State: "s", Nonce: "n", Verifier: "v", Next: "/t/sampai-pingsan"}
 	got, err := decodeLoginState(st.encode())
 	if err != nil || got != st {
 		t.Fatalf("round trip = %+v, %v; want %+v", got, err, st)

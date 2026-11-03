@@ -16,7 +16,7 @@ _Last updated: 2026-10-18 (P8 site admin)_
 ## What it is
 
 A web app for running a points leaderboard ("tally") for a group: a badminton
-club's season ranking first (e.g. *Bala Bulu Point Rank*), but generic enough for
+club's season ranking first (e.g. *Sampai Pingsan Point Rank*), but generic enough for
 other sports and non-sport tallies. The output people care about is the
 leaderboard and a shareable poster of it (dark/gold, top‑3 highlighted, movement
 arrows).

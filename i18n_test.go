@@ -94,11 +94,11 @@ func TestTranslate(t *testing.T) {
 
 func TestSafeNext(t *testing.T) {
 	for raw, want := range map[string]string{
-		"/t/bala-bulu?x=1": "/t/bala-bulu?x=1",
-		"//evil.com":       "",
-		"/\\evil.com":      "",
-		"https://evil.com": "",
-		"":                 "",
+		"/t/sampai-pingsan?x=1": "/t/sampai-pingsan?x=1",
+		"//evil.com":            "",
+		"/\\evil.com":           "",
+		"https://evil.com":      "",
+		"":                      "",
 		// Browsers drop tabs/newlines and read "\\" as "/", so these are "//evil.com".
 		"/\t/evil.com": "",
 		"/\n/evil.com": "",
@@ -112,8 +112,8 @@ func TestSafeNext(t *testing.T) {
 }
 
 func TestSplitNames(t *testing.T) {
-	got := splitNames("1. Dhamar\n2) Dimas\n- QQ\n  ferdian  \n\nFerdian\n• AD, Ilham\nGatot   Subroto\n")
-	want := []string{"Dhamar", "Dimas", "QQ", "ferdian", "AD", "Ilham", "Gatot Subroto"}
+	got := splitNames("1. Bahlul\n2) Prabski\n- Si Lob\n  dewi  \n\nDewi\n• MB, Pak Rally\nKoh   Backhand\n")
+	want := []string{"Bahlul", "Prabski", "Si Lob", "dewi", "MB", "Pak Rally", "Koh Backhand"}
 	if strings.Join(got, "|") != strings.Join(want, "|") {
 		t.Errorf("got %q, want %q", got, want)
 	}
