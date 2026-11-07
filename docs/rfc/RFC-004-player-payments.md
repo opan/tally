@@ -1,6 +1,7 @@
 # RFC-004: Player payments per play day
 
-- **Status:** Draft, for opan to review (§9)
+- **Status:** Draft; §9.1, §9.2 and §9.5 answered (opan, 2026-11-07), §9.3, §9.4 and §9.6 open
+- **Updated:** 2026-11-07
 - **Author:** opan
 - **Created:** 2026-11-05
 - **Scope:** every tally; both login modes. Phase 2 also touches cashflow.
@@ -9,8 +10,8 @@
 
 ## Complexity score: **5 / 10** (phase 1), **+3** for the cashflow link (phase 2)
 
-Phase 1 is one table, a fee setting, a card on the play day page and a page to read the
-history. The cashflow link is smaller in code but crosses two apps, needs a token between them,
+Phase 1 is one table, a fee per play day, a form and a list on the play day page, and a page to
+read the history. The cashflow link is smaller in code but crosses two apps, needs a token between them,
 and has to live with cashflow never deleting or changing an amount.
 
 ## 1. Problem
@@ -26,12 +27,11 @@ for which play day, or who still owes.
 
 **Goals**
 
-- Admins record, per play day, that a player **paid** (the full fee) or plays **free**.
-- **Everyone** who can see the tally can see the history: who paid, who was free, who hasn't
-  paid yet, per play day and per player.
-- The fee is set once and stays the same until an admin changes it. A change never rewrites
-  old payments.
-- A club that doesn't set a fee sees nothing new.
+- Each play day has its **fee** (Rp50.000), set by an admin.
+- Admins record payments **one at a time**, as people pay: pick the player, pick how they paid
+  (**Tunai**, **Transfer** or **Gratis**), submit. This replaces the list they keep by hand today.
+- **Everyone** who can see the tally can see the history: who paid, how, and for which play day.
+- A club that never sets a fee sees nothing new.
 - Optionally (phase 2), the money also lands in the club's cashflow cashplan, so the cash book
   has it without typing it twice.
 
@@ -39,9 +39,11 @@ for which play day, or who still owes.
 
 - Partial payments, credit, or paying ahead for several play days. A payment is always the full
   fee of one play day.
-- Payment methods, receipts or proof of transfer. A short note covers "transfer BCA".
+- Receipts or proof of transfer. A short note covers "BCA, a.n. istri".
+- Working out who *should* have paid (from points or attendance) and listing who owes. Admins
+  record who paid, as on their list today (§3, 2026-11-07). Could come later (§10).
 - Online payment (QRIS, payment links).
-- Fees that differ per player (members vs guests). Free covers the common exception.
+- Fees that differ per player (members vs guests). Gratis covers the common exception.
 - Monthly or yearly dues: cashflow already has *Iuran* for that.
 
 ## 3. What opan said (2026-11-05)
@@ -54,17 +56,23 @@ for which play day, or who still owes.
 5. Payments link to a **play day**.
 6. Link to cashflow if doable; if not, tally keeps it itself.
 
+And on 2026-11-07:
+
+7. **Gratis is a payment option**, next to cash and transfer. The fee is set for **each play day**.
+8. **Admins enter payments one by one:** pick the player (a name field with autocomplete), pick
+   the payment option, submit. Doing it per player is fine. Today they keep a list by hand and
+   update it whenever someone pays.
+
 ## 4. Model
 
 ```
-leaderboards.fee   bigint  NOT NULL DEFAULT 0  -- whole rupiah per player per play day; 0 = off
+rounds.fee  bigint  NOT NULL DEFAULT 0  -- whole rupiah per player for this play day; 0 = not set
 
 payments(
     id             uuid        PK,
     round_id       uuid        NOT NULL → rounds(id),
     participant_id uuid        NOT NULL → participants(id),
-    kind           text        NOT NULL CHECK (kind IN ('paid', 'free')),
-    amount         bigint      NOT NULL,         -- the fee when recorded; 0 for free
+    method         text        NOT NULL CHECK (method IN ('cash', 'transfer', 'free')),
     note           text        NOT NULL DEFAULT '',
     recorded_by    uuid        NOT NULL → users(id),
     created_at     timestamptz NOT NULL DEFAULT now(),
@@ -72,56 +80,55 @@ payments(
 )
 ```
 
-- **Fee on the leaderboard.** A play day belongs to a season, and a season to a leaderboard
-  (RFC-003), so badminton and futsal in one club can ask different fees. Most clubs have one
-  leaderboard, and the setting looks like "the club's fee".
-- **Amount copied onto each payment.** Raising the fee to Rp60.000 in December leaves
-  October's payments at Rp50.000.
-- **One row per player per play day.** "Paid" and "free" exclude each other. **Not paid** is the
-  absence of a row.
-- **Who should pay that day:** every player with points, a match or attendance on that play day.
-  An admin can also record a payment for an active player who came but has no entry yet.
-- **Undo.** An admin can undo a payment or free pass (a wrong tap). Every record and undo goes
-  in `audit_log`, like other admin actions.
+- **Fee on the play day.** Each mabar has its own fee (§3.7). The field starts with the previous
+  play day's fee on the same leaderboard, so in practice it's typed once and then just confirmed.
+- **Amount follows from the play day.** A payment is always the full fee (§3.4), so it doesn't
+  store an amount. Tunai and Transfer count as the day's fee; Gratis counts as zero.
+  - Collected that day: (Tunai + Transfer) × fee.
+  - Fixing a play day's fee after payments are in recalculates that day, which is what fixing a
+    typo should do. The change is audited.
+- **One payment per player per play day.** Recording a second one for the same player and day
+  says they're already recorded, and how.
+- **Undo.** An admin can undo a payment (a wrong tap, the wrong player). Every record and undo
+  goes in `audit_log`, like other admin actions.
 - **Deleting a player** who has payments is refused. Deactivating them still works, as with
   points. Play days can't be deleted today, so payments don't block anything else.
 
 ## 5. Pages
 
-### 5.1 Setting the fee (Setelan → Papan)
+### 5.1 Recording (play day page, admins)
 
-Each leaderboard row gets **Iuran per main**: an amount in rupiah, empty = off. With one
-leaderboard, the card reads as the club's fee. Changing it asks for confirmation and says old
-payments keep their amount.
-
-### 5.2 Recording (play day page, admins)
-
-A new card **Iuran · Rp50.000** on the play day page, after the points:
+A new card **Iuran** on the play day page, after the points:
 
 ```
-Iuran · Rp50.000                         21 lunas · 3 gratis · 2 belum
+Iuran                                         Rp [ 50.000 ]  [Simpan]
 ──────────────────────────────────────────────────────────────────
-Prabski        Lunas ✓                        [Batalkan]
-Jacque Oui     Gratis · pelatih               [Batalkan]
-Bahlul         Belum      [Lunas]  [Gratis…]
-Mas Gembul     Belum      [Lunas]  [Gratis…]
-+ Tambah pemain yang belum tercatat main
+Pemain   [ Prab…            ▾ ]   (autocomplete, same list as Poin)
+Bayar    ( Tunai ) ( Transfer ) ( Gratis )
+Catatan  [ opsional              ]
+                                                         [Catat]
 ──────────────────────────────────────────────────────────────────
-Terkumpul Rp1.050.000
+Sudah tercatat · 18 tunai · 3 transfer · 2 gratis · Rp1.050.000
+Prabski        Tunai       19.42                       [Batalkan]
+Jacque Oui     Gratis      19.40   pelatih             [Batalkan]
+Bahlul         Transfer    19.35                       [Batalkan]
+…
 ```
 
-- One tap marks **Lunas**. **Gratis…** asks for an optional reason.
-- Players who haven't paid come first, so the list shrinks as the evening goes on.
-- Earlier play days stay open for payment: someone paying a week late is recorded on the day
-  they owe for.
+- **The form asks for the fee first.** Until the play day has one, the form is hidden behind
+  "Isi iuran hari ini".
+- **The form stays open after each submit**, with the player field empty and focused, so the
+  next person who hands over cash is quick to add.
+- **Newest first,** so the last entry is easy to check and undo.
+- **Earlier play days stay open:** someone paying a week late is recorded on the play day they
+  pay for.
 
-### 5.3 Reading (everyone)
+### 5.2 Reading (everyone)
 
-- **New tab "Iuran"**, visible to everyone once a leaderboard has a fee. It shows play days
-  newest first, each with its totals (Rp, lunas, gratis, belum), and expands to show names.
-  It also has a short **"Belum bayar"** list at the top: players who owe for any play day this
-  season, with the days.
-- **Player page:** an *Iuran* section with each play day and Lunas / Gratis / Belum.
+- **New tab "Iuran"**, visible to everyone once a play day has a fee. Play days are shown newest
+  first, each with its fee and totals (tunai, transfer, gratis, Rp), and expand to show names
+  and how each paid.
+- **Player page:** an *Iuran* section listing the play days they paid for and how.
 - **Site admin** (`/admin`): totals per tally, read-only.
 
 ## 6. Cashflow (phase 2)
@@ -142,8 +149,8 @@ So the link is doable, but cashflow needs a small API first.
 | | How | For | Against |
 |---|---|---|---|
 | **A. Tally only** | No link. Tally is the record. | Nothing to build in cashflow. | The cash book is typed in by hand. |
-| **B. One entry per play day** *(recommended)* | Admin taps **Catat ke cashflow** on the play day. Tally adds one income entry: "Mabar Minggu 2 Nov · 21 × Rp50.000 (3 gratis)", the total, dated on the play day. | One readable line per mabar. Few rows that can never be undone. | Per-player detail stays in tally. |
-| **C. One entry per payment** | Each Lunas sends its own income entry, with the player as payer. | Cashflow's per-payer totals work. | ~25 rows per mabar, and a wrong tap is a permanent entry in cashflow. |
+| **B. One entry per play day** *(recommended)* | Admin taps **Catat ke cashflow** on the play day. Tally adds one income entry: "Mabar Minggu 2 Nov · 21 × Rp50.000 (18 tunai, 3 transfer; 2 gratis)", the total, dated on the play day. | One readable line per mabar. Few rows that can never be undone. | Per-player detail stays in tally. |
+| **C. One entry per payment** | Each Tunai or Transfer payment sends its own income entry, with the player as payer. | Cashflow's per-payer totals work. | ~25 rows per mabar, and a wrong tap is a permanent entry in cashflow. |
 | **D. Prefilled form** | A link opens cashflow's entry form already filled in. The admin saves it there. | No API, no token. | Easy to forget, and tally can't tell whether it was saved. |
 
 ### 6.3 How B works
@@ -169,16 +176,15 @@ So the link is doable, but cashflow needs a small API first.
 
 ### Phase 1: payments in tally
 
-1. **Schema:** `leaderboards.fee`, the `payments` table, and an index on
+1. **Schema:** `rounds.fee`, the `payments` table, and an index on
    `(participant_id, round_id)`.
-2. **Store:** record, undo and list per play day, per player, and "owes" per season; audit
-   entries.
-3. **Pages:** the fee in Setelan → Papan, the card on the play day page, the Iuran tab and the
-   player page section.
-4. **Metrics:** `tally_payments_total{kind}` and a gauge for amount collected. Grafana panel in
-   homelab.
-5. **Guide:** a section on Iuran, with screenshots. **Tests:** store, handlers, pages render with
-   and without a fee.
+2. **Store:** set a play day's fee, record and undo a payment, list per play day and per player;
+   audit entries.
+3. **Pages:** the Iuran card on the play day page, the Iuran tab and the player page section.
+4. **Metrics:** `tally_payments_total{method}` and a gauge for the amount collected. Grafana
+   panel in homelab.
+5. **Guide:** a section on Iuran, with screenshots. **Tests:** store, handlers, and pages that
+   render with and without a fee.
 
 ### Phase 2: cashflow link (option B)
 
@@ -191,10 +197,10 @@ Phase 1 is useful on its own and can ship first. Phase 2 waits for opan's call o
 
 ## 8. Risks
 
-- **Showing who hasn't paid.** For a tally that anyone with the link can see, "belum bayar" is
-  public. That's what opan asked for. A club that doesn't want it can make the tally private.
-- **Who "played".** A player who came but has no points or attendance yet won't be on the list
-  until an admin adds them (§5.2, "Tambah").
+- **Public history.** For a tally that anyone with the link can see, who paid and how is public.
+  That's what opan asked for. A club that doesn't want it can make the tally private.
+- **Someone is missed.** Tally doesn't list who still owes (§2), so it catches a missed payment
+  no better than the list on paper does. §10 has the follow-up if that turns out to matter.
 - **Money is permanent in cashflow** (phase 2). This is the reason for one deliberate send per
   play day rather than one per tap.
 - **A token between two apps** (phase 2). It's scoped to one cashplan and can only add income
@@ -202,18 +208,26 @@ Phase 1 is useful on its own and can ship first. Phase 2 waits for opan's call o
 
 ## 9. Questions for opan
 
-1. **Free pass scope.** Per play day only (proposed), or also a standing free pass for a player
-   (a coach who never pays)?
-2. **Who should pay.** Everyone with points, a match or attendance that day (proposed)?
+1. ~~**Free pass scope.**~~ Answered 2026-11-07: Gratis is a payment option on a play day,
+   next to Tunai and Transfer.
+2. ~~**Who should pay.**~~ Answered 2026-11-07: admins enter each payment by hand, and tally
+   doesn't work out who should pay.
 3. **Where the history lives.** A new **Iuran** tab for everyone (proposed), or only on player
-   pages and inside Musim?
+   pages?
 4. **Undo.** Admins can undo a payment any time, audited (proposed), or only on the same day?
-5. **Fee per leaderboard** (proposed), or one fee for the whole club?
+5. ~~**Fee per leaderboard or club.**~~ Answered 2026-11-07: per play day, prefilled from the
+   previous one.
 6. **Cashflow.** Option **B** (one entry per play day, proposed), or C, D, or A (none)? And which
    cashplan: is there one for the club already?
 
-## 10. Next steps
+## 10. Later, if a club asks
 
-- [ ] opan answers §9.
+- **Who still owes:** compare the payments with who has points or attendance on the play day,
+  and show "maybe not paid yet" to admins only.
+
+## 11. Next steps
+
+- [x] opan answers §9.1, §9.2, §9.5 (2026-11-07).
+- [ ] opan answers §9.3, §9.4, §9.6.
 - [ ] Phase 1 PR.
 - [ ] Phase 2: cashflow PR, then tally PR (if §9.6 isn't A).
