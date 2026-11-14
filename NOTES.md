@@ -120,6 +120,7 @@ given round. Movement arrow = rank after round N vs rank after round N‑1.
 | BOARDS | A tally becomes the club, with one leaderboard (papan) per sport inside it | [docs/rfc/RFC-003-leaderboards.md](docs/rfc/RFC-003-leaderboards.md): phase 1 ✅ deployed 2026-11-02 (#21); phase 2 ✅ deployed 2026-11-03 (#24) |
 | — | k8s deploy in `homelab/k8s/tally` | manifests in homelab 2026-10-14; opan deploys |
 | P11 | Archive a season: read-only, out of the season pickers, never the current season | ✅ built 2026-11-01, PR #18 |
+| MENUS | Club menus: Mabar, Events, Database, Turnamen, Sparing, in eight steps | [RFC-005](docs/rfc/RFC-005-club-menus.md), plan for review 2026-11-14 |
 
 ## P1 notes (2026-10-13)
 
