@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -12,33 +13,51 @@ import (
 
 const maxPayNoteLen = 80
 
-// parseRupiah reads a fee as typed: "50000", "50.000", "Rp 50.000", "50rb"
-// or "50k". ok is false for anything else.
-func parseRupiah(s string) (int64, bool) {
-	s = strings.ToLower(strings.TrimSpace(s))
-	s = strings.TrimPrefix(s, "rp")
-	mult := int64(1)
-	for _, suf := range []string{"rb", "k"} {
-		if strings.HasSuffix(s, suf) {
-			s, mult = strings.TrimSuffix(s, suf), 1000
-			break
+// feeField is the fee input's only format: plain digits, or digits grouped by
+// the page language's thousands separator, which app.js adds as the admin
+// types ("50.000"; "50,000" in English).
+var feeField = map[string]*regexp.Regexp{
+	".": regexp.MustCompile(`^(\d{1,12}|\d{1,3}(\.\d{3}){1,3})$`),
+	",": regexp.MustCompile(`^(\d{1,12}|\d{1,3}(,\d{3}){1,3})$`),
+}
+
+// parseRupiah reads the fee field (see feeField). ok is false for anything
+// else, so "50.000,00" or "50rb" is an error rather than a guess.
+func parseRupiah(lang, s string) (int64, bool) {
+	sep := thousandsSep(lang)
+	s = strings.TrimSpace(s)
+	if !feeField[sep].MatchString(s) {
+		return 0, false
+	}
+	n, err := strconv.ParseInt(strings.ReplaceAll(s, sep, ""), 10, 64)
+	return n, err == nil
+}
+
+func thousandsSep(lang string) string {
+	if lang == "en" {
+		return ","
+	}
+	return "."
+}
+
+// grouped is n with the language's thousands separator: 1.050.000.
+func grouped(lang string, n int64) string {
+	digits := strconv.FormatInt(n, 10)
+	var b strings.Builder
+	for i, c := range digits {
+		if i > 0 && (len(digits)-i)%3 == 0 {
+			b.WriteString(thousandsSep(lang))
 		}
+		b.WriteRune(c)
 	}
-	s = strings.NewReplacer(".", "", ",", "", " ", "").Replace(s)
-	if s == "" || len(s) > 12 {
-		return 0, false
-	}
-	n, err := strconv.ParseInt(s, 10, 64)
-	if err != nil || n < 0 {
-		return 0, false
-	}
-	return n * mult, true
+	return b.String()
 }
 
 // payVM is the Iuran card on the play day page.
 type payVM struct {
 	Fee        int64
 	FeeField   string // the fee form's value: as typed, else the fee, else a suggestion
+	FeeSep     string // the field's thousands separator, for app.js
 	EditFee    bool   // open the fee form after a failed change
 	Payments   []Payment
 	Sum        PaySummary
@@ -54,7 +73,8 @@ type payVM struct {
 
 // fillPay sets up the Iuran card. The method picked last stays picked (?pay=).
 func (a *App) fillPay(r *http.Request, d *roundData) payVM {
-	pv := payVM{Fee: d.round.Fee, Payments: d.payments, Sum: summarize(d.round.Fee, d.payments), Methods: payMethods, FMethod: PayCash}
+	lang := requestLang(r)
+	pv := payVM{Fee: d.round.Fee, Payments: d.payments, Sum: summarize(d.round.Fee, d.payments), Methods: payMethods, FMethod: PayCash, FeeSep: thousandsSep(lang)}
 	if m := r.URL.Query().Get("pay"); m == PayTransfer {
 		pv.FMethod = m
 	}
@@ -74,7 +94,7 @@ func (a *App) fillPay(r *http.Request, d *roundData) payVM {
 		}
 	}
 	if fee > 0 {
-		pv.FeeField = strconv.FormatInt(fee, 10)
+		pv.FeeField = grouped(lang, fee)
 	}
 	return pv
 }
@@ -97,10 +117,10 @@ func (a *App) handleSetFee(w http.ResponseWriter, r *http.Request) {
 			vm.Pay.Err, vm.Err = vm.Err, "" // shown in the card, where the page scrolls to
 		}, http.StatusUnprocessableEntity)
 	}
-	fee, ok := parseRupiah(typed)
+	fee, ok := parseRupiah(requestLang(r), typed)
 	switch {
 	case !ok || fee > maxFee:
-		fail("err.fee", rupiah("id", maxFee))
+		fail("err.fee", rupiah(requestLang(r), maxFee))
 		return
 	case fee == 0 && len(d.payments) > 0:
 		fail("err.fee_in_use")
@@ -282,24 +302,8 @@ type playerPayment struct {
 
 // rupiah renders "Rp50.000" (id) or "Rp50,000" (en).
 func rupiah(lang string, n int64) string {
-	sep := "."
-	if lang == "en" {
-		sep = ","
+	if n < 0 {
+		return "-Rp" + grouped(lang, -n)
 	}
-	neg := n < 0
-	if neg {
-		n = -n
-	}
-	digits := strconv.FormatInt(n, 10)
-	var b strings.Builder
-	for i, c := range digits {
-		if i > 0 && (len(digits)-i)%3 == 0 {
-			b.WriteString(sep)
-		}
-		b.WriteRune(c)
-	}
-	if neg {
-		return "-Rp" + b.String()
-	}
-	return "Rp" + b.String()
+	return "Rp" + grouped(lang, n)
 }

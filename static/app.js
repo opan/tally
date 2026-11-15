@@ -220,3 +220,21 @@ document.addEventListener('click', function (e) {
     if (e.persisted) document.querySelectorAll('form[data-submitting]').forEach(unlock);
   });
 })();
+
+// Rupiah fields (<input data-thousands=".">): digits only, grouped as they
+// are typed, so there is one format to write and the server accepts only it.
+document.addEventListener('input', function (e) {
+  var el = e.target;
+  if (!el.matches || !el.matches('input[data-thousands]')) return;
+  var sep = el.getAttribute('data-thousands');
+  var caret = el.value.slice(0, el.selectionStart).replace(/\D/g, '').length;
+  var digits = el.value.replace(/\D/g, '');
+  var trimmed = digits.replace(/^0+(?=\d)/, '');
+  caret = Math.max(0, caret - (digits.length - trimmed.length));
+  digits = trimmed.slice(0, 8);
+  var out = digits.replace(/\B(?=(\d{3})+(?!\d))/g, sep);
+  el.value = out;
+  var i = 0;
+  for (var seen = 0; i < out.length && seen < caret; i++) if (out[i] !== sep) seen++;
+  el.setSelectionRange(i, i);
+});

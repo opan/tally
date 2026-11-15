@@ -259,7 +259,7 @@
 {{define "feeform"}}{{$P := .P}}{{$p := .D.Pay}}
 <form method="post" action="/t/{{.D.Tally.Slug}}/rounds/{{.D.Round.ID}}/fee" class="feeform">
   <label>{{$P.T "pay.fee_label"}}
-    <span class="prefixed"><span class="prefix">Rp</span><input type="text" name="fee" value="{{$p.FeeField}}" inputmode="numeric" maxlength="14" required autocomplete="off" placeholder="50000"{{if eq .D.Focus "fee"}} autofocus{{end}}></span>
+    <span class="prefixed"><span class="prefix">Rp</span><input type="text" name="fee" value="{{$p.FeeField}}" inputmode="numeric" maxlength="14" required autocomplete="off" placeholder="{{$P.T "pay.fee_placeholder"}}" data-thousands="{{$p.FeeSep}}"{{if eq .D.Focus "fee"}} autofocus{{end}}></span>
   </label>
   <button type="submit" class="btn primary">{{$P.T .Submit}}</button>
 </form>

@@ -12,18 +12,29 @@ import (
 )
 
 func TestParseRupiah(t *testing.T) {
-	for in, want := range map[string]int64{
-		"50000": 50000, "50.000": 50000, "Rp 50.000": 50000, "rp50,000": 50000,
-		"50rb": 50000, "50 rb": 50000, "50k": 50000, "1.5": 15, "0": 0,
+	// One format: digits, grouped the way the field groups them per language.
+	for _, c := range []struct {
+		lang, in string
+		want     int64
+	}{
+		{"id", "50000", 50000}, {"id", "50.000", 50000}, {"id", " 1.050.000 ", 1050000}, {"id", "0", 0},
+		{"en", "50000", 50000}, {"en", "50,000", 50000}, {"en", "10,000,000", 10000000},
 	} {
-		if got, ok := parseRupiah(in); !ok || got != want {
-			t.Errorf("parseRupiah(%q) = %d, %v; want %d", in, got, ok, want)
+		if got, ok := parseRupiah(c.lang, c.in); !ok || got != c.want {
+			t.Errorf("parseRupiah(%s, %q) = %d, %v; want %d", c.lang, c.in, got, ok, c.want)
 		}
 	}
-	for _, in := range []string{"", "abc", "-5", "Rp", "50.000,-", "9999999999999"} {
-		if got, ok := parseRupiah(in); ok {
-			t.Errorf("parseRupiah(%q) = %d, want an error", in, got)
+	for _, c := range []struct{ lang, in string }{
+		{"id", ""}, {"id", "abc"}, {"id", "-5"}, {"id", "Rp 50.000"}, {"id", "50rb"}, {"id", "50k"},
+		{"id", "50.000,00"}, {"id", "50,000"}, {"id", "1.5"}, {"id", "50.00"}, {"id", "5.0000"},
+		{"id", "50 000"}, {"id", "9999999999999"}, {"en", "50.000"}, {"en", "50,000.00"},
+	} {
+		if got, ok := parseRupiah(c.lang, c.in); ok {
+			t.Errorf("parseRupiah(%s, %q) = %d, want an error", c.lang, c.in, got)
 		}
+	}
+	if got := grouped("en", 1050000); got != "1,050,000" {
+		t.Errorf("grouped(en) = %q", got)
 	}
 	for n, want := range map[int64]string{0: "Rp0", 500: "Rp500", 50000: "Rp50.000", 1050000: "Rp1.050.000"} {
 		if got := rupiah("id", n); got != want {
@@ -209,7 +220,10 @@ func TestPaymentsInApp(t *testing.T) {
 	if w := do(admin, "POST", "/", app.handleAddPayment, day, url.Values{"player": {"Prabski"}, "method": {PayCash}}); w.Code != http.StatusUnprocessableEntity {
 		t.Errorf("payment before a fee: %d", w.Code)
 	}
-	if w := do(admin, "POST", "/", app.handleSetFee, day, url.Values{"fee": {"50rb"}}); w.Code != http.StatusSeeOther || !strings.Contains(w.Header().Get("Location"), "ok=fee_saved") {
+	if w := do(admin, "POST", "/", app.handleSetFee, day, url.Values{"fee": {"50.000,00"}}); w.Code != http.StatusUnprocessableEntity {
+		t.Errorf("fee with decimals: %d", w.Code)
+	}
+	if w := do(admin, "POST", "/", app.handleSetFee, day, url.Values{"fee": {"50.000"}}); w.Code != http.StatusSeeOther || !strings.Contains(w.Header().Get("Location"), "ok=fee_saved") {
 		t.Fatalf("set fee: %d %s", w.Code, w.Header().Get("Location"))
 	}
 
