@@ -28,11 +28,45 @@
       </nav>
     </div>
   </header>
-  <main class="wrap">
-    {{block "content" .}}{{end}}
-  </main>
+  {{- $menu := .Menu}}
+  <div class="shell{{if $menu}} withmenu{{end}}">
+    {{- if $menu}}
+    <aside class="sidemenu">
+      <nav aria-label="{{.T "tally.tabs"}}">
+        {{range $menu}}<a href="{{.Href}}"{{if eq .Tab "guide"}} class="sidemenu-guide{{if .On}} on{{end}}"{{else if .On}} class="on"{{end}}{{if .On}} aria-current="page"{{end}}>{{template "menuicon" .Icon}}{{$.T .Label}}</a>
+        {{end}}
+      </nav>
+    </aside>
+    {{- end}}
+    <main class="wrap">
+      {{block "content" .}}{{end}}
+    </main>
+  </div>
+  {{- if $menu}}
+  <nav class="menubar" aria-label="{{.T "tally.tabs"}}">
+    {{range $menu}}{{if .Bar}}<a href="{{.Href}}"{{if .On}} class="on" aria-current="page"{{end}}>{{template "menuicon" .Icon}}<span>{{$.T .Label}}</span></a>
+    {{end}}{{end}}<button type="button" popovertarget="menumore"{{if .MenuMore}} class="on"{{end}}>{{template "menuicon" "more"}}<span>{{.T "menu.more"}}</span></button>
+  </nav>
+  <div id="menumore" class="menusheet" popover>
+    {{range $menu}}{{if not .Bar}}<a href="{{.Href}}"{{if .On}} class="on" aria-current="page"{{end}}>{{template "menuicon" .Icon}}{{$.T .Label}}</a>
+    {{end}}{{end}}
+  </div>
+  {{- end}}
   <footer class="foot"><div class="wrap">{{.T "app.name"}} &middot; {{.T "footer.motto"}} &middot; <a href="/panduan">{{.T "guide.title"}}</a></div></footer>
   <script src="/static/app.js?v={{.AssetVer}}"></script>
   {{block "scripts" .}}{{end}}
 </body>
 </html>{{end}}
+
+
+{{/* menuicon: one of the tally menu's line icons, by name */}}
+{{define "menuicon"}}<svg class="menuicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+{{- if eq . "trophy"}}<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3.5 3.8M16 6h3a3 3 0 0 1-3.5 3.8M12 13v4M8 21h8M10 17h4"/>
+{{- else if eq . "play"}}<circle cx="12" cy="12" r="9"/><path d="M10 8.5l5.5 3.5-5.5 3.5z"/>
+{{- else if eq . "calendar"}}<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>
+{{- else if eq . "wallet"}}<rect x="3" y="6" width="18" height="14" rx="2"/><path d="M3 10h18M15.5 15h2.5"/>
+{{- else if eq . "people"}}<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.8c1.9.7 3.1 2.5 3.5 5.2"/>
+{{- else if eq . "gear"}}<circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/>
+{{- else if eq . "book"}}<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5zM4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/>
+{{- else if eq . "more"}}<circle cx="5" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="19" cy="12" r="1.3" fill="currentColor"/>
+{{- end}}</svg>{{end}}

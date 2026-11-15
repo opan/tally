@@ -105,6 +105,24 @@ type pageData struct {
 
 func (p pageData) T(key string, args ...any) string { return translate(p.Lang, key, args...) }
 
+// Menu is the tally menu when the page has one (see tallyCtx.Menu), and
+// MenuMore whether its current item sits in the phone's Lainnya sheet.
+func (p pageData) Menu() []menuItem {
+	if m, ok := p.Data.(interface{ Menu() []menuItem }); ok {
+		return m.Menu()
+	}
+	return nil
+}
+
+func (p pageData) MenuMore() bool {
+	for _, it := range p.Menu() {
+		if it.On && !it.Bar {
+			return true
+		}
+	}
+	return false
+}
+
 func (p pageData) Date(t time.Time) string { return formatDate(p.Lang, t) }
 
 func (p pageData) DayMonth(t time.Time) string { return dayMonth(p.Lang, t) }
@@ -191,11 +209,41 @@ type guideVM struct {
 	Sizes  map[string]imgSize // "id/courts" → pixel size, so the page doesn't jump as they load
 
 	InviteDays int // how long a player invite lasts (RFC-002)
+
+	// Opened from a tally's menu (?t=slug): its admins keep that menu here,
+	// so they can go back without the home page.
+	tallyCtx
 }
 
 func (a *App) handleGuide(w http.ResponseWriter, r *http.Request) {
 	ttl, _ := a.inviteLimits()
-	a.render(w, r, "panduan", guideVM{ImgVer: a.guideVer, Sizes: a.guideSizes, InviteDays: int(ttl / (24 * time.Hour))})
+	vm := guideVM{ImgVer: a.guideVer, Sizes: a.guideSizes, InviteDays: int(ttl / (24 * time.Hour))}
+	vm.tallyCtx = a.guideTally(r)
+	a.render(w, r, "panduan", vm)
+}
+
+// guideTally is the tally named by ?t= when the viewer is one of its
+// admins; otherwise empty, the same for an unknown or private tally.
+func (a *App) guideTally(r *http.Request) tallyCtx {
+	u, slug := currentUser(r), r.URL.Query().Get("t")
+	if u == nil || slug == "" {
+		return tallyCtx{}
+	}
+	t, err := a.store.TallyBySlug(r.Context(), slug)
+	if err != nil {
+		return tallyCtx{}
+	}
+	tc := tallyCtx{Tally: t, Tab: "guide"}
+	if tc.Role, err = a.store.RoleFor(r.Context(), t.ID, u.ID); err != nil || !tc.IsAdmin() {
+		return tallyCtx{}
+	}
+	if ok, err := a.loadBoards(r, &tc); err != nil || !ok {
+		return tallyCtx{}
+	}
+	if tc.Fees, err = a.store.HasFees(r.Context(), t.ID); err != nil {
+		return tallyCtx{}
+	}
+	return tc
 }
 
 // handleAccount explains that the account lives in all-in-one and links to

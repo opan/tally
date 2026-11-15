@@ -101,6 +101,54 @@ func (c tallyCtx) SwitchPath(b Leaderboard) string {
 	return withQuery(tallyPath(c.Tally, sub), "board="+url.QueryEscape(b.Slug))
 }
 
+// guidePath opens the guide with this tally's menu (see guideTally).
+func (c tallyCtx) guidePath() string {
+	q := "t=" + url.QueryEscape(c.Tally.Slug)
+	if c.MultiBoard() && c.Board != nil {
+		q += "&board=" + url.QueryEscape(c.Board.Slug)
+	}
+	return withQuery("/panduan", q)
+}
+
+// menuItem is one entry of a tally's menu (RFC-005 step 3): the sidebar on a
+// wide screen; on a phone the bottom bar, or its Lainnya sheet when not Bar.
+type menuItem struct {
+	Tab   string
+	Href  string
+	Label string // locale key
+	Icon  string // a "menuicon" name
+	Bar   bool
+	On    bool
+}
+
+// Menu is the tally's menu for its admins; members and visitors get none.
+func (c tallyCtx) Menu() []menuItem {
+	if !c.IsAdmin() || c.Tally == nil {
+		return nil
+	}
+	play := "tab.play"
+	if c.Board != nil && c.Board.Preset().IsCounter() {
+		play = "tab.record"
+	}
+	items := []menuItem{
+		{Tab: "overview", Href: c.BoardPath(""), Label: "tab.overview", Icon: "trophy", Bar: true},
+		{Tab: "play", Href: c.BoardPath("/play"), Label: play, Icon: "play", Bar: true},
+		{Tab: "periods", Href: c.BoardPath("/periods"), Label: "tab.periods", Icon: "calendar", Bar: true},
+	}
+	if c.Fees { // once a play day has a fee; on a phone in Lainnya (opan's pick)
+		items = append(items, menuItem{Tab: "iuran", Href: c.BoardPath("/iuran"), Label: "tab.payments", Icon: "wallet"})
+	}
+	items = append(items, []menuItem{
+		{Tab: "players", Href: tallyPath(c.Tally, "/players"), Label: "tab.players", Icon: "people", Bar: true},
+		{Tab: "settings", Href: tallyPath(c.Tally, "/settings"), Label: "tab.settings", Icon: "gear"},
+		{Tab: "guide", Href: c.guidePath(), Label: "guide.title", Icon: "book"},
+	}...)
+	for i := range items {
+		items[i].On = items[i].Tab == c.Tab
+	}
+	return items
+}
+
 // withQuery adds q to path's query string, before any #fragment.
 func withQuery(path, q string) string {
 	frag := ""

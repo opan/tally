@@ -143,9 +143,47 @@ code { background: var(--card-2); padding: 1px 6px; border-radius: 4px; }
 /* Tally pages */
 .tallyhead { margin-bottom: 18px; }
 .tallyhead h1 { text-transform: uppercase; font-weight: 800; }
-.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-top: 12px; overflow-x: auto; }
-.tabs a { padding: 8px 12px; color: var(--muted); text-decoration: none; font-weight: 600; font-size: .92rem; border-bottom: 2px solid transparent; white-space: nowrap; }
-.tabs a.on { color: var(--gold-2); border-bottom-color: var(--gold); }
+/* Tally menu (RFC-005 step 3), admins only: a left sidebar on a wide screen;
+   on a phone a bottom bar, with the rest in the Lainnya sheet. */
+.sidemenu, .menubar { display: none; }
+.menuicon { width: 20px; height: 20px; flex: none; }
+@media (min-width: 900px) {
+  .shell.withmenu { display: grid; grid-template-columns: 232px minmax(0, 1fr); }
+  .shell.withmenu > main.wrap { width: 100%; }
+  body:has(.withmenu) .topbar .wrap { max-width: none; padding-left: 24px; padding-right: 24px; }
+  .sidemenu { display: block; background: #0a0a0c; border-right: 1px solid var(--line); }
+  .sidemenu nav { position: sticky; top: 0; display: flex; flex-direction: column; gap: 2px; padding: 24px 12px; }
+  .sidemenu a { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px; color: #b9b5aa; text-decoration: none; font-weight: 600; font-size: .95rem; }
+  .sidemenu a:hover { background: var(--card); color: var(--ink); }
+  .sidemenu a.on { background: #241f10; color: var(--gold-2); box-shadow: inset 3px 0 0 var(--gold); }
+  .sidemenu .sidemenu-guide { position: relative; margin-top: 29px; }
+  .sidemenu .sidemenu-guide::before { content: ""; position: absolute; left: 0; right: 0; top: -15px; border-top: 1px solid var(--line); }
+  .menusheet { display: none; }
+}
+@media (max-width: 899px) {
+  body:has(.menubar) { padding-bottom: calc(62px + env(safe-area-inset-bottom)); }
+  .menubar {
+    display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+    background: #08080a; border-top: 1px solid var(--line); padding: 4px 4px calc(4px + env(safe-area-inset-bottom));
+  }
+  .menubar a, .menubar button {
+    flex: 1 1 0; min-width: 0; min-height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    background: none; border: 0; padding: 0 2px; color: var(--muted); font: inherit; font-size: .7rem; font-weight: 600; text-decoration: none; cursor: pointer;
+  }
+  .menubar span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .menubar .menuicon { width: 22px; height: 22px; }
+  .menubar .on { color: var(--gold-2); }
+  .menusheet {
+    inset: auto 0 calc(60px + env(safe-area-inset-bottom)) 0; width: auto; max-width: none; margin: 0;
+    background: var(--card); color: var(--ink); border: 0; border-top: 1px solid #3a3940; border-radius: 18px 18px 0 0; padding: 8px 18px 10px;
+  }
+  body:has(.menubar) .guidefab { bottom: calc(78px + env(safe-area-inset-bottom)); }
+  .menusheet::backdrop { background: rgba(0, 0, 0, .55); }
+  .menusheet a { display: flex; align-items: center; gap: 14px; min-height: 52px; color: var(--ink); text-decoration: none; font-weight: 600; }
+  .menusheet a + a { border-top: 1px solid var(--line); }
+  .menusheet a .menuicon { width: 22px; height: 22px; color: #b9b5aa; }
+  .menusheet a.on, .menusheet a.on .menuicon { color: var(--gold-2); }
+}
 /* Leaderboard switcher (RFC-003): one pill per leaderboard, the current one gold. */
 .boardswitch { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
 .boardswitch a { padding: 5px 12px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); text-decoration: none; font-weight: 600; font-size: .88rem; }
@@ -375,8 +413,6 @@ label.award input { width: 4.5em; flex: none; text-align: center; font-weight: 7
 @media (max-width: 640px) {
   .steps { grid-template-columns: 1fr; }
   .hide-xs { display: none; }
-  .tabs { gap: 0; }
-  .tabs a { padding: 8px 6px; font-size: .84rem; }
   .mf-actions { margin-left: 0; width: 100%; }
   .mf-actions .btn { flex: 1; }
   /* The full username on its own row: players read it to send to an admin (RFC-002). */

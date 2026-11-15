@@ -121,6 +121,7 @@ given round. Movement arrow = rank after round N vs rank after round N‑1.
 | — | k8s deploy in `homelab/k8s/tally` | manifests in homelab 2026-10-14; opan deploys |
 | P11 | Archive a season: read-only, out of the season pickers, never the current season | ✅ built 2026-11-01, PR #18 |
 | PAY | Iuran: a fee per play day, payments recorded one by one (Tunai, Transfer, Gratis), history for everyone | RFC-004 (PR #28); phase 1 built 2026-11-15; phase 2 (cashflow) waits for the cashplan |
+| MENU | Tally menu for admins: left sidebar from 900px; below that a bottom bar (Ringkasan, Main, Musim, Pemain) with Lainnya for Iuran, Setelan and Panduan (RFC-005 step 3, first PR: same pages, no new features) | built 2026-11-15, PR #34 |
 
 ## P1 notes (2026-10-13)
 
