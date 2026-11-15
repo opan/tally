@@ -150,6 +150,7 @@ code { background: var(--card-2); padding: 1px 6px; border-radius: 4px; }
 @media (min-width: 900px) {
   .shell.withmenu { display: grid; grid-template-columns: 232px minmax(0, 1fr); }
   .shell.withmenu > main.wrap { width: 100%; }
+  body:has(.withmenu) .topbar .wrap { max-width: none; padding-left: 24px; padding-right: 24px; }
   .sidemenu { display: block; background: #0a0a0c; border-right: 1px solid var(--line); }
   .sidemenu nav { position: sticky; top: 0; display: flex; flex-direction: column; gap: 2px; padding: 24px 12px; }
   .sidemenu a { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px; color: #b9b5aa; text-decoration: none; font-weight: 600; font-size: .95rem; }
