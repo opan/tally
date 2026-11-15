@@ -109,7 +109,9 @@ const rnd = (lo, hi) => { seed = (seed * 9301 + 49297) % 233280; return lo + Mat
   const day4 = await matchDay('2026-10-25', ['Si Lob'], 3, true);
 
   // --- Capture, once per language ---
+  // The phone's fixed menu bar would cover tall elements; only the "menu" shot shows it.
   const shot = async (lang, name, locator) => {
+    await page.evaluate(() => document.querySelector('.menubar')?.style.setProperty('display', 'none'));
     await locator.first().scrollIntoViewIfNeeded();
     await locator.first().screenshot({ path: path.join(OUT, lang, name + '.jpg'), type: 'jpeg', quality: 72 });
   };
@@ -170,6 +172,12 @@ const rnd = (lo, hi) => { seed = (seed * 9301 + 49297) % 233280; return lo + Mat
     await go(T);
     await shot(lang, 'board', page.locator('.boardcard'));
     await shot(lang, 'share', page.locator('main section.card').last());
+
+    // The tally menu (RFC-005): the bottom bar with Lainnya open.
+    await go(T);
+    await page.click('.menubar button[popovertarget]');
+    await page.screenshot({ path: path.join(OUT, lang, 'menu.jpg'), type: 'jpeg', quality: 72,
+      clip: { x: 0, y: 844 - 300, width: 390, height: 300 } });
 
     await go(T + '/poster');
     await page.evaluate(() => document.fonts.ready);

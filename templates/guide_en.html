@@ -15,11 +15,14 @@
       the tally; the name and description can.</li>
     <li><strong>Add player names.</strong> One name per line. You can paste a list straight from a WhatsApp
       group: numbers and bullets are removed, and names that already exist are skipped.</li>
-    <li><strong>Create a season.</strong> On the <em>Seasons</em> tab, set the start and end dates and choose
+    <li><strong>Create a season.</strong> In the <em>Seasons</em> menu, set the start and end dates and choose
       the <a href="#aturan-poin">points rule</a>.</li>
-    <li><strong>Start playing.</strong> Open the <em>Play</em> tab, pick the date, and press <em>Start</em>.
+    <li><strong>Start playing.</strong> Open the <em>Play</em> menu, pick the date, and press <em>Start</em>.
       Enter the points on the <em>Points</em> tab. Continue in <a href="#hari-main">Play day</a>.</li>
   </ol>
+  <p>The tally menu is on the left on a wide screen, and at the bottom of the screen on a phone. On a phone, the
+    items that don't fit at the bottom (like <em>Settings</em>) are under <em>More</em>.</p>
+  {{template "gimg" (dict "P" $P "N" "menu" "Alt" "The menu on a phone: the bottom bar, with More open showing Settings and the Guide")}}
   {{template "gimg" (dict "P" $P "N" "create" "Alt" "The Create a new tally form: name, link, type, description")}}
   {{template "gimg" (dict "P" $P "N" "players" "Alt" "The Add players form with one name per line")}}
 </section>
@@ -75,7 +78,7 @@
 <section class="card gsec" id="hari-main">
   <h2>4. Play day</h2>
   <h3>Starting</h3>
-  <p>On the <em>Play</em> tab, pick the <strong>date</strong> and press <strong>Start</strong>. Below the date
+  <p>In the <em>Play</em> menu, pick the <strong>date</strong> and press <strong>Start</strong>. Below the date
     you can see which season it goes into; the date must fall inside a season. A date has only one play day;
     picking a date that already has one opens it. There's no need to tick who's here: players with points
     count as present.</p>
@@ -131,13 +134,13 @@
     tab, open <strong>Extra points</strong>, pick the player, and enter the points and a note; use a minus number
     for a penalty. Extra points count toward that play day and don't count as a play.</p>
   {{template "gimg" (dict "P" $P "N" "awards" "Alt" "The Extra points form with a note")}}
-  <p class="muted"><em>Free counter</em> tallies have no courts: the <em>Record</em> tab is simply the list of
+  <p class="muted"><em>Free counter</em> tallies have no courts: the <em>Record</em> menu is simply the list of
     players to enter points for.</p>
 </section>
 
 <section class="card gsec" id="peringkat">
   <h2>5. Leaderboard</h2>
-  <p>The leaderboard is on the <em>Overview</em> tab, and anyone with the link can open it.</p>
+  <p>The leaderboard is on the <em>Overview</em> menu, and anyone with the link can open it.</p>
   <ul>
     <li><strong>Order:</strong> total points. On equal points, whoever played fewer matches is higher, then by
       name. Every row keeps its own number.</li>
@@ -177,18 +180,18 @@
 <section class="card gsec" id="kelola">
   <h2>7. Managing a tally</h2>
   <h3>Players</h3>
-  <p>On the <em>Players</em> tab: <strong>Rename</strong>, <strong>Deactivate</strong> (no longer offered when
+  <p>In the <em>Players</em> menu: <strong>Rename</strong>, <strong>Deactivate</strong> (no longer offered when
     picking players, but their points stay), or <strong>Delete</strong>. Delete only works for players who have
     never played or received points.</p>
   {{template "gimg" (dict "P" $P "N" "player-list" "Alt" "The player list with rename, deactivate, and delete")}}
   <h3>New season</h3>
-  <p>On the <em>Seasons</em> tab. Old seasons are kept and can be viewed from the <em>Season</em> picker on the leaderboard.
+  <p>In the <em>Seasons</em> menu. Old seasons are kept and can be viewed from the <em>Season</em> picker on the leaderboard.
     Tap a season's name to see all its weeks: each week's play days, players, plays, points, and who's on top.</p>
   {{template "gimg" (dict "P" $P "N" "season-weeks" "Alt" "A season's page: totals, and each week with its play days")}}
   <h3 id="arsip-musim">Archiving a season</h3>
   <p>Tidy away a finished season with <strong>Archive season</strong> on its page (any admin can).
     It becomes read-only: no new play days, score changes or imports. It also leaves the season picker
-    and is never the current season. Its points and pages stay: open it from the <em>Archive</em> section at the bottom of the <em>Seasons</em> tab (closed until tapped).
+    and is never the current season. Its points and pages stay: open it from the <em>Archive</em> section at the bottom of the <em>Seasons</em> menu (closed until tapped).
     <strong>Unarchive</strong> it if it needs changes again.</p>
   <h3 id="impor">Import from a spreadsheet</h3>
   <p>If this season's points are already on a spreadsheet, open the season and press <strong>Import from a
@@ -200,8 +203,8 @@
     After that, keep recording in Tally.</p>
   {{template "gimg" (dict "P" $P "N" "import" "Alt" "The import preview: play days, new players, and notes about the sheet")}}
   <h3 id="hubungkan">Linking players to accounts</h3>
-  <p>Optional. Players with a Tally account can see the tally and their own points on their home page. On the
-    <em>Players</em> tab, open <strong>Link to an account</strong>, pick the player, and type the account's username
+  <p>Optional. Players with a Tally account can see the tally and their own points on their home page. In the
+    <em>Players</em> menu, open <strong>Link to an account</strong>, pick the player, and type the account's username
     exactly as the player sent it (it's at the top right of their Tally). The answer is always the same,
     <em>Invite sent</em>, because Tally won't tell you whether the username exists. Invites last
     {{.Data.InviteDays}} days. Once the player accepts, their row shows <em>Linked: @username</em>; until then,
@@ -224,7 +227,7 @@
     see it apply to all of them, so someone who plays two sports is entered once.</p>
   {{template "gimg" (dict "P" $P "N" "boards" "Alt" "Settings → Leaderboards: the list and the Add leaderboard form")}}
   <p>Once there's more than one, their buttons show under the tally's name on <em>Overview</em>, <em>Play</em> and
-    <em>Seasons</em>. Pick one once; the other tabs and the link you share stay on it. The top one is the
+    <em>Seasons</em>. Pick one once; the other menus and the link you share stay on it. The top one is the
     <em>Main</em> leaderboard, which a plain link opens; change the order with <em>Edit → Move up</em>. A
     leaderboard can only be deleted while it has no seasons. Once you stop playing it, archive its seasons.</p>
   {{template "gimg" (dict "P" $P "N" "switcher" "Alt" "Leaderboard buttons under the tally's name")}}
@@ -260,7 +263,7 @@
   <details><summary>Why can't I delete a player?</summary>
     <p>They already have matches or points. Deactivate them instead: their name leaves the pickers, and the history stays correct.</p></details>
   <details><summary>I entered a wrong score. How do I fix it?</summary>
-    <p>Open the play day (the <em>Play</em> tab, or <em>Manage this play day</em> on the leaderboard) and tap <em>Edit</em> in the <em>Finished</em> list.</p></details>
+    <p>Open the play day (the <em>Play</em> menu, or <em>Manage this play day</em> on the leaderboard) and tap <em>Edit</em> in the <em>Finished</em> list.</p></details>
   <details><summary>Can I change the score format mid-season?</summary>
     <p>Not once there are matches. The win bonus and other numbers can still change, and points are recalculated. For another format, start a new season.</p></details>
   <details><summary>Someone arrived late. Will they still get to play?</summary>
