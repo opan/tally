@@ -58,4 +58,20 @@ func TestTallyMenu(t *testing.T) {
 	if !strings.Contains(out, `popovertarget="menumore" class="on"`) {
 		t.Error("Lainnya not lit on Setelan")
 	}
+	if !strings.Contains(out, `href="/panduan?t=sampai-pingsan"`) {
+		t.Error("Panduan doesn't keep the tally menu")
+	}
+
+	// The guide opened from the menu: Panduan lit, in the sidebar and in Lainnya.
+	var buf strings.Builder
+	vm := guideVM{tallyCtx: tallyCtx{Tally: tl, Role: RoleAdmin, Tab: "guide"}}
+	if err := tmpl["panduan"].ExecuteTemplate(&buf, "layout", pageData{Lang: "id", Data: vm}); err != nil {
+		t.Fatal(err)
+	}
+	out = buf.String()
+	for _, s := range []string{`class="sidemenu-guide on" aria-current="page"`, `popovertarget="menumore" class="on"`, `href="/t/sampai-pingsan/players"`} {
+		if !strings.Contains(out, s) {
+			t.Errorf("guide with a tally: missing %q", s)
+		}
+	}
 }

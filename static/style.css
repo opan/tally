@@ -156,7 +156,8 @@ code { background: var(--card-2); padding: 1px 6px; border-radius: 4px; }
   .sidemenu a { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px; color: #b9b5aa; text-decoration: none; font-weight: 600; font-size: .95rem; }
   .sidemenu a:hover { background: var(--card); color: var(--ink); }
   .sidemenu a.on { background: #241f10; color: var(--gold-2); box-shadow: inset 3px 0 0 var(--gold); }
-  .sidemenu .sidemenu-guide { margin-top: 14px; border-top: 1px solid var(--line); border-radius: 0 0 10px 10px; padding-top: 14px; color: var(--muted); font-weight: 500; font-size: .9rem; }
+  .sidemenu .sidemenu-guide { position: relative; margin-top: 29px; }
+  .sidemenu .sidemenu-guide::before { content: ""; position: absolute; left: 0; right: 0; top: -15px; border-top: 1px solid var(--line); }
   .menusheet { display: none; }
 }
 @media (max-width: 899px) {
@@ -176,6 +177,7 @@ code { background: var(--card-2); padding: 1px 6px; border-radius: 4px; }
     inset: auto 0 calc(60px + env(safe-area-inset-bottom)) 0; width: auto; max-width: none; margin: 0;
     background: var(--card); color: var(--ink); border: 0; border-top: 1px solid #3a3940; border-radius: 18px 18px 0 0; padding: 8px 18px 10px;
   }
+  body:has(.menubar) .guidefab { bottom: calc(78px + env(safe-area-inset-bottom)); }
   .menusheet::backdrop { background: rgba(0, 0, 0, .55); }
   .menusheet a { display: flex; align-items: center; gap: 14px; min-height: 52px; color: var(--ink); text-decoration: none; font-weight: 600; }
   .menusheet a + a { border-top: 1px solid var(--line); }

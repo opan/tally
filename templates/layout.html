@@ -33,8 +33,8 @@
     {{- if $menu}}
     <aside class="sidemenu">
       <nav aria-label="{{.T "tally.tabs"}}">
-        {{range $menu}}<a href="{{.Href}}"{{if .On}} class="on" aria-current="page"{{end}}>{{template "menuicon" .Icon}}{{$.T .Label}}</a>
-        {{end}}<a href="/panduan" class="sidemenu-guide">{{template "menuicon" "book"}}{{.T "guide.title"}}</a>
+        {{range $menu}}<a href="{{.Href}}"{{if eq .Tab "guide"}} class="sidemenu-guide{{if .On}} on{{end}}"{{else if .On}} class="on"{{end}}{{if .On}} aria-current="page"{{end}}>{{template "menuicon" .Icon}}{{$.T .Label}}</a>
+        {{end}}
       </nav>
     </aside>
     {{- end}}
@@ -49,7 +49,7 @@
   </nav>
   <div id="menumore" class="menusheet" popover>
     {{range $menu}}{{if not .Bar}}<a href="{{.Href}}"{{if .On}} class="on" aria-current="page"{{end}}>{{template "menuicon" .Icon}}{{$.T .Label}}</a>
-    {{end}}{{end}}<a href="/panduan">{{template "menuicon" "book"}}{{.T "guide.title"}}</a>
+    {{end}}{{end}}
   </div>
   {{- end}}
   <footer class="foot"><div class="wrap">{{.T "app.name"}} &middot; {{.T "footer.motto"}} &middot; <a href="/panduan">{{.T "guide.title"}}</a></div></footer>

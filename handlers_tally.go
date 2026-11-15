@@ -98,6 +98,15 @@ func (c tallyCtx) SwitchPath(b Leaderboard) string {
 	return withQuery(tallyPath(c.Tally, sub), "board="+url.QueryEscape(b.Slug))
 }
 
+// guidePath opens the guide with this tally's menu (see guideTally).
+func (c tallyCtx) guidePath() string {
+	q := "t=" + url.QueryEscape(c.Tally.Slug)
+	if c.MultiBoard() && c.Board != nil {
+		q += "&board=" + url.QueryEscape(c.Board.Slug)
+	}
+	return withQuery("/panduan", q)
+}
+
 // menuItem is one entry of a tally's menu (RFC-005 step 3): the sidebar on a
 // wide screen; on a phone the bottom bar, or its Lainnya sheet when not Bar.
 type menuItem struct {
@@ -124,6 +133,7 @@ func (c tallyCtx) Menu() []menuItem {
 		{Tab: "periods", Href: c.BoardPath("/periods"), Label: "tab.periods", Icon: "calendar", Bar: true},
 		{Tab: "players", Href: tallyPath(c.Tally, "/players"), Label: "tab.players", Icon: "people", Bar: true},
 		{Tab: "settings", Href: tallyPath(c.Tally, "/settings"), Label: "tab.settings", Icon: "gear"},
+		{Tab: "guide", Href: c.guidePath(), Label: "guide.title", Icon: "book"},
 	}
 	for i := range items {
 		items[i].On = items[i].Tab == c.Tab
