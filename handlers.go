@@ -37,7 +37,7 @@ func limitBody(w http.ResponseWriter, r *http.Request, max int64) {
 	r.Body = http.MaxBytesReader(w, r.Body, max)
 }
 
-var pageNames = []string{"landing", "login", "register", "autherror", "panduan", "dashboard", "notfound", "tally", "players", "periods", "period", "period_edit", "period_import", "settings", "play", "round", "match_edit", "poster", "player", "admin", "adminuser", "admintally", "adminday", "adminerror", "akun"}
+var pageNames = []string{"landing", "login", "register", "autherror", "panduan", "dashboard", "notfound", "tally", "players", "periods", "period", "period_edit", "period_import", "settings", "play", "round", "match_edit", "poster", "player", "admin", "adminuser", "admintally", "adminday", "adminerror", "akun", "payments"}
 
 // pageExtras are additional template files a page needs.
 var pageExtras = map[string][]string{
@@ -130,6 +130,12 @@ func (p pageData) DayMonth(t time.Time) string { return dayMonth(p.Lang, t) }
 func (p pageData) Weekday(t time.Time) string { return weekday(p.Lang, t) }
 
 func (p pageData) MonthYear(t time.Time) string { return monthYear(p.Lang, t) }
+
+// Rp renders whole rupiah: "Rp50.000".
+func (p pageData) Rp(n int64) string { return rupiah(p.Lang, n) }
+
+// Clock is a moment's time of day in Jakarta: "19.42".
+func (p pageData) Clock(t time.Time) string { return clock(p.Lang, t) }
 
 // Rule is a one-line, human description of a points rule.
 func (p pageData) Rule(c ScoringConfig) string {
@@ -232,6 +238,9 @@ func (a *App) guideTally(r *http.Request) tallyCtx {
 		return tallyCtx{}
 	}
 	if ok, err := a.loadBoards(r, &tc); err != nil || !ok {
+		return tallyCtx{}
+	}
+	if tc.Fees, err = a.store.HasFees(r.Context(), t.ID); err != nil {
 		return tallyCtx{}
 	}
 	return tc

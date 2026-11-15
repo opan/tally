@@ -58,8 +58,26 @@ func TestTallyMenu(t *testing.T) {
 	if !strings.Contains(out, `popovertarget="menumore" class="on"`) {
 		t.Error("Lainnya not lit on Setelan")
 	}
+	if strings.Contains(out, "/iuran") {
+		t.Error("Iuran in the menu before any fee")
+	}
 	if !strings.Contains(out, `href="/panduan?t=sampai-pingsan"`) {
 		t.Error("Panduan doesn't keep the tally menu")
+	}
+
+	// With fees, Iuran joins the menu: in the sidebar, and on a phone in
+	// Lainnya (lit there), with Musim staying on the bar.
+	out = render(tallyCtx{Tally: tl, Role: RoleAdmin, Tab: "iuran", Fees: true})
+	side := out[strings.Index(out, `class="sidemenu"`):strings.Index(out, `class="menubar"`)]
+	bar := out[strings.Index(out, `class="menubar"`):strings.Index(out, `id="menumore"`)]
+	sheet := out[strings.Index(out, `id="menumore"`):]
+	switch {
+	case !strings.Contains(side, `href="/t/sampai-pingsan/iuran" class="on"`):
+		t.Error("Iuran not lit in the sidebar")
+	case strings.Contains(bar, "/iuran") || !strings.Contains(bar, "/periods"):
+		t.Error("phone bar: want Musim, not Iuran")
+	case !strings.Contains(sheet, `href="/t/sampai-pingsan/iuran" class="on"`) || !strings.Contains(bar, `popovertarget="menumore" class="on"`):
+		t.Error("Iuran not lit in Lainnya")
 	}
 
 	// The guide opened from the menu: Panduan lit, in the sidebar and in Lainnya.

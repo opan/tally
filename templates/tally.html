@@ -99,6 +99,8 @@
 <section class="card empty"><p>{{.T "tally.no_period"}}</p></section>
 {{end}}
 
+{{if and $d.Fees (not $d.IsAdmin)}}<p class="small"><a href="{{$d.BoardPath "/iuran"}}">{{.T "pay.history_link"}} &rarr;</a></p>{{end}}
+
 {{if $d.IsAdmin}}
 <section class="card">
   <h2>{{.T "share.title"}}</h2>

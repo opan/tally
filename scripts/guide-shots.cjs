@@ -105,6 +105,12 @@ const rnd = (lo, hi) => { seed = (seed * 9301 + 49297) % 233280; return lo + Mat
   await page.fill('.extraform input[name=points]', '10');
   await page.fill('.extraform input[name=reason]', 'Juara turnamen antarklub');
   await submit('.extraform .sf-add');
+  // Iuran (RFC-004) on the same play day.
+  await post(day2 + '/fee', { fee: '50000' });
+  for (const [player, method, note] of [['Jacque Oui', 'free', 'pelatih'], ['Prabski', 'transfer', ''],
+    ['Bahlul', 'cash', ''], ['Mas Gembul', 'cash', ''], ['Tante Smash', 'transfer', 'BCA'], ['Om Netting', 'cash', '']]) {
+    await post(day2 + '/payments', { player, method, note });
+  }
   await pointsDay('2026-10-22', sheetPlays(NAMES.slice(2, 10), 2));
   const day4 = await matchDay('2026-10-25', ['Si Lob'], 3, true);
 
@@ -160,6 +166,18 @@ const rnd = (lo, hi) => { seed = (seed * 9301 + 49297) % 233280; return lo + Mat
     await shot(lang, 'today', page.locator('#today'));
     await page.locator('#awards details').evaluate(d => d.open = true);
     await shot(lang, 'awards', page.locator('#awards'));
+    await page.fill('#iuran input[name=player]', 'Si Lob');
+    await page.locator('#iuran h2').click();
+    await shot(lang, 'pay-card', page.locator('#iuran'));
+
+    // The Iuran page: totals and the play day's list.
+    await go(T + '/iuran');
+    const payClip = await page.evaluate(() => {
+      const a = document.querySelector('.paystats').getBoundingClientRect();
+      const b = document.querySelector('section.payday').getBoundingClientRect();
+      return { x: a.left, y: a.top + window.scrollY, width: a.width, height: b.bottom - a.top };
+    });
+    await page.screenshot({ path: path.join(OUT, lang, 'pay-history.jpg'), type: 'jpeg', quality: 72, clip: payClip, fullPage: true });
 
     await go(day4 + '?tab=match');
     await shot(lang, 'courts', page.locator('#court'));

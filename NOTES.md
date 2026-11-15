@@ -120,7 +120,8 @@ given round. Movement arrow = rank after round N vs rank after round N‑1.
 | BOARDS | A tally becomes the club, with one leaderboard (papan) per sport inside it | [docs/rfc/RFC-003-leaderboards.md](docs/rfc/RFC-003-leaderboards.md): phase 1 ✅ deployed 2026-11-02 (#21); phase 2 ✅ deployed 2026-11-03 (#24) |
 | — | k8s deploy in `homelab/k8s/tally` | manifests in homelab 2026-10-14; opan deploys |
 | P11 | Archive a season: read-only, out of the season pickers, never the current season | ✅ built 2026-11-01, PR #18 |
-| MENU | Tally menu for admins: left sidebar from 900px; below that a bottom bar with Lainnya for the rest (RFC-005 step 3, first PR: same pages, no new features) | built 2026-11-15, PR #34 |
+| PAY | Iuran: a fee per play day, payments recorded one by one (Tunai, Transfer, Gratis), history for everyone | RFC-004 (PR #28); phase 1 built 2026-11-15; phase 2 (cashflow) waits for the cashplan |
+| MENU | Tally menu for admins: left sidebar from 900px; below that a bottom bar (Ringkasan, Main, Musim, Pemain) with Lainnya for Iuran, Setelan and Panduan (RFC-005 step 3, first PR: same pages, no new features) | built 2026-11-15, PR #34 |
 
 ## P1 notes (2026-10-13)
 
@@ -579,6 +580,26 @@ pages, guide §7 with two screenshots. Tests: `TestLeaderboardsInApp` (settings 
 and links on the right leaderboard, default after reorder, delete rules, private tally on every
 leaderboard, Mabar saya lines). Leaderboards are created from the settings card only; the
 create-tally form still makes the first one.
+
+## RFC-004 phase 1 notes: Iuran (2026-11-15)
+
+- **Data:** `rounds.fee` (whole rupiah, 0 = not set) and `payments` (one per player and play day,
+  method cash/transfer/free, note). No amount on a payment: Tunai and Transfer count at the day's
+  fee, so fixing a fee recalculates the day. A player who paid can't be deleted (FK, like points).
+  Fee changes, payments and undos are audited.
+- **Play day page:** the Iuran card at the bottom, on both day tabs and for counter boards. The fee
+  first (starts with the board's last fee), then player (datalist of who hasn't paid), method,
+  note. A new name asks first, like the Poin tab. After a save the page autofocuses the player
+  field, which scrolls to the card, so the card shows its own notice and errors (the alerts at the
+  top would be off screen). Transfer stays picked after a transfer (`?pay=transfer`).
+- **Reading:** `/t/{slug}/iuran` per leaderboard, for everyone who can see the tally: an admin tab
+  and, for viewers, a "Riwayat iuran" link under the board, both only once a play day has a fee
+  (`tallyCtx.Fees`). Player pages list the season's payments. Notes are admin-only (they can say
+  whose account paid). Site admin: totals per tally and the list on the read-only day page.
+- **Archived seasons:** read-only, payments included.
+- **Not done:** cashflow (phase 2). With six tabs the row scrolls on a phone; the menu in RFC-005
+  step 3 fixes that.
+- **Local demo:** `scripts/demo.sh` + `scripts/demo-seed.sql` (TestDemoSeed keeps it working).
 
 ## Open questions
 

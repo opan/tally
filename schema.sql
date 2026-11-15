@@ -274,3 +274,20 @@ UPDATE periods p SET leaderboard_id = (SELECT b.id FROM leaderboards b WHERE b.t
 WHERE p.leaderboard_id IS NULL;
 ALTER TABLE periods ALTER COLUMN leaderboard_id SET NOT NULL;
 CREATE INDEX IF NOT EXISTS periods_leaderboard_idx ON periods (leaderboard_id, starts_on DESC);
+
+-- RFC-004: Iuran. Each play day has its own fee per player (whole rupiah;
+-- 0 = not set), and admins record who paid it, one row per player and play
+-- day. A payment is always the full fee, so it stores no amount: Tunai and
+-- Transfer count as the day's fee, Gratis as nothing.
+ALTER TABLE rounds ADD COLUMN IF NOT EXISTS fee bigint NOT NULL DEFAULT 0 CHECK (fee >= 0);
+CREATE TABLE IF NOT EXISTS payments (
+    id             uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+    round_id       uuid        NOT NULL REFERENCES rounds(id) ON DELETE CASCADE,
+    participant_id uuid        NOT NULL REFERENCES participants(id), -- a player who paid can't be deleted
+    method         text        NOT NULL CHECK (method IN ('cash', 'transfer', 'free')),
+    note           text        NOT NULL DEFAULT '',
+    recorded_by    uuid        REFERENCES users(id) ON DELETE SET NULL,
+    created_at     timestamptz NOT NULL DEFAULT now(),
+    UNIQUE (round_id, participant_id)
+);
+CREATE INDEX IF NOT EXISTS payments_participant_idx ON payments (participant_id, round_id);

@@ -2,7 +2,7 @@
 <header class="tallyhead">
   {{if or (not .Data.MultiBoard) (and .Data.Board.Name (ne .Data.Tab "players") (ne .Data.Tab "settings"))}}<p class="eyebrow">{{.T $.Data.Board.Preset.NameKey}}{{if $.Data.Board.Preset.TeamSizes}} · {{.T "tally.per_side" $.Data.Board.SideSize}}{{end}}</p>{{end}}
   <h1>{{$t.Name}}</h1>
-  {{if and .Data.MultiBoard (or (eq .Data.Tab "overview") (eq .Data.Tab "play") (eq .Data.Tab "periods"))}}
+  {{if and .Data.MultiBoard (or (eq .Data.Tab "overview") (eq .Data.Tab "play") (eq .Data.Tab "periods") (eq .Data.Tab "iuran"))}}
   <nav class="boardswitch" aria-label="{{.T "boards.switch"}}">
     {{range .Data.Boards}}<a href="{{$.Data.SwitchPath .}}"{{if eq .ID $.Data.Board.ID}} class="on" aria-current="true"{{end}}>{{template "boardname" (dict "P" $ "B" .)}}</a>{{end}}
   </nav>
@@ -191,3 +191,97 @@
 {{define "seasonbadge"}}{{$s := .S.Status}}<span class="badge{{if eq $s "running"}} gold{{else if or (eq $s "ended") (eq $s "archived")}} ended{{end}}">{{.P.T (print "season.status_" $s)}}</span>{{end}}
 
 {{define "aioleaving"}}<p class="muted small">{{.T "account.leaving" .Aio.Host}}</p>{{end}}
+
+{{/* paycard: dict P (page) D (roundVM): the play day's Iuran card, admins only (RFC-004) */}}
+{{define "paycard"}}{{$p := .D.Pay}}{{$t := .D.Tally}}{{$P := .P}}{{$rid := .D.Round.ID}}
+<section class="card paycard" id="iuran">
+  <div class="cardhead"><h2>{{$P.T "pay.title"}}</h2>{{if $p.Fee}}<span class="muted small">{{$P.T "pay.per_player" ($P.Rp $p.Fee)}}</span>{{end}}</div>
+  {{if $p.Notice}}<div class="alert ok" role="status">{{$p.Notice}}</div>{{end}}
+  {{if $p.Err}}<div class="alert error" role="alert">{{$p.Err}}</div>{{end}}
+  {{if not $p.Fee}}
+  <p class="muted">{{$P.T "pay.fee_none"}}</p>
+  {{template "feeform" (dict "P" $P "D" .D "Submit" "pay.fee_set")}}
+  {{else}}
+  {{if $p.ConfirmNew}}
+  <div class="confirmbox" role="alert">
+    <p>{{$P.T "pay.new_player" $p.ConfirmNew}}</p>
+    <form method="post" action="/t/{{$t.Slug}}/rounds/{{$rid}}/payments" class="actions">
+      <input type="hidden" name="form_token" value="{{formToken}}">
+      <input type="hidden" name="player" value="{{$p.ConfirmNew}}">
+      <input type="hidden" name="method" value="{{$p.FMethod}}">
+      <input type="hidden" name="note" value="{{$p.FNote}}">
+      <input type="hidden" name="confirm_new" value="1">
+      <button type="submit" class="btn primary">{{$P.T "pay.new_player_yes" ($P.T (print "pay.method." $p.FMethod))}}</button>
+      <a class="btn ghost" href="?#iuran">{{$P.T "score.new_player_no"}}</a>
+    </form>
+  </div>
+  {{end}}
+  <form method="post" action="/t/{{$t.Slug}}/rounds/{{$rid}}/payments" class="payform">
+    <input type="hidden" name="form_token" value="{{formToken}}">
+    <label class="pf-player">{{$P.T "score.player"}}
+      <input type="text" name="player" value="{{$p.FPlayer}}" list="pay-players" maxlength="40" required autocomplete="off" autocapitalize="words" placeholder="{{$P.T "score.player_placeholder"}}"{{if eq .D.Focus "payer"}} autofocus{{end}}>
+    </label>
+    <fieldset class="pf-method seg">
+      <legend>{{$P.T "pay.method"}}</legend>
+      {{range $p.Methods}}<label><input type="radio" name="method" value="{{.}}"{{if eq . $p.FMethod}} checked{{end}}><span>{{$P.T (print "pay.method." .)}}</span></label>{{end}}
+    </fieldset>
+    <label class="pf-note">{{$P.T "pay.note"}}
+      <input type="text" name="note" value="{{$p.FNote}}" maxlength="80" autocomplete="off" placeholder="{{$P.T "pay.note_placeholder"}}">
+    </label>
+    <button type="submit" class="btn primary pf-add">{{$P.T "pay.record"}}</button>
+  </form>
+  <datalist id="pay-players">{{range $p.Names}}<option value="{{.}}">{{end}}</datalist>
+  <p class="muted small">{{$P.T "pay.help"}} <a href="/panduan#iuran">{{$P.T "guide.more"}}</a></p>
+
+  {{template "paysum" (dict "P" $P "S" $p.Sum "Collected" $p.Sum.Collected)}}
+  {{if $p.Payments}}{{template "paylist" (dict "P" $P "Rows" $p.Payments "Undo" true "Notes" true "Clock" true "Slug" $t.Slug)}}
+  {{else}}<p class="muted">{{$P.T "pay.none"}}</p>{{end}}
+
+  <details class="manual feechange"{{if $p.EditFee}} open{{end}}>
+    <summary class="btn small ghost">{{$P.T "pay.fee_change"}}</summary>
+    {{with $p.ConfirmFee}}
+    <div class="confirmbox" role="alert">
+      <p>{{$P.T "pay.fee_confirm" .Paid ($P.Rp .Before) ($P.Rp .After)}}</p>
+      <form method="post" action="/t/{{$t.Slug}}/rounds/{{$rid}}/fee" class="actions">
+        <input type="hidden" name="fee" value="{{.Field}}">
+        <input type="hidden" name="confirm_fee" value="{{.Fee}}">
+        <button type="submit" class="btn primary"{{if eq $.D.Focus "fee_confirm"}} autofocus{{end}}>{{$P.T "pay.fee_confirm_yes" ($P.Rp .Fee)}}</button>
+        <a class="btn ghost" href="?#iuran">{{$P.T "common.cancel"}}</a>
+      </form>
+    </div>
+    {{end}}
+    {{template "feeform" (dict "P" $P "D" .D "Submit" "common.save")}}
+  </details>
+  {{end}}
+</section>
+{{end}}
+
+{{/* feeform: dict P D Submit: a play day's fee per player */}}
+{{define "feeform"}}{{$P := .P}}{{$p := .D.Pay}}
+<form method="post" action="/t/{{.D.Tally.Slug}}/rounds/{{.D.Round.ID}}/fee" class="feeform">
+  <label>{{$P.T "pay.fee_label"}}
+    <span class="prefixed"><span class="prefix">Rp</span><input type="text" name="fee" value="{{$p.FeeField}}" inputmode="numeric" maxlength="14" required autocomplete="off" placeholder="{{$P.T "pay.fee_placeholder"}}" data-thousands="{{$p.FeeSep}}"{{if eq .D.Focus "fee"}} autofocus{{end}}></span>
+  </label>
+  <button type="submit" class="btn primary">{{$P.T .Submit}}</button>
+</form>
+<p class="muted small">{{$P.T "pay.fee_help"}}</p>
+{{end}}
+
+{{/* paysum: dict P S (PaySummary) Collected: "23 tercatat · 18 tunai · … · Rp1.050.000" */}}
+{{define "paysum"}}
+<p class="paysum"><span><strong>{{.P.T "pay.recorded_n" .S.Count}}</strong> · {{.P.T "pay.summary" .S.Cash .S.Transfer .S.Free}}</span><strong class="paytotal">{{.P.Rp .Collected}}</strong></p>
+{{end}}
+
+{{/* paylist: dict P Rows ([]Payment) Undo Notes Clock Slug, and Season to link names to player pages */}}
+{{define "paylist"}}{{$P := .P}}{{$x := .}}
+<ul class="rows paylist">
+  {{range .Rows}}
+  <li class="prow payrow">
+    <span class="pr-name">{{if $x.Season}}<a href="/t/{{$x.Slug}}/players/{{.ParticipantID}}?season={{$x.Season}}">{{.Name}}</a>{{else}}{{.Name}}{{end}}</span>
+    <span class="paymethod m-{{.Method}}">{{$P.T (print "pay.method." .Method)}}</span>
+    <span class="muted small pr-when">{{if $x.Clock}}{{$P.Clock .CreatedAt}}{{end}}{{if and $x.Clock $x.Notes .Note}} · {{end}}{{if and $x.Notes .Note}}{{.Note}}{{end}}</span>
+    {{if $x.Undo}}<form method="post" action="/t/{{$x.Slug}}/payments/{{.ID}}/delete" data-confirm="{{$P.T "pay.undo_confirm" .Name}}" class="pr-undo"><button type="submit" class="btn small ghost">{{$P.T "pay.undo"}}</button></form>{{end}}
+  </li>
+  {{end}}
+</ul>
+{{end}}

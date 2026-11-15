@@ -161,6 +161,8 @@ type Totals struct {
 	Users, Tallies, ActiveTallies, Players, Matches, PlayDays int64
 	LinkedPlayers, PendingInvites, Seasons, ArchivedSeasons   int64
 	Leaderboards                                              int64
+	Payments                                                  int64
+	Collected                                                 int64 // rupiah, every tally's Iuran (RFC-004)
 }
 
 func (s *Store) Totals(ctx context.Context) (Totals, error) {
@@ -177,9 +179,12 @@ func (s *Store) Totals(ctx context.Context) (Totals, error) {
 		(SELECT count(*) FROM player_invites WHERE status = 'pending' AND expires_at > now()),
 		(SELECT count(*) FROM periods),
 		(SELECT count(*) FROM periods WHERE archived_at IS NOT NULL),
-		(SELECT count(*) FROM leaderboards)`,
+		(SELECT count(*) FROM leaderboards),
+		(SELECT count(*) FROM payments),
+		(SELECT COALESCE(sum(r.fee), 0) FROM payments pay JOIN rounds r ON r.id = pay.round_id WHERE pay.method <> 'free')`,
 	).Scan(&t.Users, &t.Tallies, &t.ActiveTallies, &t.Players, &t.Matches, &t.PlayDays,
-		&t.LinkedPlayers, &t.PendingInvites, &t.Seasons, &t.ArchivedSeasons, &t.Leaderboards)
+		&t.LinkedPlayers, &t.PendingInvites, &t.Seasons, &t.ArchivedSeasons, &t.Leaderboards,
+		&t.Payments, &t.Collected)
 	return t, err
 }
 
