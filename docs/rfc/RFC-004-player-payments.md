@@ -1,7 +1,8 @@
 # RFC-004: Player payments per play day
 
-- **Status:** Draft; §9.1, §9.2 and §9.5 answered (opan, 2026-11-07), §9.3, §9.4 and §9.6 open
-- **Updated:** 2026-11-07
+- **Status:** Approved (opan, 2026-11-15), with the proposals in §9.3, §9.4 and §9.6. Which
+  cashplan to link is picked before phase 2.
+- **Updated:** 2026-11-15
 - **Author:** opan
 - **Created:** 2026-11-05
 - **Scope:** every tally; both login modes. Phase 2 also touches cashflow.
@@ -193,7 +194,7 @@ So the link is doable, but cashflow needs a small API first.
 2. **tally PR:** the Cashflow card in Setelan, "Catat ke cashflow" on the play day card, and the
    sent/unsent state per payment.
 
-Phase 1 is useful on its own and can ship first. Phase 2 waits for opan's call on §9.6.
+Phase 1 is useful on its own and ships first. Phase 2 waits for the cashplan (§9.6).
 
 ## 8. Risks
 
@@ -212,13 +213,13 @@ Phase 1 is useful on its own and can ship first. Phase 2 waits for opan's call o
    next to Tunai and Transfer.
 2. ~~**Who should pay.**~~ Answered 2026-11-07: admins enter each payment by hand, and tally
    doesn't work out who should pay.
-3. **Where the history lives.** A new **Iuran** tab for everyone (proposed), or only on player
-   pages?
-4. **Undo.** Admins can undo a payment any time, audited (proposed), or only on the same day?
+3. ~~**Where the history lives.**~~ Approved 2026-11-15: a new **Iuran** tab for everyone, and
+   a section on player pages (§5.2).
+4. ~~**Undo.**~~ Approved 2026-11-15: admins can undo a payment any time, audited.
 5. ~~**Fee per leaderboard or club.**~~ Answered 2026-11-07: per play day, prefilled from the
    previous one.
-6. **Cashflow.** Option **B** (one entry per play day, proposed), or C, D, or A (none)? And which
-   cashplan: is there one for the club already?
+6. **Cashflow.** Approved 2026-11-15: option **B**, one entry per play day. Still open, before
+   phase 2: which cashplan. Is there one for the club already?
 
 ## 10. Later, if a club asks
 
@@ -228,6 +229,7 @@ Phase 1 is useful on its own and can ship first. Phase 2 waits for opan's call o
 ## 11. Next steps
 
 - [x] opan answers §9.1, §9.2, §9.5 (2026-11-07).
-- [ ] opan answers §9.3, §9.4, §9.6.
+- [x] opan approves the RFC with §9.3, §9.4, §9.6 as proposed (2026-11-15).
+- [ ] opan picks the cashplan for phase 2.
 - [ ] Phase 1 PR.
 - [ ] Phase 2: cashflow PR, then tally PR (if §9.6 isn't A).
