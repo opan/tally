@@ -53,6 +53,15 @@ func grouped(lang string, n int64) string {
 	return b.String()
 }
 
+// feeChange is what a new fee does to a play day whose payments are already
+// recorded: they count at the new fee, so Collected changes with it.
+type feeChange struct {
+	Fee           int64
+	Field         string // Fee as the field writes it
+	Paid          int    // Tunai + Transfer; Gratis stays at zero
+	Before, After int64  // Collected
+}
+
 // payVM is the Iuran card on the play day page.
 type payVM struct {
 	Fee        int64
@@ -66,9 +75,10 @@ type payVM struct {
 	FPlayer    string
 	FMethod    string
 	FNote      string
-	ConfirmNew string // typed name that isn't a player yet; asks before adding
-	Err        string // the card's own messages: autofocus scrolls the page to it,
-	Notice     string // away from the alerts at the top
+	ConfirmNew string     // typed name that isn't a player yet; asks before adding
+	ConfirmFee *feeChange // a new fee on a day with payments; asks before saving
+	Err        string     // the card's own messages: autofocus scrolls the page to it,
+	Notice     string     // away from the alerts at the top
 }
 
 // fillPay sets up the Iuran card. The method picked last stays picked (?pay=).
@@ -124,6 +134,20 @@ func (a *App) handleSetFee(w http.ResponseWriter, r *http.Request) {
 		return
 	case fee == 0 && len(d.payments) > 0:
 		fail("err.fee_in_use")
+		return
+	}
+	// Payments follow the fee, so changing it re-values them: say by how
+	// much and ask first. confirm_fee must name this fee, so editing the
+	// number on the confirm step asks again.
+	if sum := summarize(d.round.Fee, d.payments); sum.Paid() > 0 && fee != d.round.Fee &&
+		r.FormValue("confirm_fee") != strconv.FormatInt(fee, 10) {
+		after := sum
+		after.Fee = fee
+		a.renderRoundVM(w, r, d, nil, func(vm *roundVM) {
+			vm.Pay.ConfirmFee = &feeChange{Fee: fee, Field: grouped(requestLang(r), fee), Paid: sum.Paid(),
+				Before: sum.Collected(), After: after.Collected()}
+			vm.Pay.FeeField, vm.Pay.EditFee, vm.Focus = typed, true, "fee_confirm"
+		}, http.StatusOK)
 		return
 	}
 	switch err := a.store.SetRoundFee(r.Context(), tc.Tally.ID, u.ID, d.round, fee); {

@@ -249,6 +249,17 @@
 
   <details class="manual feechange"{{if $p.EditFee}} open{{end}}>
     <summary class="btn small ghost">{{$P.T "pay.fee_change"}}</summary>
+    {{with $p.ConfirmFee}}
+    <div class="confirmbox" role="alert">
+      <p>{{$P.T "pay.fee_confirm" .Paid ($P.Rp .Before) ($P.Rp .After)}}</p>
+      <form method="post" action="/t/{{$t.Slug}}/rounds/{{$rid}}/fee" class="actions">
+        <input type="hidden" name="fee" value="{{.Field}}">
+        <input type="hidden" name="confirm_fee" value="{{.Fee}}">
+        <button type="submit" class="btn primary"{{if eq $.D.Focus "fee_confirm"}} autofocus{{end}}>{{$P.T "pay.fee_confirm_yes" ($P.Rp .Fee)}}</button>
+        <a class="btn ghost" href="?#iuran">{{$P.T "common.cancel"}}</a>
+      </form>
+    </div>
+    {{end}}
     {{template "feeform" (dict "P" $P "D" .D "Submit" "common.save")}}
   </details>
   {{end}}

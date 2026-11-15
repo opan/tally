@@ -301,6 +301,36 @@ func TestPaymentsInApp(t *testing.T) {
 		t.Errorf("clearing the fee with payments: %d", w.Code)
 	}
 
+	// A new fee re-values the day's payments, so Tally asks first, with the
+	// new Collected; only confirm_fee naming that same fee saves it.
+	left, _ := s.RoundPayments(ctx, rid)
+	sum := summarize(50000, left)
+	if sum.Paid() == 0 {
+		t.Fatal("test needs a paid payment left")
+	}
+	feeNow := func() int64 {
+		rd, _ := s.RoundByID(ctx, tl.ID, rid)
+		return rd.Fee
+	}
+	w = do(admin, "POST", "/", app.handleSetFee, day, url.Values{"fee": {"60.000"}})
+	body = w.Body.String()
+	if w.Code != http.StatusOK || !strings.Contains(body, `name="confirm_fee" value="60000"`) ||
+		!strings.Contains(body, rupiah("id", sum.Collected())+" → "+rupiah("id", int64(sum.Paid())*60000)) {
+		t.Errorf("changing the fee with payments should ask first: %d", w.Code)
+	}
+	if feeNow() != 50000 {
+		t.Fatalf("fee changed before confirming: %d", feeNow())
+	}
+	if w := do(admin, "POST", "/", app.handleSetFee, day, url.Values{"fee": {"70.000"}, "confirm_fee": {"60000"}}); w.Code != http.StatusOK || feeNow() != 50000 {
+		t.Errorf("a confirm for another fee must ask again: %d, fee %d", w.Code, feeNow())
+	}
+	if w := do(admin, "POST", "/", app.handleSetFee, day, url.Values{"fee": {"60.000"}, "confirm_fee": {"60000"}}); w.Code != http.StatusSeeOther || feeNow() != 60000 {
+		t.Errorf("confirmed fee change: %d, fee %d", w.Code, feeNow())
+	}
+	if w := do(admin, "POST", "/", app.handleSetFee, day, url.Values{"fee": {"60.000"}}); w.Code != http.StatusSeeOther {
+		t.Errorf("saving the same fee shouldn't ask: %d", w.Code)
+	}
+
 	// Private: nobody outside sees the Iuran page.
 	if err := s.UpdateTally(ctx, admin.ID, tl, "Club", "", VisibilityPrivate); err != nil {
 		t.Fatal(err)

@@ -283,7 +283,7 @@ type roundVM struct {
 	FPlayer    string
 	FScore     string
 	ConfirmNew string // typed name that isn't a player yet; asks before adding
-	Focus      string // "player", "points", "xplayer", "xpoints", "fee" or "payer": where the cursor goes
+	Focus      string // "player", "points", "xplayer", "xpoints", "fee", "fee_confirm" or "payer": where the cursor goes
 	FXPlayer   string // the extras form, as typed
 	FXPoints   string
 
