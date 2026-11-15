@@ -105,6 +105,24 @@ type pageData struct {
 
 func (p pageData) T(key string, args ...any) string { return translate(p.Lang, key, args...) }
 
+// Menu is the tally menu when the page has one (see tallyCtx.Menu), and
+// MenuMore whether its current item sits in the phone's Lainnya sheet.
+func (p pageData) Menu() []menuItem {
+	if m, ok := p.Data.(interface{ Menu() []menuItem }); ok {
+		return m.Menu()
+	}
+	return nil
+}
+
+func (p pageData) MenuMore() bool {
+	for _, it := range p.Menu() {
+		if it.On && !it.Bar {
+			return true
+		}
+	}
+	return false
+}
+
 func (p pageData) Date(t time.Time) string { return formatDate(p.Lang, t) }
 
 func (p pageData) DayMonth(t time.Time) string { return dayMonth(p.Lang, t) }
