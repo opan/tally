@@ -40,8 +40,11 @@ type playerVM struct {
 	Matches   []*Match  // newest first
 	Partners  []pairStat
 	Opponents []pairStat
-	Awards    []Award // extras
-	Scores    int     // plays entered as points only (no match details)
+	Awards    []Award         // extras
+	Scores    int             // plays entered as points only (no match details)
+	Payments  []playerPayment // Iuran in this season, newest play day first (RFC-004)
+	PaySum    PaySummary      // Fee unset: days' fees differ
+	Paid      int64           // money paid in this season
 	Counter   bool
 	Admin     bool // the site admin's read-only view
 }
@@ -162,6 +165,22 @@ func (a *App) playerPage(w http.ResponseWriter, r *http.Request, vm playerVM) {
 	if err != nil {
 		internalError(w, "list rounds", err)
 		return
+	}
+	pays, err := a.store.PlayerPayments(ctx, vm.Period.ID, player.ID)
+	if err != nil {
+		internalError(w, "player payments", err)
+		return
+	}
+	roundByID := map[string]Round{}
+	for _, rd := range rounds {
+		roundByID[rd.ID] = rd
+	}
+	for _, p := range pays {
+		rd := roundByID[p.RoundID]
+		vm.Payments = append(vm.Payments, playerPayment{Round: rd, Payment: p})
+		day := summarize(rd.Fee, []Payment{p})
+		vm.PaySum.add(day)
+		vm.Paid += day.Collected()
 	}
 
 	dayPts := map[string]int{}

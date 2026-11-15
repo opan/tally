@@ -134,8 +134,37 @@
     daftar pemain untuk diisi poinnya.</p>
 </section>
 
+<section class="card gsec" id="iuran">
+  <h2>5. Iuran</h2>
+  <p>Catat siapa yang sudah bayar iuran tiap hari main, seperti daftar yang biasa ditulis tangan. Hanya admin yang
+    mencatat; semua yang bisa membuka tally bisa melihat riwayatnya.</p>
+  <h3>Mengisi iuran hari main</h3>
+  <p>Di halaman hari main, kartu <strong>Iuran</strong> ada di bagian bawah. Isi <strong>iuran per orang</strong>
+    (tulis angkanya saja, mis. 50000; titik ribuan muncul sendiri) lalu tekan <strong>Isi iuran</strong>. Hari main berikutnya langsung terisi
+    iuran yang terakhir, tinggal disimpan. Salah ketik? Buka <strong>Ubah iuran</strong>; pembayaran yang sudah
+    tercatat ikut iuran yang baru. Kalau sudah ada yang bayar, Tally menunjukkan dulu perubahan <em>Terkumpul</em>-nya
+    dan bertanya sebelum menyimpan.</p>
+  <h3>Mencatat pembayaran</h3>
+  <p>Ketik nama pemain (atau pilih dari daftar, yang hanya berisi yang belum tercatat), pilih
+    <strong>Tunai</strong>, <strong>Transfer</strong> atau <strong>Gratis</strong>, beri catatan kalau perlu
+    (mis. <em>pelatih</em>), lalu tekan <strong>Catat</strong>. Kursor kembali ke kolom nama, jadi orang
+    berikutnya bisa langsung dicatat. Satu pemain hanya sekali per hari main; nama yang belum terdaftar
+    ditanyakan dulu sebelum ditambahkan sebagai pemain baru.</p>
+  <ul>
+    <li><strong>Terkumpul</strong> = (Tunai + Transfer) × iuran hari itu. <strong>Gratis</strong> tidak dihitung.</li>
+    <li>Salah pemain atau salah pilih? Tekan <strong>Batalkan</strong> di barisnya, lalu catat lagi.</li>
+    <li>Yang bayar belakangan dicatat di hari main yang dibayarnya; hari main lama tetap bisa diisi.</li>
+  </ul>
+  {{template "gimg" (dict "P" $P "N" "pay-card" "Alt" "Kartu Iuran: kolom pemain, pilihan Tunai, Transfer, Gratis, dan daftar yang sudah bayar")}}
+  <h3>Riwayat iuran</h3>
+  <p>Tab <strong>Iuran</strong> (untuk pemain: <em>Riwayat iuran</em> di bawah papan peringkat) muncul setelah
+    ada hari main dengan iuran. Isinya total yang terkumpul dan, per hari main, siapa yang sudah bayar dan
+    caranya. Halaman pemain juga menampilkan iurannya. <strong>Catatan hanya terlihat oleh admin.</strong></p>
+  {{template "gimg" (dict "P" $P "N" "pay-history" "Alt" "Halaman Iuran: total terkumpul dan daftar pembayaran satu hari main")}}
+</section>
+
 <section class="card gsec" id="peringkat">
-  <h2>5. Papan peringkat</h2>
+  <h2>6. Papan peringkat</h2>
   <p>Papan peringkat ada di tab <em>Ringkasan</em> dan bisa dibuka siapa saja yang punya tautan.</p>
   <ul>
     <li><strong>Urutan:</strong> total poin. Kalau poinnya sama, yang mainnya lebih sedikit di atas, lalu
@@ -155,7 +184,7 @@
 </section>
 
 <section class="card gsec" id="poster">
-  <h2>6. Poster</h2>
+  <h2>7. Poster</h2>
   <p>Tekan <strong>Poster</strong> di papan peringkat. Poster memakai musim dan hari main yang sedang dipilih,
     berisi sampai 20 peringkat teratas, dan berukuran 1024×1536 untuk grup WhatsApp atau Instagram.</p>
   <ul>
@@ -174,7 +203,7 @@
 </section>
 
 <section class="card gsec" id="kelola">
-  <h2>7. Mengelola tally</h2>
+  <h2>8. Mengelola tally</h2>
   <h3>Pemain</h3>
   <p>Di tab <em>Pemain</em>: <strong>Ganti nama</strong>, <strong>Nonaktifkan</strong> (tidak muncul lagi saat
     memilih pemain, tapi poinnya tetap), atau <strong>Hapus</strong>. Hapus hanya bisa untuk pemain yang belum
@@ -230,7 +259,7 @@
 </section>
 
 <section class="card gsec" id="pemain">
-  <h2>8. Untuk pemain</h2>
+  <h2>9. Untuk pemain</h2>
   <p>Pemain tidak perlu akun. Buka tautan dari admin untuk melihat papan peringkat, pilih hari main lain,
     dan tekan nama sendiri untuk melihat statistik. Ada skor yang salah? Beri tahu admin; perbaikannya langsung
     mengubah poin dan peringkat.</p>
@@ -247,7 +276,7 @@
 </section>
 
 <section class="card gsec" id="faq">
-  <h2>9. Tanya jawab</h2>
+  <h2>10. Tanya jawab</h2>
   {{if .Aio}}
   <details><summary>Lupa kata sandi?</summary>
     <p>Tekan <a href="{{.Aio.ForgotURL .Lang}}">Lupa kata sandi?</a> di beranda. Jika email Anda sudah dikonfirmasi, kata sandi sementara dikirim ke sana (berlaku 30 menit). Masuk dengan kata sandi itu, lalu buat kata sandi baru. Kata sandi lama tetap bisa dipakai sampai saat itu. Belum punya email? Halaman itu menjelaskan cara meminta bantuan admin.</p></details>

@@ -283,9 +283,11 @@ type roundVM struct {
 	FPlayer    string
 	FScore     string
 	ConfirmNew string // typed name that isn't a player yet; asks before adding
-	Focus      string // "player", "points", "xplayer" or "xpoints": where the cursor goes
+	Focus      string // "player", "points", "xplayer", "xpoints", "fee", "fee_confirm" or "payer": where the cursor goes
 	FXPlayer   string // the extras form, as typed
 	FXPoints   string
+
+	Pay payVM // the Iuran card (RFC-004)
 }
 
 // maxPlaysPerDay caps how often one player plays on a play day, like the
@@ -316,14 +318,15 @@ type scoreRow struct {
 }
 
 type roundData struct {
-	tc      tallyCtx
-	round   *Round
-	period  *Period
-	players []Participant
-	present []string
-	matches []*Match
-	awards  []Award // extras
-	scores  []Award // points entered without match details
+	tc       tallyCtx
+	round    *Round
+	period   *Period
+	players  []Participant
+	present  []string
+	matches  []*Match
+	awards   []Award // extras
+	scores   []Award // points entered without match details
+	payments []Payment
 }
 
 func (a *App) loadRound(w http.ResponseWriter, r *http.Request, tc tallyCtx, roundID string) (*roundData, bool) {
@@ -361,6 +364,10 @@ func (a *App) loadRound(w http.ResponseWriter, r *http.Request, tc tallyCtx, rou
 	}
 	if d.scores, err = a.store.ScoreAwards(ctx, rd.ID); err != nil {
 		internalError(w, "list scores", err)
+		return nil, false
+	}
+	if d.payments, err = a.store.RoundPayments(ctx, rd.ID); err != nil {
+		internalError(w, "list payments", err)
 		return nil, false
 	}
 	return d, true
@@ -549,6 +556,15 @@ func (a *App) renderRoundVM(w http.ResponseWriter, r *http.Request, d *roundData
 		// Selects offer active players plus anyone already in a match today.
 		if p.Active || inMatch[p.ID] {
 			vm.Options = append(vm.Options, p)
+		}
+	}
+
+	vm.Pay = a.fillPay(r, d)
+	if r.Method == http.MethodGet {
+		switch r.URL.Query().Get("ok") {
+		case "fee_saved", "payment_saved", "payment_undone":
+			vm.Focus = "payer"
+			vm.Pay.Notice, vm.Notice = vm.Notice, ""
 		}
 	}
 

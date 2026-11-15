@@ -38,6 +38,8 @@ var (
 	adminEvents  metric.Int64Counter // {action: added|removed|owner_transferred}
 	seasonEvents metric.Int64Counter // {action: created|edited|archived|unarchived}
 	sheetImports metric.Int64Counter
+	payments     metric.Int64Counter // {method: cash|transfer|free}
+	payEvents    metric.Int64Counter // {action: fee_set|undone}
 )
 
 // initOTel wires up OTLP metric export (push) to the collector. Endpoint,
@@ -101,6 +103,8 @@ func initOTel(ctx context.Context) (shutdown func(context.Context) error, enable
 		{&adminEvents, "tally.admin.events", "Tally admin changes: added, removed, ownership transferred."},
 		{&seasonEvents, "tally.season.events", "Season changes, by action."},
 		{&sheetImports, "tally.sheet_imports", "Points sheets imported into a season."},
+		{&payments, "tally.payments", "Iuran payments recorded (RFC-004), by method."},
+		{&payEvents, "tally.payment.events", "Iuran changes other than recording a payment: a play day's fee set or changed, a payment undone."},
 		{&adminChecks, "tally.admin.checks", "Site admin page requests, by the result of asking all-in-one."},
 	}
 	for _, c := range counters {
@@ -196,6 +200,14 @@ func recordSeasonEvent(ctx context.Context, action string) {
 
 func recordSheetImport(ctx context.Context) { add(ctx, sheetImports, 1) }
 
+func recordPayment(ctx context.Context, method string) {
+	add(ctx, payments, 1, attribute.String("method", method))
+}
+
+func recordPaymentEvent(ctx context.Context, action string) {
+	add(ctx, payEvents, 1, attribute.String("action", action))
+}
+
 // registerBusinessMetrics adds gauges sampled from the database on each export
 // (every 15s): totals for the dashboard, and the connection pool. Call it only
 // when telemetry is enabled.
@@ -218,6 +230,8 @@ func registerBusinessMetrics(store *Store) {
 	pending := gauge("tally.player_invites.pending", "Player invites waiting for an answer, not expired.")
 	seasons := gauge("tally.seasons", "Seasons, by state (active, archived).")
 	boards := gauge("tally.leaderboards", "Leaderboards across all tallies (RFC-003).")
+	paid := gauge("tally.payments.count", "Iuran payments across all tallies (RFC-004), Gratis included.")
+	collected := gauge("tally.payments.collected", "Iuran collected across all tallies, in rupiah: Tunai and Transfer at their play day's fee.")
 	conns := gauge("tally.db.connections", "Database pool connections, by state.")
 
 	_, err := meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {
@@ -241,8 +255,10 @@ func registerBusinessMetrics(store *Store) {
 		o.ObserveInt64(seasons, t.Seasons-t.ArchivedSeasons, metric.WithAttributes(attribute.String("state", "active")))
 		o.ObserveInt64(seasons, t.ArchivedSeasons, metric.WithAttributes(attribute.String("state", "archived")))
 		o.ObserveInt64(boards, t.Leaderboards)
+		o.ObserveInt64(paid, t.Payments)
+		o.ObserveInt64(collected, t.Collected)
 		return nil
-	}, users, tallies, active, players, matches, days, linked, pending, seasons, boards, conns)
+	}, users, tallies, active, players, matches, days, linked, pending, seasons, boards, paid, collected, conns)
 	if err != nil {
 		log.Printf("otel business metrics: %v", err)
 	}

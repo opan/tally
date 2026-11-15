@@ -19,6 +19,13 @@ docker compose up --build
 Open <http://localhost:8090> and sign up. Postgres runs in compose (exposed on
 `127.0.0.1:5433` for poking around); the schema is applied on app start.
 
+To try it with data already in, run `./scripts/demo.sh`: it starts compose and
+fills in a made-up club, Badminton Sampai Pingsan, with four play days of
+points and Iuran (three paid, today's half paid). Open
+<http://localhost:8090/t/sampai-pingsan> and log in as `demo` / `demo1234`. Run
+it again to reset that club; other tallies are left alone. The data is in
+`scripts/demo-seed.sql`, and `go test` checks it still fits the schema.
+
 Local Go against the compose database:
 
 ```bash
@@ -155,6 +162,8 @@ Names as they appear in VictoriaMetrics / Grafana (label `job="tally"`):
 | `tally_player_invites_pending` | gauge | | Player invites waiting for an answer, not expired |
 | `tally_seasons` | gauge | `state` = active, archived | Seasons |
 | `tally_leaderboards` | gauge | | Leaderboards across all tallies (RFC-003) |
+| `tally_payments_count` | gauge | | Iuran payments across all tallies (RFC-004), Gratis included |
+| `tally_payments_collected` | gauge | | Iuran collected across all tallies, in rupiah: Tunai and Transfer at their play day's fee |
 | `tally_users_created_total` | counter | `method` = local, aio | New accounts |
 | `tally_tallies_created_total` | counter | `type` | New tallies, by preset |
 | `tally_leaderboards_created_total` | counter | `type` | Leaderboards added to an existing tally (RFC-003), by preset |
@@ -167,6 +176,8 @@ Names as they appear in VictoriaMetrics / Grafana (label `job="tally"`):
 | `tally_admin_events_total` | counter | `action` = added, removed, owner_transferred | Tally admin changes |
 | `tally_season_events_total` | counter | `action` = created, edited, archived, unarchived | Season changes |
 | `tally_sheet_imports_total` | counter | | Points sheets imported into a season |
+| `tally_payments_total` | counter | `method` = cash, transfer, free | Iuran payments recorded (RFC-004) |
+| `tally_payment_events_total` | counter | `action` = fee_set, undone | A play day's fee set or changed, a payment undone |
 | `tally_admin_checks_total` | counter | `result` = admin, not_admin, local_account, error | Site admin page requests by aio's answer (`error`: aio unreachable or unexpected reply) |
 
 A ready-made Grafana dashboard for these metrics is kept as a Kubernetes
