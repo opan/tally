@@ -1,0 +1,32 @@
+{{define "title"}}{{.T "pay.title"}} &middot; {{.Data.Tally.Name}} &mdash; {{.T "app.name"}}{{end}}
+{{define "content"}}
+{{template "tallyhead" .}}
+{{$t := .Data.Tally}}{{$d := .Data}}
+{{if not $d.IsAdmin}}<p class="small"><a href="{{$d.BoardPath ""}}">&larr; {{.T "tab.overview"}}</a></p>{{end}}
+
+{{if $d.Days}}
+<section class="stats paystats">
+  <div class="stat"><span class="lbl">{{.T "pay.collected"}}</span><span class="val">{{.Rp $d.Collected}}</span></div>
+  <div class="stat"><span class="lbl">{{.T "season.play_days"}}</span><span class="val">{{len $d.Days}}</span></div>
+  <div class="stat"><span class="lbl">{{.T "pay.recorded"}}</span><span class="val">{{$d.Sum.Count}}</span><span class="muted small">{{.T "pay.summary" $d.Sum.Cash $d.Sum.Transfer $d.Sum.Free}}</span></div>
+</section>
+
+{{range $i, $day := $d.Days}}
+<section class="card payday">
+  <details{{if eq $i 0}} open{{end}}>
+    <summary class="cardhead summaryhead">
+      <h2>{{$.T "round.label" $day.Round.WeekLabel}} &middot; {{$.Weekday $day.Round.PlayedOn}} {{$.Date $day.Round.PlayedOn}}</h2>
+      <span class="muted small">{{$.T "pay.day_head" $day.Sum.Count ($.Rp $day.Sum.Collected)}}</span>
+    </summary>
+    <p class="muted small">{{$.T "pay.per_player" ($.Rp $day.Round.Fee)}} &middot; {{$.T "pay.summary" $day.Sum.Cash $day.Sum.Transfer $day.Sum.Free}}</p>
+    {{if $day.Payments}}{{template "paylist" (dict "P" $ "Rows" $day.Payments "Notes" $d.IsAdmin "Slug" $t.Slug "Season" $day.Round.PeriodID)}}
+    {{else}}<p class="muted">{{$.T "pay.none"}}</p>{{end}}
+    {{if $d.IsAdmin}}<p class="small"><a href="/t/{{$t.Slug}}/rounds/{{$day.Round.ID}}#iuran">{{$.T "pay.manage"}}</a></p>{{end}}
+  </details>
+</section>
+{{end}}
+<p class="muted small">{{.T "pay.page_help"}}</p>
+{{else}}
+<section class="card empty"><p>{{.T "pay.page_empty"}}</p></section>
+{{end}}
+{{end}}

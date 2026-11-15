@@ -125,6 +125,7 @@ type adminTallyVM struct {
 	Admins  []Admin
 	Seasons []adminSeasonRow
 	Players []TallyPlayerRow
+	Pay     PaymentTotals
 }
 
 func (a *App) handleAdminTally(w http.ResponseWriter, r *http.Request) {
@@ -172,6 +173,10 @@ func (a *App) handleAdminTally(w http.ResponseWriter, r *http.Request) {
 	}
 	if vm.Players, err = a.store.TallyPlayers(ctx, tc.Tally.ID); err != nil {
 		internalError(w, "admin: players", err)
+		return
+	}
+	if vm.Pay, err = a.store.PaymentTotals(ctx, tc.Tally.ID); err != nil {
+		internalError(w, "admin: payments", err)
 		return
 	}
 	a.logAdminTallyView(r, admin, "tally", tc.Tally.ID, "")
@@ -225,6 +230,8 @@ type adminDayVM struct {
 	Done      []*Match
 	Awards    []Award
 	Present   []Participant
+	Payments  []Payment
+	PaySum    PaySummary
 	SiteAdmin bool // else a tally admin looking at an archived season's play day
 }
 
@@ -259,7 +266,8 @@ func (a *App) handleAdminDay(w http.ResponseWriter, r *http.Request) {
 // renderDay shows a play day read-only: in the site admin's pages, and to a
 // tally's admins once its season is archived.
 func (a *App) renderDay(w http.ResponseWriter, r *http.Request, d *roundData, siteAdmin bool) {
-	vm := adminDayVM{tallyCtx: d.tc, Round: d.round, Period: d.period, Awards: d.awards, SiteAdmin: siteAdmin}
+	vm := adminDayVM{tallyCtx: d.tc, Round: d.round, Period: d.period, Awards: d.awards, SiteAdmin: siteAdmin,
+		Payments: d.payments, PaySum: summarize(d.round.Fee, d.payments)}
 	vm.ScoreRows, vm.Plays = d.scoreRows()
 	for _, m := range d.matches {
 		if m.Scheduled() {

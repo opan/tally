@@ -34,11 +34,12 @@ type Round struct {
 	Number   int // position by date within the period, 1-based
 	PlayedOn time.Time
 	Courts   int
-	Done     int // scored matches, filled by RoundsForPeriod
-	Awards   int // point awards of any kind, filled by RoundsForPeriod
-	Scores   int // points entered without match details, filled by RoundsForPeriod
-	WeekPart int // 1-based position among the season's play days in the same Week
-	WeekDays int // how many play days the season has in that Week
+	Fee      int64 // Iuran per player in whole rupiah (RFC-004); 0 = not set
+	Done     int   // scored matches, filled by RoundsForPeriod
+	Awards   int   // point awards of any kind, filled by RoundsForPeriod
+	Scores   int   // points entered without match details, filled by RoundsForPeriod
+	WeekPart int   // 1-based position among the season's play days in the same Week
+	WeekDays int   // how many play days the season has in that Week
 }
 
 // Week is the week of the month by date, like the club's sheet: days 1–7 are
@@ -113,7 +114,7 @@ const sameWeek = `r2.period_id = r.period_id
 
 // roundSelect computes the round's number from its date order in the period,
 // and its place in its week.
-const roundSelect = `SELECT r.id, r.period_id, r.played_on, r.courts,
+const roundSelect = `SELECT r.id, r.period_id, r.played_on, r.courts, r.fee,
 	(SELECT count(*) FROM rounds r2 WHERE r2.period_id = r.period_id AND r2.played_on <= r.played_on),
 	(SELECT count(*) FROM rounds r2 WHERE ` + sameWeek + ` AND r2.played_on <= r.played_on),
 	(SELECT count(*) FROM rounds r2 WHERE ` + sameWeek + `)
@@ -121,7 +122,7 @@ const roundSelect = `SELECT r.id, r.period_id, r.played_on, r.courts,
 
 func scanRound(row pgx.Row) (*Round, error) {
 	r := &Round{}
-	if err := row.Scan(&r.ID, &r.PeriodID, &r.PlayedOn, &r.Courts, &r.Number, &r.WeekPart, &r.WeekDays); err != nil {
+	if err := row.Scan(&r.ID, &r.PeriodID, &r.PlayedOn, &r.Courts, &r.Fee, &r.Number, &r.WeekPart, &r.WeekDays); err != nil {
 		return nil, err
 	}
 	return r, nil
@@ -140,7 +141,7 @@ func (s *Store) RoundByDate(ctx context.Context, tallyID, boardID string, d time
 
 func (s *Store) RoundsForPeriod(ctx context.Context, periodID string) ([]Round, error) {
 	rows, err := s.pool.Query(ctx,
-		`SELECT r.id, r.period_id, r.played_on, r.courts,
+		`SELECT r.id, r.period_id, r.played_on, r.courts, r.fee,
 		        row_number() OVER (ORDER BY r.played_on),
 		        (SELECT count(*) FROM matches m WHERE m.round_id = r.id AND m.status = 'done'),
 		        (SELECT count(*) FROM point_awards pa WHERE pa.round_id = r.id),
@@ -153,7 +154,7 @@ func (s *Store) RoundsForPeriod(ctx context.Context, periodID string) ([]Round, 
 	}
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (Round, error) {
 		var r Round
-		err := row.Scan(&r.ID, &r.PeriodID, &r.PlayedOn, &r.Courts, &r.Number, &r.Done, &r.Awards, &r.Scores, &r.WeekPart, &r.WeekDays)
+		err := row.Scan(&r.ID, &r.PeriodID, &r.PlayedOn, &r.Courts, &r.Fee, &r.Number, &r.Done, &r.Awards, &r.Scores, &r.WeekPart, &r.WeekDays)
 		return r, err
 	})
 }

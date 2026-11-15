@@ -66,6 +66,7 @@ type tallyCtx struct {
 	Notice string
 	Err    string
 	MeID   string // the viewer's linked player in this tally (RFC-002), or ""
+	Fees   bool   // a play day has a fee, so the Iuran page shows (RFC-004)
 }
 
 func (c tallyCtx) IsAdmin() bool { return c.Role != "" }
@@ -94,6 +95,8 @@ func (c tallyCtx) SwitchPath(b Leaderboard) string {
 		sub = "/play"
 	case "periods":
 		sub = "/periods"
+	case "iuran":
+		sub = "/iuran"
 	}
 	return withQuery(tallyPath(c.Tally, sub), "board="+url.QueryEscape(b.Slug))
 }
@@ -171,6 +174,10 @@ func (a *App) loadTally(w http.ResponseWriter, r *http.Request, tab string) (tc 
 		a.notFound(w, r)
 		return tc, false
 	}
+	if tc.Fees, err = a.store.HasFees(r.Context(), t.ID); err != nil {
+		internalError(w, "load fees", err)
+		return tc, false
+	}
 	if found, err := a.loadBoards(r, &tc); err != nil {
 		internalError(w, "load leaderboards", err)
 		return tc, false
@@ -206,6 +213,7 @@ var okNotices = map[string]bool{
 	"period_created": true, "period_saved": true, "season_archived": true, "season_unarchived": true,
 	"invite_sent": true, "invite_cancelled": true, "player_unlinked": true,
 	"invite_accept": true, "invite_decline": true, "invite_mute": true, "unmuted": true, "link_removed": true,
+	"fee_saved": true, "payment_saved": true, "payment_undone": true,
 	"round_saved": true, "awards_saved": true, "award_deleted": true, "score_saved": true, "score_deleted": true, "import_done": true, "match_saved": true, "match_deleted": true, "match_cancelled": true,
 }
 

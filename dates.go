@@ -64,3 +64,11 @@ func formatDate(lang string, t time.Time) string {
 	}
 	return t.Format("2") + " " + m + " " + t.Format("2006")
 }
+
+// clock renders a moment's time of day in Jakarta: "19.42" (id), "19:42" (en).
+func clock(lang string, t time.Time) string {
+	if lang == "en" {
+		return t.In(jakarta).Format("15:04")
+	}
+	return t.In(jakarta).Format("15.04")
+}

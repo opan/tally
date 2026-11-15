@@ -135,8 +135,36 @@
     players to enter points for.</p>
 </section>
 
+<section class="card gsec" id="iuran">
+  <h2>5. Fees</h2>
+  <p>Keep track of who has paid each play day's fee, like the list people usually write by hand. Only admins
+    record payments; everyone who can open the tally can see the history.</p>
+  <h3>Setting a play day's fee</h3>
+  <p>On the play day page, the <strong>Fees</strong> card is at the bottom. Enter the <strong>fee per
+    player</strong> (e.g. 50000, 50.000 or 50k) and press <strong>Set fee</strong>. The next play day starts with
+    the last fee filled in, so you only save it. Typo? Open <strong>Change fee</strong>; payments already
+    recorded count at the new fee.</p>
+  <h3>Recording payments</h3>
+  <p>Type a player's name (or pick from the list, which only shows who isn't recorded yet), pick
+    <strong>Cash</strong>, <strong>Transfer</strong> or <strong>Free</strong>, add a note if needed
+    (e.g. <em>coach</em>), and press <strong>Record</strong>. The cursor goes back to the name field, ready for
+    the next person. A player can be recorded once per play day; a name that isn't a player yet is asked about
+    before it's added.</p>
+  <ul>
+    <li><strong>Collected</strong> = (Cash + Transfer) × that day's fee. <strong>Free</strong> isn't counted.</li>
+    <li>Wrong player or wrong choice? Press <strong>Undo</strong> on its row and record it again.</li>
+    <li>Late payers are recorded on the play day they pay for; earlier play days stay open.</li>
+  </ul>
+  {{template "gimg" (dict "P" $P "N" "pay-card" "Alt" "The Fees card: the player field, Cash, Transfer and Free, and the list of who paid")}}
+  <h3>Fee history</h3>
+  <p>The <strong>Fees</strong> tab (for players: <em>Fee history</em> below the leaderboard) shows up once a play
+    day has a fee. It shows the total collected and, for each play day, who paid and how. Player pages list
+    their payments too. <strong>Notes are only shown to admins.</strong></p>
+  {{template "gimg" (dict "P" $P "N" "pay-history" "Alt" "The Fees page: total collected and one play day's payments")}}
+</section>
+
 <section class="card gsec" id="peringkat">
-  <h2>5. Leaderboard</h2>
+  <h2>6. Leaderboard</h2>
   <p>The leaderboard is on the <em>Overview</em> tab, and anyone with the link can open it.</p>
   <ul>
     <li><strong>Order:</strong> total points. On equal points, whoever played fewer matches is higher, then by
@@ -156,7 +184,7 @@
 </section>
 
 <section class="card gsec" id="poster">
-  <h2>6. Poster</h2>
+  <h2>7. Poster</h2>
   <p>Tap <strong>Poster</strong> on the leaderboard. The poster uses the season and play day currently
     selected, shows up to the top 20, and is 1024×1536 for WhatsApp groups or Instagram.</p>
   <ul>
@@ -175,7 +203,7 @@
 </section>
 
 <section class="card gsec" id="kelola">
-  <h2>7. Managing a tally</h2>
+  <h2>8. Managing a tally</h2>
   <h3>Players</h3>
   <p>On the <em>Players</em> tab: <strong>Rename</strong>, <strong>Deactivate</strong> (no longer offered when
     picking players, but their points stay), or <strong>Delete</strong>. Delete only works for players who have
@@ -231,7 +259,7 @@
 </section>
 
 <section class="card gsec" id="pemain">
-  <h2>8. For players</h2>
+  <h2>9. For players</h2>
   <p>Players don't need an account. Open the link from your admin to see the leaderboard, pick another play
     day, and tap your own name for your stats. Spotted a wrong score? Tell the admin; fixing it updates points
     and ranks right away.</p>
@@ -248,7 +276,7 @@
 </section>
 
 <section class="card gsec" id="faq">
-  <h2>9. FAQ</h2>
+  <h2>10. FAQ</h2>
   {{if .Aio}}
   <details><summary>Forgot your password?</summary>
     <p>Tap <a href="{{.Aio.ForgotURL .Lang}}">Forgot password?</a> on the home page. If your email is confirmed, a temporary password is sent there (it works for 30 minutes). Log in with it, then choose a new password. Your old password keeps working until then. No email yet? That page explains how to ask the admin for help.</p></details>

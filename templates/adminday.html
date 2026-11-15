@@ -36,6 +36,14 @@
 </section>
 {{end}}
 
+{{if or $d.Round.Fee $d.Payments}}
+<section class="card">
+  <div class="cardhead"><h2>{{.T "pay.title"}}</h2>{{if $d.Round.Fee}}<span class="muted small">{{.T "pay.per_player" (.Rp $d.Round.Fee)}}</span>{{end}}</div>
+  {{template "paysum" (dict "P" $ "S" $d.PaySum "Collected" $d.PaySum.Collected)}}
+  {{if $d.Payments}}{{template "paylist" (dict "P" $ "Rows" $d.Payments "Notes" true "Clock" true "Slug" $t.Slug)}}{{else}}<p class="muted">{{.T "pay.none"}}</p>{{end}}
+</section>
+{{end}}
+
 {{if $d.Present}}
 <section class="card">
   <div class="cardhead"><h2>{{.T "play.present"}}</h2><span class="muted small">{{len $d.Present}}</span></div>

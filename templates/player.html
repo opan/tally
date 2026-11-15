@@ -87,4 +87,13 @@
 </section>
 {{end}}
 {{end}}
+
+{{if $d.Payments}}
+<section class="card" id="iuran">
+  <div class="cardhead"><h2>{{.T "pay.title"}}</h2><span class="muted small">{{.T "pay.player_total" $d.PaySum.Count (.Rp $d.Paid)}}</span></div>
+  <ul class="rows">
+    {{range $d.Payments}}<li class="prow"><span><a href="{{$d.DayHref .Round.ID}}">{{$.T "round.label" .Round.WeekLabel}}</a> <span class="muted small">{{$.Date .Round.PlayedOn}}</span></span><span><span class="paymethod m-{{.Method}}">{{$.T (print "pay.method." .Method)}}</span>{{if and (or $d.IsAdmin $d.Admin) .Note}} <span class="muted small">· {{.Note}}</span>{{end}} <span class="muted small">{{if eq .Method "free"}}&mdash;{{else}}{{$.Rp .Round.Fee}}{{end}}</span></span></li>{{end}}
+  </ul>
+</section>
+{{end}}
 {{end}}
