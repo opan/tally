@@ -1,7 +1,7 @@
 # RFC-005: Club menus (implementation plan)
 
 - **Status:** Draft; plan for opan to review. The questions in §5 block only their own step.
-- **Updated:** 2026-11-14
+- **Updated:** 2026-11-19
 - **Author:** opan
 - **Created:** 2026-11-14
 - **Scope:** every tally; both login modes
@@ -67,9 +67,14 @@ history for everyone. Phase 2 links to cashflow.
 
 - **Blocks:** RFC-004 §9.3 (where the history lives), §9.4 (undo), §9.6 (cashflow).
 - **PRs:** RFC-004 (#28); phase 1; phase 2 is optional and goes cashflow first, then tally.
+- **Done:** phase 1 merged (#32, 2026-11-15) and live. Phase 2 (cashflow) is on hold since
+  2026-11-19.
 - **Then:** the member and guest price (needs step 2) is the likely next ask.
 
 ### Step 2. Database (M), RFC-006
+
+Now RFC-006 (PR #36), with the answers to §5.2. The sketch below is what this plan proposed;
+RFC-006 drops phone, note and joined date, and keeps levels admin-only.
 
 The member list, which the later steps rely on. Sparing line-ups pick from it, tournament
 categories need gender, and draws balance by level.
@@ -116,6 +121,8 @@ The five menus get a home, and the tab row goes away.
   `?board=` stay as they are, so shared links keep working.
 - **PRs:** the menu shell with today's pages behind it, with no new features; then the Events
   list.
+- **Done:** the menu (#34, 2026-11-15), as a sidebar on PC and a bottom bar on phones with
+  today's pages. The Events list and the rename are next.
 
 ### Step 4. Turnamen eksternal (S), RFC-007
 
@@ -212,14 +219,10 @@ tournament to host, by building on step 6.
 
 Each question only blocks its own step.
 
-1. **Step 1:** RFC-004 §9.3, §9.4, §9.6.
-2. **Step 2:**
-   - Which member fields does the club really need? Fewer is safer, since each is personal
-     data.
-   - What is the club's level scale?
-   - Should levels be public?
-3. **Step 3:** Is "Event" the word members use for the points league? Then papan becomes Event in
-   the UI.
+1. ~~**Step 1:**~~ Answered in RFC-004 (2026-11-15).
+2. ~~**Step 2:**~~ Answered 2026-11-19: level, gender, and member or guest (no phone or note);
+   a level scale per tally; levels for admins only. See RFC-006.
+3. ~~**Step 3:**~~ Answered 2026-11-19: yes, papan becomes **Event** in the UI.
 4. **Steps 4 and 5:** Do tournament and sparing results earn bonus points? If so, how many per
    result?
 5. **Step 5:** What format does a sparing use: best of 3 to 21, or one game to 21 or 42?
@@ -243,5 +246,7 @@ Each question only blocks its own step.
 ## 7. Next steps
 
 - [ ] opan reviews this plan and the order.
-- [ ] Step 1: RFC-004 answers, then the phase 1 PR.
+- [x] Step 1: RFC-004 answers, then the phase 1 PR (#32).
+- [x] Step 3, first PR: the menu (#34).
+- [ ] Step 2: RFC-006 (#36).
 - [ ] Each later step starts with its RFC and its Deck card.
