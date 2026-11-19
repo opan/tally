@@ -1,7 +1,6 @@
 # RFC-006: Database (the member list)
 
-- **Status:** Draft. The fields, the level scale and who sees levels are decided (§3, opan,
-  2026-11-19); §9 has the rest.
+- **Status:** Accepted (opan, 2026-11-19). Every question is answered (§3, §9); PR 1 is next.
 - **Updated:** 2026-11-19
 - **Author:** opan
 - **Created:** 2026-11-19
@@ -144,16 +143,13 @@ these renders without them (§8).
 - **Import overwrites.** Mitigation: the preview shows every change, empty cells never clear, and
   the whole import is audited.
 
-## 9. Questions for opan
+## 9. Questions for opan (answered 2026-11-19)
 
-1. **Menu name.** The club asked for "Database". Keep the menu called **Pemain** (clearer for
-   most members) or rename it **Database**? Proposed: keep **Pemain**; the page is what they
-   asked for.
-2. **Gender labels.** L/P in Indonesian is proposed. Or would the club rather see
-   Putra/Putri, as badminton tournaments do?
+1. **Menu name:** keep **Pemain**. The club's "Database" is this page; the name doesn't change.
+2. **Gender labels:** **L/P** (Laki-laki/Perempuan) in Indonesian, **M/F** in English, as in §4.
 
 ## 10. Next steps
 
-- [ ] opan answers §9.
+- [x] opan answers §9.
 - [ ] PR 1, then PR 2.
 - [ ] PR 3 only if the club asks.
