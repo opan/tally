@@ -179,7 +179,7 @@ So the link is doable, but cashflow needs a small API first.
 opan put phase 2 on hold: "keep it simple and keep them in tally. I don't see any use case yet."
 What was decided or built before the hold, for when it comes back:
 
-- **Cashflow side, built:** opan/cashflow#18 (branch `feat/link-api`, left as a draft). It adds
+- **Cashflow side, built:** opan/cashflow#18 (branch `feat/link-api`, left open and marked "on hold"; not to merge). It adds
   link tokens and `POST /api/v1/plans/{slug}/entries` with an idempotency key. The Integrasi page
   that makes tokens is only for owners who are also aio admins.
 - **Linking in tally:** from the site admin's page for the tally (`/admin/tallies/{id}`), not
@@ -246,4 +246,4 @@ Phase 1 is useful on its own and ships first. Phase 2 is on hold (§6.4).
 - [x] opan answers §9.1, §9.2, §9.5 (2026-11-07).
 - [x] opan approves the RFC with §9.3, §9.4, §9.6 as proposed (2026-11-15).
 - [x] Phase 1 PR (#32, merged 2026-11-15).
-- [ ] Phase 2, **on hold** (2026-11-19): cashflow PR (opan/cashflow#18, draft), then the tally PR.
+- [ ] Phase 2, **on hold** (2026-11-19): cashflow PR (opan/cashflow#18, on hold), then the tally PR.
