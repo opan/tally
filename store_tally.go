@@ -65,6 +65,7 @@ type Participant struct {
 	ID     string
 	Name   string
 	Active bool
+	Profile
 }
 
 type Period struct {
@@ -459,8 +460,8 @@ func (s *Store) ListParticipants(ctx context.Context, tallyID string) ([]Partici
 func (s *Store) participant(ctx context.Context, q pgx.Tx, tallyID, id string) (*Participant, error) {
 	p := &Participant{}
 	err := q.QueryRow(ctx,
-		`SELECT id, display_name, active FROM participants WHERE tally_id = $1 AND id = $2`,
-		tallyID, id).Scan(&p.ID, &p.Name, &p.Active)
+		`SELECT id, display_name, active, level, gender, membership FROM participants WHERE tally_id = $1 AND id = $2`,
+		tallyID, id).Scan(&p.ID, &p.Name, &p.Active, &p.Level, &p.Gender, &p.Membership)
 	if err != nil {
 		return nil, err
 	}
@@ -470,14 +471,23 @@ func (s *Store) participant(ctx context.Context, q pgx.Tx, tallyID, id string) (
 // AddParticipants inserts names that don't exist yet (case-insensitive) and
 // returns the ones that were added and the ones skipped as duplicates.
 func (s *Store) AddParticipants(ctx context.Context, tallyID, actorID string, names []string) (added, skipped []string, err error) {
+	return s.AddParticipantsAs(ctx, tallyID, actorID, names, "")
+}
+
+// AddParticipantsAs is AddParticipants with every new player marked as a
+// member or a guest (RFC-006; "" leaves it unset). Skipped names keep theirs.
+func (s *Store) AddParticipantsAs(ctx context.Context, tallyID, actorID string, names []string, membership string) (added, skipped []string, err error) {
+	if !validMembership(membership) {
+		return nil, nil, ErrBadProfile
+	}
 	err = pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
 		added, skipped = nil, nil
 		for _, name := range names {
 			var id string
 			err := tx.QueryRow(ctx,
-				`INSERT INTO participants (tally_id, display_name) VALUES ($1, $2)
+				`INSERT INTO participants (tally_id, display_name, membership) VALUES ($1, $2, $3)
 				 ON CONFLICT (tally_id, lower(display_name)) DO NOTHING
-				 RETURNING id`, tallyID, name).Scan(&id)
+				 RETURNING id`, tallyID, name, membership).Scan(&id)
 			if errors.Is(err, pgx.ErrNoRows) {
 				skipped = append(skipped, name)
 				continue
@@ -485,7 +495,8 @@ func (s *Store) AddParticipants(ctx context.Context, tallyID, actorID string, na
 			if err != nil {
 				return err
 			}
-			if err := audit(ctx, tx, tallyID, actorID, "create", "participant", id, nil, Participant{ID: id, Name: name, Active: true}); err != nil {
+			if err := audit(ctx, tx, tallyID, actorID, "create", "participant", id, nil,
+				Participant{ID: id, Name: name, Active: true, Profile: Profile{Membership: membership}}); err != nil {
 				return err
 			}
 			added = append(added, name)

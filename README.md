@@ -159,6 +159,7 @@ Names as they appear in VictoriaMetrics / Grafana (label `job="tally"`):
 | `tally_users`, `tally_tallies`, `tally_players`, `tally_matches`, `tally_play_days` | gauge | | Totals from the database (active players, finished matches) |
 | `tally_tallies_active` | gauge | | Tallies with a play day in the last 30 days |
 | `tally_players_linked` | gauge | | Players linked to an account (RFC-002) |
+| `tally_players_membership` | gauge | `membership` = member, guest, unset | Active players by status (RFC-006); counts only |
 | `tally_player_invites_pending` | gauge | | Player invites waiting for an answer, not expired |
 | `tally_seasons` | gauge | `state` = active, archived | Seasons |
 | `tally_leaderboards` | gauge | | Leaderboards across all tallies (RFC-003) |

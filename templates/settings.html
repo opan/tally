@@ -87,6 +87,51 @@
   </details>
 </section>
 
+<section class="card" id="level">
+  <div class="cardhead"><h2>{{.T "levels.title"}}</h2>{{if .Data.Levels}}<span class="muted small">{{len .Data.Levels}}</span>{{end}}</div>
+  <p class="muted small">{{.T "levels.help"}}</p>
+  {{$n := len .Data.Levels}}
+  {{if .Data.Levels}}
+  <ul class="rows levelrows">
+    {{range $i, $l := .Data.Levels}}
+    <li class="prow">
+      <span class="pname"><span class="lname">{{$l.Name}}</span> <span class="muted small lcount">{{$.T "levels.players_n" $l.Players}}</span></span>
+      <details class="pmenu">
+        <summary class="btn small ghost">{{$.T "common.edit"}}</summary>
+        <div class="pmenu-body">
+          <form method="post" action="/t/{{$t.Slug}}/levels" class="inlineform">
+            <input type="hidden" name="action" value="rename">
+            <input type="hidden" name="level" value="{{$l.Name}}">
+            <input type="text" name="name" value="{{$l.Name}}" maxlength="10" required aria-label="{{$.T "levels.name"}}">
+            <button type="submit" class="btn small">{{$.T "players.rename"}}</button>
+          </form>
+          <div class="pactions">
+            {{if gt $i 0}}<form method="post" action="/t/{{$t.Slug}}/levels"><input type="hidden" name="action" value="up"><input type="hidden" name="level" value="{{$l.Name}}"><button type="submit" class="btn small ghost">↑ {{$.T "boards.up"}}</button></form>{{end}}
+            {{if lt (add1 $i) $n}}<form method="post" action="/t/{{$t.Slug}}/levels"><input type="hidden" name="action" value="down"><input type="hidden" name="level" value="{{$l.Name}}"><button type="submit" class="btn small ghost">↓ {{$.T "boards.down"}}</button></form>{{end}}
+            <form method="post" action="/t/{{$t.Slug}}/levels" data-confirm="{{if $l.Players}}{{$.T "levels.delete_confirm_n" $l.Players $l.Name}}{{else}}{{$.T "levels.delete_confirm" $l.Name}}{{end}}"><input type="hidden" name="action" value="delete"><input type="hidden" name="level" value="{{$l.Name}}"><button type="submit" class="btn small danger">{{$.T "common.delete"}}</button></form>
+          </div>
+          <div><button type="button" class="btn small ghost" data-close-details>{{$.T "common.cancel"}}</button></div>
+        </div>
+      </details>
+    </li>
+    {{end}}
+  </ul>
+  {{else}}
+  <p class="muted">{{.T "levels.empty"}}</p>
+  <form method="post" action="/t/{{$t.Slug}}/levels">
+    <input type="hidden" name="action" value="default">
+    <button type="submit" class="btn primary">{{.T "levels.use_default"}}</button>
+  </form>
+  {{end}}
+  {{if lt $n 10}}
+  <form method="post" action="/t/{{$t.Slug}}/levels" class="inlineform addlevel">
+    <input type="hidden" name="action" value="add">
+    <input type="text" name="name" value="{{.Data.FLevel}}" maxlength="10" required placeholder="{{.T "levels.name_placeholder"}}" aria-label="{{.T "levels.name"}}">
+    <button type="submit" class="btn small">{{.T "levels.add"}}</button>
+  </form>
+  {{end}}
+</section>
+
 <section class="card" id="poster">
   <div class="cardhead">
     <h2>{{.T "poster.title"}}</h2>

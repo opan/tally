@@ -262,14 +262,23 @@ var okNotices = map[string]bool{
 	"invite_sent": true, "invite_cancelled": true, "player_unlinked": true,
 	"invite_accept": true, "invite_decline": true, "invite_mute": true, "unmuted": true, "link_removed": true,
 	"fee_saved": true, "payment_saved": true, "payment_undone": true,
+	"player_saved": true, "levels_added": true, "level_added": true, "level_renamed": true, "level_moved": true, "level_deleted": true,
 	"round_saved": true, "awards_saved": true, "award_deleted": true, "score_saved": true, "score_deleted": true, "import_done": true, "match_saved": true, "match_deleted": true, "match_cancelled": true,
 }
 
+// countNotices say how many players a change touched when ?n= is set.
+var countNotices = map[string]bool{"level_renamed": true, "level_deleted": true}
+
 func okNotice(r *http.Request) string {
-	if k := r.URL.Query().Get("ok"); okNotices[k] {
-		return tr(r, "ok."+k)
+	q := r.URL.Query()
+	k := q.Get("ok")
+	if !okNotices[k] {
+		return ""
 	}
-	return ""
+	if n, err := strconv.Atoi(q.Get("n")); err == nil && n > 0 && countNotices[k] {
+		return tr(r, "ok."+k+"_n", n)
+	}
+	return tr(r, "ok."+k)
 }
 
 func redirectOK(w http.ResponseWriter, r *http.Request, path, key string) {
@@ -405,7 +414,9 @@ type playersVM struct {
 	Added       []string
 	Skipped     []string
 	FNames      string
+	FMembership string // "Tambah sebagai" as last chosen (RFC-006)
 	JustCreated bool
+	Levels      []string // the tally's level scale; nil hides the level picker
 
 	// RFC-002: linking players to accounts.
 	Links       map[string]PlayerLink // by player id
@@ -417,12 +428,16 @@ type playersVM struct {
 }
 
 func (a *App) renderPlayers(w http.ResponseWriter, r *http.Request, vm playersVM, status int) {
-	players, err := a.store.ListParticipants(r.Context(), vm.Tally.ID)
+	players, err := a.store.ListRoster(r.Context(), vm.Tally.ID)
 	if err != nil {
 		internalError(w, "list players", err)
 		return
 	}
 	vm.Players = players
+	if vm.Levels, err = a.store.TallyLevels(r.Context(), vm.Tally.ID); err != nil {
+		internalError(w, "tally levels", err)
+		return
+	}
 	if vm.Links, err = a.store.PlayerLinks(r.Context(), vm.Tally.ID); err != nil {
 		internalError(w, "player links", err)
 		return
@@ -477,13 +492,16 @@ func (a *App) handleAddPlayers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	limitBody(w, r, maxFormBytes)
-	raw := r.FormValue("names")
+	raw, membership := r.FormValue("names"), r.FormValue("membership")
 	names := splitNames(raw)
 	fail := func(key string, args ...any) {
 		tc.Err = tr(r, key, args...)
-		a.renderPlayers(w, r, playersVM{tallyCtx: tc, FNames: raw}, http.StatusUnprocessableEntity)
+		a.renderPlayers(w, r, playersVM{tallyCtx: tc, FNames: raw, FMembership: membership}, http.StatusUnprocessableEntity)
 	}
 	switch {
+	case !validMembership(membership):
+		fail("err.profile")
+		return
 	case len(names) == 0:
 		fail("err.players_required")
 		return
@@ -497,13 +515,13 @@ func (a *App) handleAddPlayers(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	added, skipped, err := a.store.AddParticipants(r.Context(), tc.Tally.ID, u.ID, names)
+	added, skipped, err := a.store.AddParticipantsAs(r.Context(), tc.Tally.ID, u.ID, names, membership)
 	if err != nil {
 		internalError(w, "add players", err)
 		return
 	}
 	recordPlayersAdded(r.Context(), len(added))
-	a.renderPlayers(w, r, playersVM{tallyCtx: tc, Added: added, Skipped: skipped}, http.StatusOK)
+	a.renderPlayers(w, r, playersVM{tallyCtx: tc, Added: added, Skipped: skipped, FMembership: membership}, http.StatusOK)
 }
 
 func (a *App) handlePlayerAction(w http.ResponseWriter, r *http.Request) {
@@ -532,6 +550,10 @@ func (a *App) handlePlayerAction(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		err, okKey = a.store.RenameParticipant(ctx, tc.Tally.ID, u.ID, id, name), "player_renamed"
+	case "profile":
+		err, okKey = a.store.SetParticipantProfile(ctx, tc.Tally.ID, u.ID, id, Profile{
+			Level: r.FormValue("level"), Gender: r.FormValue("gender"), Membership: r.FormValue("membership"),
+		}), "player_saved"
 	case "activate":
 		err, okKey = a.store.SetParticipantActive(ctx, tc.Tally.ID, u.ID, id, true), "player_activated"
 	case "deactivate":
@@ -553,6 +575,8 @@ func (a *App) handlePlayerAction(w http.ResponseWriter, r *http.Request) {
 		fail("err.player_exists")
 	case errors.Is(err, ErrInUse):
 		fail("err.player_in_use")
+	case errors.Is(err, ErrBadProfile), errors.Is(err, ErrUnknownLevel):
+		fail("err.profile")
 	case err != nil:
 		internalError(w, "player action", err)
 	default:
@@ -997,6 +1021,10 @@ type settingsVM struct {
 	FBoardTemplate string
 	FBoardSide     string
 	OpenBoard      bool // show the add form open (it failed)
+
+	// Level (RFC-006): the tally's level scale, and the add field as typed.
+	Levels []LevelRow
+	FLevel string
 }
 
 func (a *App) renderSettings(w http.ResponseWriter, r *http.Request, vm settingsVM, status int) {
@@ -1008,6 +1036,10 @@ func (a *App) renderSettings(w http.ResponseWriter, r *http.Request, vm settings
 	vm.Admins = admins
 	if vm.Leaderboards, err = a.store.LeaderboardRows(r.Context(), vm.Tally.ID); err != nil {
 		internalError(w, "list leaderboards", err)
+		return
+	}
+	if vm.Levels, err = a.store.LevelRows(r.Context(), vm.Tally.ID); err != nil {
+		internalError(w, "list levels", err)
 		return
 	}
 	vm.Presets = presets

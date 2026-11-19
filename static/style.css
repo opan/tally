@@ -610,3 +610,17 @@ a.chip.match:hover { color: var(--ink); border-color: var(--muted); }
   .payrow .paymethod { grid-row: 1 / span 2; grid-column: 2; align-self: center; }
   .payrow .pr-undo { grid-row: 1 / span 2; grid-column: 3; align-self: center; }
 }
+
+/* RFC-006: a player's level, gender and status (admin pages only). */
+.roster .pname { flex: 1 1 0; min-width: 0; }
+.pbadge { margin-left: 4px; }
+.pbadge.lvl { border-color: var(--gold); color: var(--gold-2); }
+.profileform { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; align-items: end; gap: 8px; }
+.profileform label { margin: 0; font-size: .85rem; }
+@media (max-width: 520px) {
+  .profileform { grid-template-columns: 1fr; }
+  .profileform label { display: grid; grid-template-columns: 8.5em 1fr; align-items: center; gap: 8px; }
+}
+.levelrows .lname { font-weight: 700; }
+.levelrows .lcount { font-weight: 400; margin-left: 4px; }
+.addlevel { margin-top: 10px; }

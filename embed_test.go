@@ -14,6 +14,8 @@ var (
 	handlersPosterSrc string
 	//go:embed handlers_player.go
 	handlersPlayerSrc string
+	//go:embed handlers_profile.go
+	handlersProfileSrc string
 	//go:embed slug.go
 	slugSrc string
 	//go:embed dates.go

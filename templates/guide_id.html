@@ -212,6 +212,22 @@
     memilih pemain, tapi poinnya tetap), atau <strong>Hapus</strong>. Hapus hanya bisa untuk pemain yang belum
     pernah bertanding atau mendapat poin.</p>
   {{template "gimg" (dict "P" $P "N" "player-list" "Alt" "Daftar pemain dengan tombol ganti nama, nonaktifkan, hapus")}}
+  <h3 id="level">Level, jenis kelamin, dan status</h3>
+  <p>Admin bisa mencatat <strong>level</strong>, <strong>jenis kelamin</strong>, dan apakah pemain itu
+    <strong>anggota</strong> atau <strong>tamu</strong>. Semuanya boleh kosong. Hanya admin yang melihatnya, di menu
+    <em>Pemain</em>: papan peringkat, halaman pemain, Iuran, dan poster tidak pernah menampilkannya.</p>
+  <ul>
+    <li><strong>Level</strong>: atur dulu daftarnya di <em>Setelan → Level</em>, dari yang terkuat. Tekan
+      <strong>Pakai A+, A, B+, B, C</strong> atau tulis sendiri (paling banyak 10). Mengganti nama level ikut
+      mengganti level para pemainnya; menghapus level mengosongkan level mereka (Tally bertanya dulu).</li>
+    <li><strong>Per pemain</strong>: buka <em>Ubah</em> di barisnya, pilih level, jenis kelamin, dan status, lalu
+      <strong>Simpan</strong>. Barisnya menampilkan level, <em>L</em> atau <em>P</em>, dan <em>Tamu</em>; anggota
+      tidak diberi tanda.</li>
+    <li><strong>Saat menambah pemain</strong>: pilih <em>Tambah sebagai Anggota</em> atau <em>Tamu</em>, dan semua
+      nama baru di daftar itu langsung tercatat begitu.</li>
+  </ul>
+  {{template "gimg" (dict "P" $P "N" "player-edit" "Alt" "Menu Ubah pemain: ganti nama, lalu level, jenis kelamin, dan status")}}
+  {{template "gimg" (dict "P" $P "N" "levels" "Alt" "Setelan → Level: daftar level dan jumlah pemainnya")}}
   <h3>Musim baru</h3>
   <p>Di menu <em>Musim</em>. Musim lama tetap tersimpan dan bisa dilihat dari pilihan <em>Musim</em> di papan peringkat.
     Tekan nama musim untuk melihat semua minggunya: hari main tiap minggu, jumlah pemain, main, poin, dan yang teratas.</p>

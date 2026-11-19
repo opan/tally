@@ -44,7 +44,7 @@ func TestReferencedKeysExist(t *testing.T) {
 		}
 		return nil
 	})
-	for _, src := range []string{handlersSrc, handlersTallySrc, handlersMatchSrc, handlersPosterSrc, handlersPlayerSrc, authSrc, scoringSrc, aioauthSrc, adminSrc, slugSrc, datesSrc} {
+	for _, src := range []string{handlersSrc, handlersTallySrc, handlersMatchSrc, handlersPosterSrc, handlersPlayerSrc, handlersProfileSrc, authSrc, scoringSrc, aioauthSrc, adminSrc, slugSrc, datesSrc} {
 		for _, re := range goKeys {
 			for _, m := range re.FindAllStringSubmatch(src, -1) {
 				if !strings.HasSuffix(m[1], ".") { // a prefix of a dynamic key, checked below
@@ -55,6 +55,9 @@ func TestReferencedKeysExist(t *testing.T) {
 	}
 	for k := range okNotices {
 		used["ok."+k] = true
+	}
+	for k := range countNotices {
+		used["ok."+k+"_n"] = true
 	}
 	for _, p := range presets {
 		used[p.NameKey()] = true

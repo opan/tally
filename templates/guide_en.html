@@ -213,6 +213,22 @@
     picking players, but their points stay), or <strong>Delete</strong>. Delete only works for players who have
     never played or received points.</p>
   {{template "gimg" (dict "P" $P "N" "player-list" "Alt" "The player list with rename, deactivate, and delete")}}
+  <h3 id="level">Level, gender, and status</h3>
+  <p>Admins can record each player's <strong>level</strong>, <strong>gender</strong>, and whether they're a
+    <strong>member</strong> or a <strong>guest</strong>. All of it is optional. Only admins see it, on the
+    <em>Players</em> page: the leaderboard, player pages, Fees, and the poster never show it.</p>
+  <ul>
+    <li><strong>Level</strong>: first set up the list in <em>Settings → Level</em>, strongest first. Tap
+      <strong>Use A+, A, B+, B, C</strong> or type your own (up to 10). Renaming a level renames it on its players;
+      removing one clears it from them (Tally asks first).</li>
+    <li><strong>Per player</strong>: open <em>Edit</em> on their row, pick the level, gender and status, then
+      <strong>Save</strong>. The row shows the level, <em>M</em> or <em>F</em>, and <em>Guest</em>; members get no
+      tag.</li>
+    <li><strong>When adding players</strong>: choose <em>Add as Member</em> or <em>Guest</em>, and every new name in
+      that list is saved that way.</li>
+  </ul>
+  {{template "gimg" (dict "P" $P "N" "player-edit" "Alt" "A player's Edit menu: rename, then level, gender and status")}}
+  {{template "gimg" (dict "P" $P "N" "levels" "Alt" "Settings → Level: the levels and how many players have each")}}
   <h3>New season</h3>
   <p>In the <em>Seasons</em> menu. Old seasons are kept and can be viewed from the <em>Season</em> picker on the leaderboard.
     Tap a season's name to see all its weeks: each week's play days, players, plays, points, and who's on top.</p>

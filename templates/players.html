@@ -12,6 +12,13 @@
     <label>{{.T "players.names"}} <span class="muted hint">{{.T "players.names_hint"}}</span>
       <textarea name="names" rows="6" placeholder="Jacque Oui&#10;Prabski&#10;Bahlul" required>{{.Data.FNames}}</textarea>
     </label>
+    <fieldset class="seg">
+      <legend>{{.T "players.add_as"}}</legend>
+      {{$m := .Data.FMembership}}
+      <label><input type="radio" name="membership" value=""{{if not $m}} checked{{end}}><span>{{.T "profile.unset"}}</span></label>
+      <label><input type="radio" name="membership" value="member"{{if eq $m "member"}} checked{{end}}><span>{{.T "membership.member"}}</span></label>
+      <label><input type="radio" name="membership" value="guest"{{if eq $m "guest"}} checked{{end}}><span>{{.T "membership.guest"}}</span></label>
+    </fieldset>
     <button type="submit" class="btn primary">{{.T "players.add_submit"}}</button>
   </form>
 </section>
@@ -22,11 +29,11 @@
     <span class="muted small">{{.T "players.count" .Data.Active (len .Data.Players)}}</span>
   </div>
   {{if .Data.Players}}
-  <ul class="rows">
+  <ul class="rows roster">
     {{range .Data.Players}}
     <li class="prow {{if not .Active}}inactive{{end}}">
       {{$l := index $.Data.Links .ID}}
-      <span class="pname">{{.Name}}{{if not .Active}} <span class="badge">{{$.T "players.inactive"}}</span>{{end}}
+      <span class="pname">{{.Name}}{{template "pbadges" (dict "P" $ "Pl" .)}}{{if not .Active}} <span class="badge">{{$.T "players.inactive"}}</span>{{end}}
         {{if $l.Username}}<span class="plink muted small">{{if $l.Linked}}{{$.T "link.linked" $l.Username}}{{else}}{{$.T "link.pending" $l.Username ($.DayMonth $l.ExpiresAt)}}{{end}}</span>{{end}}
       </span>
       <details class="pmenu">
@@ -37,6 +44,33 @@
             <input type="text" name="name" value="{{.Name}}" maxlength="40" required aria-label="{{$.T "players.rename"}}">
             <button type="submit" class="btn small">{{$.T "players.rename"}}</button>
           </form>
+          <form method="post" action="/t/{{$t.Slug}}/players/{{.ID}}" class="profileform">
+            <input type="hidden" name="action" value="profile">
+            {{if $.Data.Levels}}
+            <label>{{$.T "profile.level"}}
+              <select name="level">
+                <option value="">{{$.T "profile.unset"}}</option>
+                {{$cur := .Level}}{{range $.Data.Levels}}<option value="{{.}}"{{if eq . $cur}} selected{{end}}>{{.}}</option>{{end}}
+              </select>
+            </label>
+            {{else}}<input type="hidden" name="level" value="{{.Level}}">{{end}}
+            <label>{{$.T "profile.gender"}}
+              <select name="gender">
+                <option value="">{{$.T "profile.unset"}}</option>
+                <option value="m"{{if eq .Gender "m"}} selected{{end}}>{{$.T "gender.m"}}</option>
+                <option value="f"{{if eq .Gender "f"}} selected{{end}}>{{$.T "gender.f"}}</option>
+              </select>
+            </label>
+            <label>{{$.T "profile.status"}}
+              <select name="membership">
+                <option value="">{{$.T "profile.unset"}}</option>
+                <option value="member"{{if eq .Membership "member"}} selected{{end}}>{{$.T "membership.member"}}</option>
+                <option value="guest"{{if eq .Membership "guest"}} selected{{end}}>{{$.T "membership.guest"}}</option>
+              </select>
+            </label>
+            <button type="submit" class="btn small">{{$.T "common.save"}}</button>
+          </form>
+          <p class="muted small">{{$.T "profile.help"}}{{if not $.Data.Levels}} <a href="/t/{{$t.Slug}}/settings#level">{{$.T "profile.no_levels"}}</a>{{end}}</p>
           <div class="pactions">
             <form method="post" action="/t/{{$t.Slug}}/players/{{.ID}}">
               {{if .Active}}
@@ -90,3 +124,6 @@
 </section>
 {{end}}
 {{end}}
+
+{{/* RFC-006: a player's level, L/P and Tamu, for admin pages only. Members get no badge. */}}
+{{define "pbadges"}}{{$P := .P}}{{with .Pl}}{{if .Level}} <span class="badge pbadge lvl">{{.Level}}</span>{{end}}{{if eq .Gender "m"}} <span class="badge pbadge" title="{{$P.T "gender.m"}}">{{$P.T "gender.m_short"}}</span>{{else if eq .Gender "f"}} <span class="badge pbadge" title="{{$P.T "gender.f"}}">{{$P.T "gender.f_short"}}</span>{{end}}{{if eq .Membership "guest"}} <span class="badge pbadge">{{$P.T "membership.guest"}}</span>{{end}}{{end}}{{end}}
