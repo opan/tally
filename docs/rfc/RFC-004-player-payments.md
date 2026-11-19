@@ -1,8 +1,9 @@
 # RFC-004: Player payments per play day
 
-- **Status:** Approved (opan, 2026-11-15), with the proposals in §9.3, §9.4 and §9.6. Which
-  cashplan to link is picked before phase 2.
-- **Updated:** 2026-11-15
+- **Status:** Approved (opan, 2026-11-15), with the proposals in §9.3, §9.4 and §9.6. Phase 1
+  is merged (#32). **Phase 2 (cashflow link) is on hold** (opan, 2026-11-19): payments stay in
+  tally until there's a use case. See §6.4.
+- **Updated:** 2026-11-19
 - **Author:** opan
 - **Created:** 2026-11-05
 - **Scope:** every tally; both login modes. Phase 2 also touches cashflow.
@@ -173,6 +174,20 @@ So the link is doable, but cashflow needs a small API first.
   ("Rp50.000 lebih di cashflow") and the admin corrects it in cashflow with an expense entry. This
   should be rare, because sending is a deliberate step once the evening's payments are in.
 
+### 6.4 On hold (2026-11-19)
+
+opan put phase 2 on hold: "keep it simple and keep them in tally. I don't see any use case yet."
+What was decided or built before the hold, for when it comes back:
+
+- **Cashflow side, built:** opan/cashflow#18 (branch `feat/link-api`, left as a draft). It adds
+  link tokens and `POST /api/v1/plans/{slug}/entries` with an idempotency key. The Integrasi page
+  that makes tokens is only for owners who are also aio admins.
+- **Linking in tally:** from the site admin's page for the tally (`/admin/tallies/{id}`), not
+  Setelan. It would be the one change a site admin can make there, audited, with no need to be
+  a tally admin. Tally admins never see the token.
+- **Still open:** who sends each play day: tally admins with a tap (as in §6.3), or tally on
+  its own the next morning.
+
 ## 7. Plan
 
 ### Phase 1: payments in tally
@@ -194,7 +209,7 @@ So the link is doable, but cashflow needs a small API first.
 2. **tally PR:** the Cashflow card in Setelan, "Catat ke cashflow" on the play day card, and the
    sent/unsent state per payment.
 
-Phase 1 is useful on its own and ships first. Phase 2 waits for the cashplan (§9.6).
+Phase 1 is useful on its own and ships first. Phase 2 is on hold (§6.4).
 
 ## 8. Risks
 
@@ -218,8 +233,8 @@ Phase 1 is useful on its own and ships first. Phase 2 waits for the cashplan (§
 4. ~~**Undo.**~~ Approved 2026-11-15: admins can undo a payment any time, audited.
 5. ~~**Fee per leaderboard or club.**~~ Answered 2026-11-07: per play day, prefilled from the
    previous one.
-6. **Cashflow.** Approved 2026-11-15: option **B**, one entry per play day. Still open, before
-   phase 2: which cashplan. Is there one for the club already?
+6. **Cashflow.** Approved 2026-11-15: option **B**, one entry per play day. On hold since
+   2026-11-19 (§6.4).
 
 ## 10. Later, if a club asks
 
@@ -230,6 +245,5 @@ Phase 1 is useful on its own and ships first. Phase 2 waits for the cashplan (§
 
 - [x] opan answers §9.1, §9.2, §9.5 (2026-11-07).
 - [x] opan approves the RFC with §9.3, §9.4, §9.6 as proposed (2026-11-15).
-- [ ] opan picks the cashplan for phase 2.
-- [ ] Phase 1 PR.
-- [ ] Phase 2: cashflow PR, then tally PR (if §9.6 isn't A).
+- [x] Phase 1 PR (#32, merged 2026-11-15).
+- [ ] Phase 2, **on hold** (2026-11-19): cashflow PR (opan/cashflow#18, draft), then the tally PR.
