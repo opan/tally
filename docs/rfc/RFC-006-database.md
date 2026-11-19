@@ -120,8 +120,9 @@ these renders without them (§8).
 
 ## 6. Metrics
 
-- `tally_players{membership}`: a gauge of active players by status (`member`, `guest`, `unset`)
-  across all tallies. Counts only, never names or levels.
+- `tally_players_membership{membership}`: a gauge of active players by status (`member`,
+  `guest`, `unset`) across all tallies. Counts only, never names or levels. A new name rather
+  than a label on `tally_players`, so existing panels keep one series.
 - A Grafana panel in homelab next to the existing tally panels.
 
 ## 7. Plan
@@ -151,5 +152,5 @@ these renders without them (§8).
 ## 10. Next steps
 
 - [x] opan answers §9.
-- [ ] PR 1, then PR 2.
+- [ ] PR 1 (#37), then PR 2.
 - [ ] PR 3 only if the club asks.
