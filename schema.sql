@@ -291,3 +291,12 @@ CREATE TABLE IF NOT EXISTS payments (
     UNIQUE (round_id, participant_id)
 );
 CREATE INDEX IF NOT EXISTS payments_participant_idx ON payments (participant_id, round_id);
+
+-- RFC-006: what the tally's admins know about each player. All optional
+-- ('' = not set) and shown only on admin pages. level is one of the tally's
+-- levels (ordered, strongest first; empty = none set up); renaming or removing
+-- a level updates its players in the same transaction.
+ALTER TABLE participants ADD COLUMN IF NOT EXISTS level text NOT NULL DEFAULT '' CHECK (char_length(level) <= 10);
+ALTER TABLE participants ADD COLUMN IF NOT EXISTS gender text NOT NULL DEFAULT '' CHECK (gender IN ('', 'm', 'f'));
+ALTER TABLE participants ADD COLUMN IF NOT EXISTS membership text NOT NULL DEFAULT '' CHECK (membership IN ('', 'member', 'guest'));
+ALTER TABLE tallies ADD COLUMN IF NOT EXISTS levels text[] NOT NULL DEFAULT '{}' CHECK (cardinality(levels) <= 10);

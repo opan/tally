@@ -56,6 +56,21 @@ const rnd = (lo, hi) => { seed = (seed * 9301 + 49297) % 233280; return lo + Mat
     format: 'continuous', target: '42', game_target: '21', win_bonus: '0' });
   await post(T + '/settings', { name: 'Badminton Sampai Pingsan', description: 'Main bareng tiap Minggu pagi.', visibility: 'link' });
   await post(T + '/branding', { title1: '', title2: '', badge: 'Badminton Sampai Pingsan', footer: 'Sehat bareng, seru bareng' }, true);
+  // Levels, gender and member or guest (RFC-006), for the Pemain shots.
+  await post(T + '/levels', { action: 'default' });
+  const PROFILES = {
+    'Jacque Oui': ['A', 'm', 'member'], 'Prabski': ['A+', 'm', 'member'], 'Bahlul': ['B', 'm', 'member'],
+    'Mas Gembul': ['B+', 'm', 'guest'], 'Tante Smash': ['A', 'f', 'member'], 'Om Netting': ['C', 'm', 'member'],
+    'Si Lob': ['B', 'm', 'guest'], 'Dewi Dropshot': ['B+', 'f', 'member'], 'Koh Backhand': ['A', 'm', 'member'],
+    'Mbak Servis': ['B', 'f', 'member'], 'Pak Rally': ['C', 'm', 'guest'], 'Bang Defense': ['B+', 'm', 'member'],
+  };
+  await go(T + '/players');
+  const rows = await page.$$eval('li.prow', lis => lis.map(li => [
+    li.querySelector('form input[name=name]').value, li.querySelector('form').getAttribute('action')]));
+  for (const [name, action] of rows) {
+    const [level, gender, membership] = PROFILES[name];
+    await post(B + action, { action: 'profile', level, gender, membership });
+  }
 
   const startDay = async (date) => {
     await go(T + '/play');
@@ -133,6 +148,9 @@ const rnd = (lo, hi) => { seed = (seed * 9301 + 49297) % 233280; return lo + Mat
     await go(T + '/players');
     await shot(lang, 'players', page.locator('main section.card').nth(0));
     await shot(lang, 'player-list', page.locator('main section.card').nth(1));
+    const first = page.locator('main section.card').nth(1).locator('li.prow').first();
+    await first.locator('details.pmenu').evaluate(d => d.open = true);
+    await shot(lang, 'player-edit', first);
 
     await go(T + '/periods');
     await shot(lang, 'season', page.locator('main section.card').last());
@@ -205,6 +223,7 @@ const rnd = (lo, hi) => { seed = (seed * 9301 + 49297) % 233280; return lo + Mat
     await go(T + '/settings');
     await shot(lang, 'branding', page.locator('#poster'));
     await shot(lang, 'visibility', page.locator('main section.card').first());
+    await shot(lang, 'levels', page.locator('#level'));
 
     await go(T);
     await Promise.all([page.waitForNavigation(), page.click('.board td.pname a >> nth=0')]);

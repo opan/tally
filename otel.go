@@ -232,6 +232,7 @@ func registerBusinessMetrics(store *Store) {
 	boards := gauge("tally.leaderboards", "Leaderboards across all tallies (RFC-003).")
 	paid := gauge("tally.payments.count", "Iuran payments across all tallies (RFC-004), Gratis included.")
 	collected := gauge("tally.payments.collected", "Iuran collected across all tallies, in rupiah: Tunai and Transfer at their play day's fee.")
+	byStatus := gauge("tally.players.membership", "Active players by status (RFC-006): member, guest, unset.")
 	conns := gauge("tally.db.connections", "Database pool connections, by state.")
 
 	_, err := meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {
@@ -257,8 +258,14 @@ func registerBusinessMetrics(store *Store) {
 		o.ObserveInt64(boards, t.Leaderboards)
 		o.ObserveInt64(paid, t.Payments)
 		o.ObserveInt64(collected, t.Collected)
+		for _, m := range []struct {
+			status string
+			n      int64
+		}{{Member, t.Members}, {Guest, t.Guests}, {"unset", t.Players - t.Members - t.Guests}} {
+			o.ObserveInt64(byStatus, m.n, metric.WithAttributes(attribute.String("membership", m.status)))
+		}
 		return nil
-	}, users, tallies, active, players, matches, days, linked, pending, seasons, boards, paid, collected, conns)
+	}, users, tallies, active, players, matches, days, linked, pending, seasons, boards, paid, collected, byStatus, conns)
 	if err != nil {
 		log.Printf("otel business metrics: %v", err)
 	}
